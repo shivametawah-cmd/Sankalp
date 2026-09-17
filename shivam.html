@@ -174,6 +174,7 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <a class="btn btn-outline" href="#monthlyFeeStatusPanel">Fee status</a>
         <button class="btn btn-outline" onclick="loadData()">Refresh data</button>
         <button class="btn btn-gold" onclick="logout()">Logout</button>
       </div>
@@ -237,6 +238,26 @@
             </thead>
             <tbody id="studentsBody">
               <tr class="empty-row"><td colspan="13">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" id="monthlyFeeStatusPanel">
+        <div class="panel-head">
+          <h3>Monthly fee status</h3>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <select id="monthSelect" onchange="renderMonthStatus()" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px; font-size:.85rem;"></select>
+            <input type="text" id="monthStatusSearch" placeholder="Search by name or course..." oninput="renderMonthStatus()">
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Course</th><th>Status</th><th>Amount</th><th>Date paid</th></tr>
+            </thead>
+            <tbody id="monthStatusBody">
+              <tr class="empty-row"><td colspan="5">Loading…</td></tr>
             </tbody>
           </table>
         </div>
@@ -351,6 +372,64 @@
     renderFeeChart();
     renderStudents();
     renderFees();
+    populateMonthDropdown();
+    renderMonthStatus();
+  }
+
+  function populateMonthDropdown(){
+    const select = document.getElementById('monthSelect');
+    const monthsSet = new Set();
+    allFees.forEach(f => { if (f.month) monthsSet.add(String(f.month).trim()); });
+    monthsSet.add(currentMonthLabel());
+    // Sort months chronologically where possible, fallback to alphabetical
+    const monthsArr = Array.from(monthsSet).sort((a, b) => {
+      const da = new Date('1 ' + a), db = new Date('1 ' + b);
+      if (!isNaN(da) && !isNaN(db)) return db - da;
+      return a.localeCompare(b);
+    });
+    const prevValue = select.value;
+    select.innerHTML = monthsArr.map(m => `<option value="${m}">${m}</option>`).join('');
+    select.value = monthsArr.includes(prevValue) ? prevValue : currentMonthLabel();
+  }
+
+  function renderMonthStatus(){
+    const select = document.getElementById('monthSelect');
+    if (!select.value) select.value = currentMonthLabel();
+    const selectedMonth = normalize(select.value);
+    const q = normalize(document.getElementById('monthStatusSearch').value);
+
+    // Build a lookup of fee entries for the selected month, keyed by normalized student name
+    const feeForMonth = {};
+    allFees.forEach(f => {
+      if (normalize(f.month) === selectedMonth){
+        feeForMonth[normalize(f.name)] = f;
+      }
+    });
+
+    const activeStudents = allStudents.filter(s => normalize(s.status) !== 'completed');
+    const filtered = activeStudents.filter(s =>
+      normalize(s.name).includes(q) || normalize(s.course).includes(q)
+    );
+
+    const body = document.getElementById('monthStatusBody');
+    if (filtered.length === 0){
+      body.innerHTML = '<tr class="empty-row"><td colspan="5">No students found.</td></tr>';
+      return;
+    }
+    body.innerHTML = filtered.map(s => {
+      const fee = feeForMonth[normalize(s.name)];
+      const isPaid = fee && normalize(fee.status).includes('paid');
+      const pillClass = isPaid ? 'pill-paid' : 'pill-pending';
+      const label = isPaid ? 'Paid' : 'Pending';
+      return `
+      <tr>
+        <td>${s.name || '—'}</td>
+        <td>${s.course || '—'}</td>
+        <td><span class="pill ${pillClass}">${label}</span></td>
+        <td>${fee ? formatMoney(fee.amount) : '—'}</td>
+        <td>${fee ? formatDate(fee.date) : '—'}</td>
+      </tr>`;
+    }).join('');
   }
 
   function renderSummary(){
