@@ -232,7 +232,7 @@
                 <th>Admission fee</th><th>Adm. fee status</th>
                 <th>Father's name</th>
                 <th>Mother's name</th><th>DOB</th><th>Apaar ID</th><th>Aadhar</th>
-                <th>School</th><th>Photo</th>
+                <th>Aadhar upload</th><th>Marksheet</th>
               </tr>
             </thead>
             <tbody id="studentsBody">
@@ -458,8 +458,8 @@
         <td>${formatDate(s.dob)}</td>
         <td>${s.apaarId || '—'}</td>
         <td>${s.aadharMasked || '—'}</td>
-        <td>${s.school || '—'}</td>
-        <td>${s.photo ? `<a class="link-photo" href="${s.photo}" target="_blank" rel="noopener">View</a>` : '—'}</td>
+        <td>${s.aadharUpload ? `<a class="link-photo" href="${s.aadharUpload}" target="_blank" rel="noopener">View</a>` : '—'}</td>
+        <td>${s.marksheetUpload ? `<a class="link-photo" href="${s.marksheetUpload}" target="_blank" rel="noopener">View</a>` : '—'}</td>
       </tr>`;
     }).join('');
   }
