@@ -94,6 +94,7 @@
 
   /* ---------- Summary cards ---------- */
   .summary-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px;}
+  .summary-grid-5{grid-template-columns:repeat(5,1fr);}
   .summary-card{
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
     padding:20px; box-shadow:var(--shadow);
@@ -142,6 +143,7 @@
 
   @media (max-width: 900px){
     .summary-grid{grid-template-columns:1fr 1fr;}
+    .summary-grid-5{grid-template-columns:1fr 1fr;}
     .chart-grid{grid-template-columns:1fr;}
   }
 </style>
@@ -183,7 +185,7 @@
 
       <div class="status-banner" id="statusBanner"></div>
 
-      <div class="summary-grid">
+      <div class="summary-grid summary-grid-5">
         <div class="summary-card">
           <div class="label">Total students</div>
           <div class="value" id="statTotalStudents">—</div>
@@ -193,12 +195,16 @@
           <div class="value" id="statTotalCollected">—</div>
         </div>
         <div class="summary-card ok">
-          <div class="label">Paid this month</div>
+          <div class="label">Monthly fee paid (this month)</div>
           <div class="value" id="statPaidThisMonth">—</div>
         </div>
         <div class="summary-card danger">
-          <div class="label">Pending this month</div>
+          <div class="label">Monthly fee pending (this month)</div>
           <div class="value" id="statPendingThisMonth">—</div>
+        </div>
+        <div class="summary-card danger">
+          <div class="label">Admission fee pending</div>
+          <div class="value" id="statAdmissionPending">—</div>
         </div>
       </div>
 
@@ -222,13 +228,15 @@
           <table>
             <thead>
               <tr>
-                <th>Name</th><th>Course</th><th>Admission date</th><th>Father's name</th>
+                <th>Name</th><th>Course</th><th>Status</th><th>Admission date</th>
+                <th>Admission fee</th><th>Adm. fee status</th>
+                <th>Father's name</th>
                 <th>Mother's name</th><th>DOB</th><th>Apaar ID</th><th>Aadhar</th>
                 <th>School</th><th>Photo</th>
               </tr>
             </thead>
             <tbody id="studentsBody">
-              <tr class="empty-row"><td colspan="10">Loading…</td></tr>
+              <tr class="empty-row"><td colspan="13">Loading…</td></tr>
             </tbody>
           </table>
         </div>
@@ -352,8 +360,12 @@
     allFees.forEach(f => {
       if (normalize(f.status).includes('paid')) totalCollected += (parseFloat(f.amount) || 0);
     });
+    allStudents.forEach(s => {
+      if (normalize(s.admissionFeeStatus).includes('paid')) totalCollected += (parseFloat(s.admissionFee) || 0);
+    });
     document.getElementById('statTotalCollected').textContent = formatMoney(totalCollected);
 
+    const activeStudents = allStudents.filter(s => normalize(s.status) !== 'completed');
     const thisMonth = normalize(currentMonthLabel());
     const paidNames = new Set();
     allFees.forEach(f => {
@@ -361,10 +373,13 @@
         paidNames.add(normalize(f.name));
       }
     });
-    const paidCount = paidNames.size;
-    const pendingCount = Math.max(allStudents.length - paidCount, 0);
+    const paidCount = activeStudents.filter(s => paidNames.has(normalize(s.name))).length;
+    const pendingCount = Math.max(activeStudents.length - paidCount, 0);
     document.getElementById('statPaidThisMonth').textContent = paidCount;
     document.getElementById('statPendingThisMonth').textContent = pendingCount;
+
+    const admissionPending = allStudents.filter(s => !normalize(s.admissionFeeStatus).includes('paid')).length;
+    document.getElementById('statAdmissionPending').textContent = admissionPending;
   }
 
   let courseChartInstance, feeChartInstance;
@@ -392,6 +407,7 @@
   }
 
   function renderFeeChart(){
+    const activeStudents = allStudents.filter(s => normalize(s.status) !== 'completed');
     const thisMonth = normalize(currentMonthLabel());
     const paidNames = new Set();
     allFees.forEach(f => {
@@ -399,8 +415,8 @@
         paidNames.add(normalize(f.name));
       }
     });
-    const paid = paidNames.size;
-    const pending = Math.max(allStudents.length - paid, 0);
+    const paid = activeStudents.filter(s => paidNames.has(normalize(s.name))).length;
+    const pending = Math.max(activeStudents.length - paid, 0);
     const ctx = document.getElementById('feeChart');
     if (feeChartInstance) feeChartInstance.destroy();
     feeChartInstance = new Chart(ctx, {
@@ -421,14 +437,22 @@
     document.getElementById('studentCount').textContent = filtered.length;
     const body = document.getElementById('studentsBody');
     if (filtered.length === 0){
-      body.innerHTML = '<tr class="empty-row"><td colspan="10">No students found.</td></tr>';
+      body.innerHTML = '<tr class="empty-row"><td colspan="13">No students found.</td></tr>';
       return;
     }
-    body.innerHTML = filtered.map(s => `
+    body.innerHTML = filtered.map(s => {
+      const statusNorm = normalize(s.status);
+      const pillClass = statusNorm === 'completed' ? 'pill-neutral' : 'pill-paid';
+      const admStatusNorm = normalize(s.admissionFeeStatus);
+      const admPillClass = admStatusNorm.includes('paid') ? 'pill-paid' : 'pill-pending';
+      return `
       <tr>
         <td>${s.name || '—'}</td>
         <td>${s.course || '—'}</td>
+        <td><span class="pill ${pillClass}">${s.status || 'Active'}</span></td>
         <td>${formatDate(s.admissionDate)}</td>
+        <td>${formatMoney(s.admissionFee)}</td>
+        <td><span class="pill ${admPillClass}">${s.admissionFeeStatus || 'Pending'}</span></td>
         <td>${s.fatherName || '—'}</td>
         <td>${s.motherName || '—'}</td>
         <td>${formatDate(s.dob)}</td>
@@ -436,8 +460,8 @@
         <td>${s.aadharMasked || '—'}</td>
         <td>${s.school || '—'}</td>
         <td>${s.photo ? `<a class="link-photo" href="${s.photo}" target="_blank" rel="noopener">View</a>` : '—'}</td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
   }
 
   function renderFees(){
