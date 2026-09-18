@@ -28,10 +28,18 @@
 
   Bas itna hi — file save karo, upload karo, mcq-quiz.html ki list mein
   naya chapter apne aap dikhne lagega. Koi aur code kahin nahi badalna.
+
+  NOTE (fix log): pehle is file mein "var STATIC_CHAPTERS = [...]" likha
+  tha. mcq-quiz.html mein bhi alag se "const STATIC_CHAPTERS = ..." hai,
+  aur ek hi naam var + const dono se declare hone par browser error deta
+  hai ("Identifier has already been declared"), jisse poora quiz page
+  crash ho jaata tha. Isliye ab neeche "window.STATIC_CHAPTERS" use kiya
+  gaya hai — isse sirf window object par property set hoti hai, koi naya
+  global identifier declare nahi hota, aur conflict nahi hota.
   =====================================================================
 */
 
-var STATIC_CHAPTERS = [
+window.STATIC_CHAPTERS = [
   {
     id: 'ccc-ch1',
     course: 'CCC',
