@@ -253,6 +253,21 @@
   .contact-details .item{display:flex; gap:10px; max-width:280px;}
   .contact-details svg{width:20px; height:20px; flex-shrink:0; color:var(--gold); margin-top:2px;}
 
+  /* ---------- WhatsApp floating button ---------- */
+  .whatsapp-float{
+    position:fixed; bottom:22px; right:22px; z-index:50;
+    width:58px; height:58px; border-radius:50%; background:#25D366;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 25px -6px rgba(0,0,0,0.4);
+    transition:transform .15s ease;
+  }
+  .whatsapp-float:hover{transform:scale(1.08);}
+  .whatsapp-float svg{width:30px; height:30px;}
+  @media (max-width: 880px){
+    .whatsapp-float{width:52px; height:52px; bottom:16px; right:16px;}
+    .whatsapp-float svg{width:26px; height:26px;}
+  }
+
   /* ---------- Footer ---------- */
   footer{background:#0d1728; color:#aab0c0; padding:36px 0 22px; font-size:.85rem;}
   footer .wrap{display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
@@ -718,6 +733,10 @@
           <span>Mobile: 92867 33232<br>Landline: 05681 297561</span>
         </div>
         <div class="item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="var(--gold)" stroke="none"/></svg>
+          <span>WhatsApp: <a href="https://wa.me/919286733232" target="_blank" rel="noopener" style="color:#fff; text-decoration:underline;">92867 33232</a></span>
+        </div>
+        <div class="item">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
           <span>Email: <a href="mailto:sankalpcomputerclasses1@gmail.com" style="color:#fff; text-decoration:underline;">sankalpcomputerclasses1@gmail.com</a></span>
         </div>
@@ -730,6 +749,10 @@
   </section>
 
 </main>
+
+<a class="whatsapp-float" href="https://wa.me/919286733232?text=Hi%2C%20I%20want%20to%20know%20more%20about%20your%20courses" target="_blank" rel="noopener" aria-label="Chat with us on WhatsApp">
+  <svg viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.004 2c-5.52 0-9.998 4.478-9.998 9.997 0 1.763.462 3.484 1.34 5l-1.4 5.11 5.234-1.373a9.958 9.958 0 0 0 4.824 1.23h.004c5.52 0 9.997-4.477 9.997-9.997C22.005 6.478 17.523 2 12.004 2zm5.882 15.878a8.264 8.264 0 0 1-5.882 2.435h-.004a8.267 8.267 0 0 1-4.212-1.153l-.302-.18-3.106.815.829-3.028-.197-.312a8.245 8.245 0 0 1-1.267-4.457c0-4.567 3.72-8.287 8.29-8.287 2.215 0 4.298.863 5.863 2.43a8.235 8.235 0 0 1 2.426 5.863c0 4.567-3.72 8.286-8.31 8.286z"/></svg>
+</a>
 
 <footer>
   <div class="wrap">
