@@ -72,7 +72,14 @@ window.STATIC_CHAPTERS = [
     questionCount: 50,
     url: 'ccc-chapter3-mcq.html'
   },
-
+{
+    id: 'ccc-ch4',
+    course: 'CCC',
+    chapter: 'Chapter 4: Spreadsheet',
+    chapterHi: 'अध्याय 4: स्प्रेडशीट',
+    questionCount: 50,
+    url: 'ccc-chapter4-mcq.html'
+  },
   // 👇 Naya chapter yahan neeche add karo, upar wale jaisa hi ek block
   // copy-paste karke. Pichle block ke baad comma (,) lagana mat bhoolna.
   //
