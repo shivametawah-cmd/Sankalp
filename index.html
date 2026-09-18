@@ -1,49 +1,39 @@
 <!DOCTYPE html>
 <!--
-  SANKALP COMPUTER CLASSES — website
+  SANKALP COMPUTER CLASSES — website (v2 redesign)
   ------------------------------------------------------------
   SETUP NOTES FOR THE OWNER (read before publishing):
   1. LOGO: put your logo file in the same folder as this index.html
-     and name it exactly  logo.png  — it will appear automatically
-     in the header, hero and footer.
-  2. INQUIRY FORMS: each course has its own inquiry form. The forms
-     use a free service called FormSubmit (no sign-up needed) to
-     email you the responses. Find every line that says
-         action="https://formsubmit.co/sankalpcomputerclasses1@gmail.com"
-     and replace sankalpcomputerclasses1@gmail.com with your real email address
-     (same address everywhere). The FIRST time someone submits a
-     form, FormSubmit will send YOU a confirmation email — click the
-     link in it once, and after that every future inquiry will land
-     straight in your inbox automatically.
-  3. GOOGLE BUSINESS: search "Sankalp Computer Classes Bidhuna" on
-     Google Maps once your Business Profile is live, open it, click
-     Share, and paste that link where marked
-     GOOGLE-BUSINESS-PROFILE-LINK-HERE below (two places).
-  4. GITHUB PAGES: upload this file as index.html plus logo.png to
-     your repository, then turn on GitHub Pages in
+     and name it exactly  logo.png
+  2. CENTER PHOTOS: upload up to 6 photos of your center, named
+     exactly: center-1.jpg  center-2.jpg  center-3.jpg
+              center-4.jpg  center-5.jpg  center-6.jpg
+     They appear as a swipeable carousel right under the hero text.
+     Any photo you haven't uploaded yet is simply skipped.
+  3. INQUIRY FORMS: each course has its own inquiry form using
+     FormSubmit (free, no signup). Action emails already point to
+     sankalpcomputerclasses1@gmail.com — the first submission will
+     trigger a one-time confirmation email from FormSubmit; click
+     the link in it once to activate.
+  4. GOOGLE BUSINESS: paste your profile share-link in place of
+     GOOGLE-BUSINESS-PROFILE-LINK-HERE below.
+  5. GITHUB PAGES: upload this file + logo.png + photos to your
+     repository, then turn on GitHub Pages in
      Settings → Pages → Deploy from branch → main → / (root).
-  5. CENTER PHOTOS: upload up to 6 photos of your center to the same
-     folder as this file, named exactly:
-         center-1.jpg  center-2.jpg  center-3.jpg
-         center-4.jpg  center-5.jpg  center-6.jpg
-     (jpg or png both work, just keep the same file names). Any photo
-     you don't upload yet is simply skipped on the page — you don't
-     need all 6 at once, add more later any time.
 ------------------------------------------------------------- -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="google-site-verification" content="avYm5FXpUnJLqxffjgefBjfBdqwPbYrXZ0rsDPDcsjg" />
 <title>Sankalp Computer Classes — Bidhuna, Auraiya | CCC, ADCA, Tally, MS Office &amp; more</title>
 <meta name="description" content="Sankalp Computer Classes, Bidhuna (Auraiya, UP) — CCC, ADCA, Tally, MS Office, LibreOffice, Windows, AI &amp; Ubuntu courses. Established 2026. Call 9286733232.">
 <link rel="icon" href="logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#132038;
+    --ink:#0f1a30;
     --ink-soft:#2b3a58;
     --paper:#f6f4ee;
     --paper-alt:#eeebe2;
@@ -55,7 +45,8 @@
     --line:#e1ddd0;
     --radius:14px;
     --shadow:0 10px 30px -18px rgba(19,32,56,0.35);
-    --maxw:1120px;
+    --maxw:1160px;
+    --mono:"JetBrains Mono", ui-monospace, monospace;
     font-size:16px;
   }
   *{box-sizing:border-box;}
@@ -79,103 +70,61 @@
   a{color:var(--teal-dark);}
   img{max-width:100%; display:block;}
   .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
-  .visually-hidden{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
   :focus-visible{outline:3px solid var(--gold); outline-offset:3px;}
+  .mono-tag{
+    font-family:var(--mono); font-size:.72rem; letter-spacing:.04em; font-weight:600;
+  }
 
   /* ---------- Header ---------- */
-  header{
-    position:sticky; top:0; z-index:40;
-    background:var(--paper);
-    border-bottom:1px solid var(--line);
-  }
-  .nav-row{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:14px 24px;
-    max-width:var(--maxw); margin:0 auto;
-    gap:16px;
-  }
+  header{position:sticky; top:0; z-index:40; background:var(--paper); border-bottom:1px solid var(--line);}
+  .nav-row{display:flex; align-items:center; justify-content:space-between; padding:14px 24px; max-width:var(--maxw); margin:0 auto; gap:16px;}
   .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
   .brand img{width:44px; height:44px; border-radius:9px; object-fit:cover; background:var(--ink); flex-shrink:0;}
   .brand-text{display:flex; flex-direction:column; line-height:1.2;}
   .brand-text strong{font-family:"Space Grotesk"; font-size:1.05rem; color:var(--ink);}
   .brand-text span{font-size:.78rem; color:var(--ink-soft); letter-spacing:.02em;}
-  nav.primary-nav ul{
-    list-style:none; display:flex; gap:26px; margin:0; padding:0;
-  }
-  nav.primary-nav a{
-    text-decoration:none; color:var(--ink-soft); font-weight:600; font-size:.95rem;
-    padding:6px 2px; border-bottom:2px solid transparent;
-  }
+  nav.primary-nav ul{list-style:none; display:flex; gap:24px; margin:0; padding:0;}
+  nav.primary-nav a{text-decoration:none; color:var(--ink-soft); font-weight:600; font-size:.93rem; padding:6px 2px; border-bottom:2px solid transparent;}
   nav.primary-nav a:hover{color:var(--ink); border-color:var(--gold);}
-  .call-pill{
-    display:inline-flex; align-items:center; gap:8px;
-    background:var(--ink); color:#fff; text-decoration:none;
-    padding:9px 16px; border-radius:999px; font-weight:600; font-size:.9rem;
-    white-space:nowrap;
-  }
+  .call-pill{display:inline-flex; align-items:center; gap:8px; background:var(--ink); color:#fff; text-decoration:none; padding:9px 16px; border-radius:999px; font-weight:600; font-size:.9rem; white-space:nowrap;}
   .call-pill:hover{background:var(--teal-dark);}
   .menu-toggle{display:none;}
 
   /* ---------- Hero ---------- */
-  .hero{
-    background:var(--ink);
-    color:#f3f1ea;
-    position:relative;
-    overflow:hidden;
-  }
+  .hero{background:var(--ink); color:#f3f1ea; position:relative; overflow:hidden;}
   .hero::before{
-    content:"";
-    position:absolute; inset:0;
+    content:""; position:absolute; inset:0;
     background-image:
-      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-    background-size:46px 46px;
-    -webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,0.9), transparent 85%);
-    mask-image:linear-gradient(180deg, rgba(0,0,0,0.9), transparent 85%);
+      linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size:42px 42px;
+    -webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,0.9), transparent 90%);
+    mask-image:linear-gradient(180deg, rgba(0,0,0,0.9), transparent 90%);
     pointer-events:none;
   }
   .hero::after{
-    content:"";
-    position:absolute; inset:0;
+    content:""; position:absolute; inset:0;
     background:
-      radial-gradient(650px 340px at 85% 10%, rgba(217,154,31,0.22), transparent 60%),
-      radial-gradient(560px 300px at 100% 100%, rgba(15,111,108,0.32), transparent 60%),
+      radial-gradient(650px 340px at 85% 5%, rgba(217,154,31,0.22), transparent 60%),
+      radial-gradient(560px 300px at 100% 100%, rgba(15,111,108,0.34), transparent 60%),
       radial-gradient(420px 220px at 0% 100%, rgba(217,154,31,0.10), transparent 65%);
     pointer-events:none;
   }
-  .hero-inner{
-    position:relative;
-    display:grid; grid-template-columns:1.15fr 0.85fr; gap:48px;
-    align-items:center;
-    padding:70px 24px 60px;
-    max-width:var(--maxw); margin:0 auto;
-  }
+  .hero-inner{position:relative; padding:60px 24px 60px; max-width:var(--maxw); margin:0 auto;}
+  .hero-inner.split{display:grid; grid-template-columns:1.15fr 1fr; gap:44px; align-items:center;}
+  .hero-media{position:relative; min-width:0;}
   .eyebrow-tag{
-    display:inline-flex; align-items:center; gap:8px;
-    font-size:.82rem; font-weight:600; color:#d99a1f;
-    background:rgba(217,154,31,0.12);
-    border:1px solid rgba(217,154,31,0.35);
-    padding:6px 12px; border-radius:999px;
-    margin-bottom:18px;
+    display:inline-flex; align-items:center; gap:8px; font-family:var(--mono);
+    font-size:.75rem; font-weight:600; color:#e8c877;
+    background:rgba(217,154,31,0.12); border:1px solid rgba(217,154,31,0.35);
+    padding:6px 12px; border-radius:6px; margin-bottom:18px;
   }
-  .hero h1{
-    font-size:clamp(2rem, 4vw, 2.9rem);
-    color:#fff;
-    max-width:15ch;
-  }
-  .hero .hindi-line{
-    font-size:1.05rem; color:#c9cdd8; margin:10px 0 20px; max-width:44ch;
-  }
-  .hero p.lede{
-    font-size:1.08rem; color:#cfd3de; max-width:48ch; margin:0 0 28px;
-  }
-  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap;}
-  .btn{
-    display:inline-flex; align-items:center; gap:10px;
-    padding:13px 22px; border-radius:10px; font-weight:700; font-size:.98rem;
-    text-decoration:none; border:1px solid transparent; cursor:pointer;
-    font-family:"Source Sans 3", sans-serif;
-  }
+  .eyebrow-tag::before{content:"$"; color:var(--gold);}
+  .hero h1{font-size:clamp(2rem, 4vw, 2.85rem); color:#fff; max-width:18ch;}
+  .hero .hindi-line{font-size:1.02rem; color:#c9cdd8; margin:10px 0 18px; max-width:48ch;}
+  .hero p.lede{font-size:1.05rem; color:#cfd3de; max-width:52ch; margin:0 0 26px;}
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:36px;}
+  .btn{display:inline-flex; align-items:center; gap:10px; padding:13px 22px; border-radius:10px; font-weight:700; font-size:.98rem; text-decoration:none; border:1px solid transparent; cursor:pointer; font-family:"Source Sans 3", sans-serif;}
   .btn-gold{background:var(--gold); color:#241a02;}
   .btn-gold:hover{background:var(--gold-dark);}
   .btn-outline{border-color:rgba(255,255,255,0.4); color:#fff;}
@@ -183,34 +132,61 @@
   .btn-teal{background:var(--teal); color:#fff;}
   .btn-teal:hover{background:var(--teal-dark);}
 
-  .stat-card{
-    background:rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.14);
-    border-radius:var(--radius);
-    padding:26px;
-    backdrop-filter:blur(2px);
+  .hero-stats-row{
+    position:relative; display:flex; gap:0; flex-wrap:wrap;
+    border-top:1px solid rgba(255,255,255,0.14); padding:20px 0; margin-top:4px;
   }
-  .stat-card .stat-grid{
-    display:grid; grid-template-columns:1fr 1fr; gap:20px;
+  .hero-stats-row .stat{flex:1; min-width:130px; border-left:1px solid rgba(255,255,255,0.14); padding:0 20px;}
+  .hero-stats-row .stat:first-child{border-left:none; padding-left:0;}
+  .hero-stats-row .stat b{display:block; font-family:"Space Grotesk"; font-size:1.5rem; color:#fff;}
+  .hero-stats-row .stat span{font-size:.78rem; color:#c9cdd8;}
+
+  /* ---------- Hero photo carousel ---------- */
+  .carousel-frame{
+    position:relative; border-radius:var(--radius); overflow:hidden;
+    border:1px solid rgba(255,255,255,0.14); box-shadow:0 25px 60px -20px rgba(0,0,0,0.6);
   }
-  .stat-card .stat{border-left:3px solid var(--gold); padding-left:12px;}
-  .stat-card .stat b{display:block; font-family:"Space Grotesk"; font-size:1.6rem; color:#fff;}
-  .stat-card .stat span{font-size:.82rem; color:#c9cdd8;}
-  .stat-card .logo-row{
-    display:flex; align-items:center; gap:12px; margin-bottom:22px;
-    padding-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.14);
+  .carousel-track{
+    display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none;
+    -ms-overflow-style:none; cursor:grab; background:#0a1424;
   }
-  .stat-card .logo-row img{width:52px; height:52px; border-radius:11px; background:#fff; object-fit:cover;}
-  .stat-card .logo-row div{font-size:.85rem; color:#c9cdd8;}
-  .stat-card .logo-row strong{display:block; color:#fff; font-family:"Space Grotesk"; font-size:1rem;}
+  .carousel-track::-webkit-scrollbar{display:none;}
+  .carousel-track.dragging{cursor:grabbing; scroll-snap-type:none;}
+  .carousel-slide{
+    flex:0 0 100%; scroll-snap-align:start; position:relative;
+    aspect-ratio:4/3; min-height:220px; background:var(--paper-alt);
+  }
+  .carousel-slide img{width:100%; height:100%; object-fit:cover; pointer-events:none;}
+  .carousel-slide .cap{
+    position:absolute; left:0; right:0; bottom:0;
+    background:linear-gradient(0deg, rgba(0,0,0,0.65), transparent);
+    color:#fff; font-weight:600; font-size:.9rem; padding:28px 22px 14px;
+  }
+  .carousel-empty{
+    display:none; align-items:center; justify-content:center; aspect-ratio:4/3; min-height:220px;
+    color:#c9cdd8; font-size:.9rem; text-align:center; padding:20px;
+  }
+  .carousel-arrow{
+    position:absolute; top:50%; transform:translateY(-50%); z-index:5;
+    width:40px; height:40px; border-radius:50%; border:1px solid rgba(255,255,255,0.3);
+    background:rgba(15,26,48,0.6); color:#fff; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; backdrop-filter:blur(4px);
+  }
+  .carousel-arrow:hover{background:rgba(15,26,48,0.85);}
+  .carousel-arrow.prev{left:14px;}
+  .carousel-arrow.next{right:14px;}
+  .carousel-dots{display:flex; justify-content:center; gap:8px; margin-top:16px;}
+  .carousel-dots button{
+    width:8px; height:8px; border-radius:50%; border:none; background:rgba(255,255,255,0.3);
+    cursor:pointer; padding:0;
+  }
+  .carousel-dots button.active{background:var(--gold); width:22px; border-radius:5px;}
 
   /* ---------- Sections ---------- */
   section{padding:64px 0;}
   .section-head{max-width:60ch; margin-bottom:40px;}
-  .section-tag{
-    font-size:.82rem; font-weight:700; color:var(--teal-dark);
-    text-transform:none; letter-spacing:.01em;
-  }
+  .section-tag{font-family:var(--mono); font-size:.75rem; font-weight:700; color:var(--teal-dark); letter-spacing:.03em;}
+  .section-tag::before{content:"// "; color:var(--gold-dark);}
   .section-head h2{font-size:clamp(1.6rem, 3vw, 2.1rem); margin-top:8px;}
   .section-head p{color:var(--ink-soft); font-size:1.02rem; margin-top:10px;}
 
@@ -223,138 +199,72 @@
     border-top:1px solid var(--line); border-bottom:1px solid var(--line);
   }
   .course-grid{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
-  details.course-card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    overflow:hidden;
-  }
-  details.course-card > summary{
-    list-style:none; cursor:pointer;
-    padding:24px 24px 22px;
-    display:flex; gap:16px; align-items:flex-start;
-    position:relative;
-  }
+  details.course-card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
+  details.course-card > summary{list-style:none; cursor:pointer; padding:24px 24px 22px; display:flex; gap:16px; align-items:flex-start; position:relative;}
   details.course-card > summary::-webkit-details-marker{display:none;}
-  .course-icon{
-    flex-shrink:0; width:48px; height:48px; border-radius:11px;
-    background:var(--paper-alt); display:flex; align-items:center; justify-content:center;
-    color:var(--teal-dark);
-  }
+  .course-icon{flex-shrink:0; width:48px; height:48px; border-radius:11px; background:var(--paper-alt); display:flex; align-items:center; justify-content:center; color:var(--teal-dark);}
   .course-icon svg{width:26px; height:26px;}
   .course-text h3{font-size:1.12rem; margin-bottom:4px;}
-  .course-text .course-code{font-size:.78rem; font-weight:700; color:var(--gold-dark);}
+  .course-text .course-code{font-family:var(--mono); font-size:.72rem; font-weight:700; color:var(--gold-dark);}
   .course-text p{margin:8px 0 0; color:var(--ink-soft); font-size:.95rem;}
-  .chevron{
-    margin-left:auto; flex-shrink:0; width:22px; height:22px; color:var(--ink-soft);
-    transition:transform .2s ease; margin-top:4px;
-  }
+  .chevron{margin-left:auto; flex-shrink:0; width:22px; height:22px; color:var(--ink-soft); transition:transform .2s ease; margin-top:4px;}
   details[open] .chevron{transform:rotate(180deg);}
-  .course-body{
-    padding:0 24px 26px; border-top:1px dashed var(--line); margin-top:2px;
-  }
-  .course-meta{
-    display:flex; gap:22px; flex-wrap:wrap; margin:18px 0 20px; font-size:.88rem; color:var(--ink-soft);
-  }
+  .course-body{padding:0 24px 26px; border-top:1px dashed var(--line); margin-top:2px;}
+  .course-meta{display:flex; gap:22px; flex-wrap:wrap; margin:18px 0 20px; font-size:.88rem; color:var(--ink-soft);}
   .course-meta b{color:var(--ink); font-weight:700;}
-  form.inquiry{
-    background:var(--paper-alt); border:1px solid var(--line); border-radius:12px; padding:18px;
-  }
+  form.inquiry{background:var(--paper-alt); border:1px solid var(--line); border-radius:12px; padding:18px;}
   form.inquiry h4{font-size:.95rem; margin-bottom:12px; color:var(--ink);}
   .form-row{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;}
-  form.inquiry label{
-    display:block; font-size:.8rem; font-weight:600; color:var(--ink-soft); margin-bottom:5px;
-  }
-  form.inquiry input, form.inquiry textarea{
-    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px;
-    font-family:inherit; font-size:.92rem; background:#fff; color:var(--ink);
-  }
+  form.inquiry label{display:block; font-size:.8rem; font-weight:600; color:var(--ink-soft); margin-bottom:5px;}
+  form.inquiry input, form.inquiry textarea{width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-family:inherit; font-size:.92rem; background:#fff; color:var(--ink);}
   form.inquiry input:focus, form.inquiry textarea:focus{border-color:var(--teal);}
   form.inquiry textarea{resize:vertical; min-height:64px;}
   .form-foot{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:4px;}
   .form-foot small{color:var(--ink-soft); font-size:.78rem;}
-  button.submit-btn{
-    background:var(--teal); color:#fff; border:none; padding:11px 20px;
-    border-radius:8px; font-weight:700; font-size:.9rem; cursor:pointer;
-    font-family:inherit;
-  }
+  button.submit-btn{background:var(--teal); color:#fff; border:none; padding:11px 20px; border-radius:8px; font-weight:700; font-size:.9rem; cursor:pointer; font-family:inherit;}
   button.submit-btn:hover{background:var(--teal-dark);}
 
-  /* ---------- About / Why ---------- */
+  /* ---------- Why / About ---------- */
   .why-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:18px;}
-  .why-card{
-    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
-    padding:22px; box-shadow:var(--shadow);
-  }
-  .why-card .num{
-    font-family:"Space Grotesk"; font-size:.8rem; font-weight:700; color:var(--gold-dark);
-    margin-bottom:10px; display:block;
-  }
+  .why-card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:22px; box-shadow:var(--shadow);}
+  .why-card .num{font-family:var(--mono); font-size:.78rem; font-weight:700; color:var(--gold-dark); margin-bottom:10px; display:block;}
   .why-card h3{font-size:1rem;}
   .why-card p{font-size:.9rem; color:var(--ink-soft); margin-top:6px;}
 
-  /* ---------- Gallery ---------- */
-  .gallery-grid{
-    display:grid; grid-template-columns:repeat(3, 1fr); gap:16px;
-  }
-  .gallery-tile{
-    position:relative; border-radius:var(--radius); overflow:hidden;
-    aspect-ratio:4/3; background:var(--paper-alt);
-    border:1px solid var(--line); box-shadow:var(--shadow);
-  }
-  .gallery-tile img{
-    width:100%; height:100%; object-fit:cover;
-    transition:transform .35s ease;
-  }
-  .gallery-tile:hover img{transform:scale(1.05);}
-  .gallery-tile .cap{
-    position:absolute; left:0; right:0; bottom:0;
-    background:linear-gradient(0deg, rgba(19,32,56,0.72), transparent);
-    color:#fff; font-size:.82rem; font-weight:600;
-    padding:22px 14px 10px;
-  }
-  .gallery-empty-note{
-    grid-column:1/-1; text-align:center; color:var(--ink-soft);
-    font-size:.9rem; padding:20px; border:1px dashed var(--line); border-radius:var(--radius);
-    display:none;
-  }
-
   /* ---------- Google Business ---------- */
-  .gbp-section .wrap{
-    display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:stretch;
-  }
-  .gbp-card{
-    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
-    padding:28px; box-shadow:var(--shadow); display:flex; flex-direction:column; justify-content:center;
-  }
+  .gbp-section .wrap{display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:stretch;}
+  .gbp-card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:28px; box-shadow:var(--shadow); display:flex; flex-direction:column; justify-content:center;}
   .gbp-card h3{font-size:1.2rem;}
   .gbp-card p{color:var(--ink-soft); font-size:.95rem;}
   .stars{color:var(--gold-dark); font-size:1.1rem; letter-spacing:2px; margin:10px 0;}
-  .gbp-map{
-    border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); box-shadow:var(--shadow);
-    min-height:320px;
-  }
+  .gbp-map{border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); box-shadow:var(--shadow); min-height:320px;}
   .gbp-map iframe{width:100%; height:100%; min-height:320px; border:0; display:block;}
 
   /* ---------- Contact CTA ---------- */
-  .contact-cta{
-    background:var(--ink); color:#f3f1ea; text-align:center; position:relative; overflow:hidden;
-  }
-  .contact-cta::after{
-    content:""; position:absolute; inset:0;
-    background:radial-gradient(500px 240px at 50% 0%, rgba(217,154,31,0.18), transparent 65%);
-  }
+  .contact-cta{background:var(--ink); color:#f3f1ea; text-align:center; position:relative; overflow:hidden;}
+  .contact-cta::after{content:""; position:absolute; inset:0; background:radial-gradient(500px 240px at 50% 0%, rgba(217,154,31,0.18), transparent 65%);}
   .contact-cta .wrap{position:relative; max-width:760px;}
   .contact-cta h2{color:#fff; font-size:clamp(1.6rem,3vw,2.2rem);}
   .contact-cta p{color:#cfd3de; margin:12px auto 28px; max-width:50ch; font-size:1.02rem;}
   .contact-cta .btn-row{display:flex; gap:14px; justify-content:center; flex-wrap:wrap;}
-  .contact-details{
-    margin-top:36px; display:flex; gap:28px; justify-content:center; flex-wrap:wrap;
-    font-size:.92rem; color:#dfe2ea; text-align:left;
-  }
+  .contact-details{margin-top:36px; display:flex; gap:28px; justify-content:center; flex-wrap:wrap; font-size:.92rem; color:#dfe2ea; text-align:left;}
   .contact-details .item{display:flex; gap:10px; max-width:280px;}
   .contact-details svg{width:20px; height:20px; flex-shrink:0; color:var(--gold); margin-top:2px;}
+
+  /* ---------- WhatsApp floating button ---------- */
+  .whatsapp-float{
+    position:fixed; bottom:22px; right:22px; z-index:50;
+    width:58px; height:58px; border-radius:50%; background:#25D366;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 25px -6px rgba(0,0,0,0.4);
+    transition:transform .15s ease;
+  }
+  .whatsapp-float:hover{transform:scale(1.08);}
+  .whatsapp-float svg{width:30px; height:30px;}
+  @media (max-width: 880px){
+    .whatsapp-float{width:52px; height:52px; bottom:16px; right:16px;}
+    .whatsapp-float svg{width:26px; height:26px;}
+  }
 
   /* ---------- Footer ---------- */
   footer{background:#0d1728; color:#aab0c0; padding:36px 0 22px; font-size:.85rem;}
@@ -365,25 +275,20 @@
 
   /* ---------- Responsive ---------- */
   @media (max-width: 880px){
-    nav.primary-nav{
-      position:fixed; inset:64px 0 0 0; background:var(--paper);
-      display:none; flex-direction:column; padding:24px; border-top:1px solid var(--line);
-    }
+    nav.primary-nav{position:fixed; inset:64px 0 0 0; background:var(--paper); display:none; flex-direction:column; padding:24px; border-top:1px solid var(--line);}
     nav.primary-nav.open{display:flex;}
     nav.primary-nav ul{flex-direction:column; gap:4px;}
     nav.primary-nav a{display:block; padding:12px 4px; font-size:1.05rem;}
-    .menu-toggle{
-      display:inline-flex; align-items:center; justify-content:center;
-      width:40px; height:40px; border-radius:8px; border:1px solid var(--line);
-      background:transparent; cursor:pointer; color:var(--ink);
-    }
+    .menu-toggle{display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:8px; border:1px solid var(--line); background:transparent; cursor:pointer; color:var(--ink);}
     .call-pill span.pill-text{display:none;}
-    .hero-inner{grid-template-columns:1fr; padding-top:44px;}
-    .stat-card{order:-1;}
+    .hero-inner.split{grid-template-columns:1fr; gap:28px;}
+    .hero-stats-row{flex-direction:column;}
+    .hero-stats-row .stat{border-left:none; border-top:1px solid rgba(255,255,255,0.14); padding:14px 0;}
+    .hero-stats-row .stat:first-child{border-top:none;}
     .course-grid, .why-grid{grid-template-columns:1fr;}
-    .gallery-grid{grid-template-columns:1fr 1fr;}
     .gbp-section .wrap{grid-template-columns:1fr;}
     .form-row{grid-template-columns:1fr;}
+    .carousel-slide{aspect-ratio:4/3;}
   }
 </style>
 </head>
@@ -401,9 +306,9 @@
     <nav class="primary-nav" id="primaryNav">
       <ul>
         <li><a href="#courses">Courses</a></li>
-        <li><a href="#gallery">Gallery</a></li>
         <li><a href="#why-us">Why us</a></li>
         <li><a href="#find-us">Find us</a></li>
+        <li><a href="study-material.html">Notes &amp; MCQ</a></li>
         <li><a href="verify-certificate.html">Verify Certificate</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
@@ -422,35 +327,47 @@
 
 <main id="top">
 
-  <!-- ---------- HERO ---------- -->
+  <!-- ---------- HERO (text + photo carousel side by side) ---------- -->
   <section class="hero">
-    <div class="hero-inner">
-      <div>
-        <span class="eyebrow-tag">New batches open all year</span>
+    <div class="hero-inner split">
+      <div class="hero-text">
+        <span class="eyebrow-tag">new_batches --open --all_year</span>
         <h1>Practical computer training, right here in Bidhuna.</h1>
         <p class="hindi-line">बिधूना, औरैया में कंप्यूटर सीखना अब आसान — CCC, ADCA, Tally और बाकी सभी कोर्स एक ही जगह।</p>
-        <p class="lede">Sankalp Computer Classes was founded in 2026 to bring certificate-recognised, job-ready computer courses to students, shopkeepers and job-seekers around Bhagat Singh Chauraha — without needing to travel to a bigger city.</p>
+        <p class="lede">Sankalp Computer Classes was founded in 2026 to bring certificate-recognised, job-ready computer courses to students, shopkeepers and job-seekers around Bidhuna — without needing to travel to a bigger city.</p>
         <div class="hero-ctas">
           <a class="btn btn-gold" href="#courses">See all courses</a>
           <a class="btn btn-outline" href="tel:+919286733232">Call 92867 33232</a>
         </div>
-      </div>
 
-      <aside class="stat-card">
-        <div class="logo-row">
-          <img src="logo.png" alt="Sankalp Computer Classes logo" onerror="this.style.background='#fff'; this.src='';">
-          <div>
-            <strong>Sankalp Computer Classes</strong>
-            Parle Agency wali gali, Bidhuna
-          </div>
-        </div>
-        <div class="stat-grid">
+        <div class="hero-stats-row">
           <div class="stat"><b>2026</b><span>Institute established</span></div>
           <div class="stat"><b>8</b><span>Courses offered</span></div>
           <div class="stat"><b>2</b><span>Phone lines to reach us</span></div>
-          <div class="stat"><b>206243</b><span>Bidhuna PIN code</span></div>
+          <div class="stat"><b>100%</b><span>Practical, hands-on classes</span></div>
         </div>
-      </aside>
+      </div>
+
+      <div class="hero-media">
+        <div class="carousel-frame">
+          <div class="carousel-track" id="carouselTrack">
+            <div class="carousel-slide" data-slide><img src="center-1.jpg" alt="Sankalp Computer Classes — classroom" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Classroom</span></div>
+            <div class="carousel-slide" data-slide><img src="center-2.jpg" alt="Sankalp Computer Classes — computer lab" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Computer lab</span></div>
+            <div class="carousel-slide" data-slide><img src="center-3.jpg" alt="Sankalp Computer Classes — students in training" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Students in training</span></div>
+            <div class="carousel-slide" data-slide><img src="center-4.jpg" alt="Sankalp Computer Classes — entrance" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Entrance</span></div>
+            <div class="carousel-slide" data-slide><img src="center-5.jpg" alt="Sankalp Computer Classes — practical session" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Practical session</span></div>
+            <div class="carousel-slide" data-slide><img src="center-6.jpg" alt="Sankalp Computer Classes — certificate distribution" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Certificate distribution</span></div>
+          </div>
+          <div class="carousel-empty" id="carouselEmpty">Photos coming soon — upload center-1.jpg to center-6.jpg to this folder on GitHub to show them here.</div>
+          <button class="carousel-arrow prev" id="carouselPrev" aria-label="Previous photo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="carousel-arrow next" id="carouselNext" aria-label="Next photo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <div class="carousel-dots" id="carouselDots"></div>
+      </div>
     </div>
   </section>
 
@@ -458,7 +375,7 @@
   <section class="courses-section" id="courses">
     <div class="wrap">
       <div class="section-head">
-        <span class="section-tag">Courses offered</span>
+        <span class="section-tag">courses_offered</span>
         <h2>Pick a course, then send us your details</h2>
         <p>Tap a course to read what it covers and fill the short inquiry form under it — we'll call you back to confirm batch timing and fees.</p>
       </div>
@@ -742,23 +659,10 @@
   </section>
 
   <!-- ---------- WHY US ---------- -->
-  <!-- ---------- VERIFY CERTIFICATE CTA ---------- -->
-  <section style="padding:0 0 40px;">
-    <div class="wrap">
-      <div style="background:linear-gradient(135deg, var(--teal-dark), var(--teal)); border-radius:var(--radius); padding:28px 30px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; box-shadow:var(--shadow);">
-        <div>
-          <h3 style="color:#fff; font-size:1.15rem; margin-bottom:4px;">Got a certificate from us?</h3>
-          <p style="color:#dcecea; font-size:.92rem; margin:0;">Verify its authenticity instantly using your Certificate ID.</p>
-        </div>
-        <a class="btn btn-gold" href="verify-certificate.html">Verify Certificate</a>
-      </div>
-    </div>
-  </section>
-
   <section id="why-us">
     <div class="wrap">
       <div class="section-head">
-        <span class="section-tag">Why families in Bidhuna choose us</span>
+        <span class="section-tag">why_bidhuna_chooses_us</span>
         <h2>Small classes, hands-on practice</h2>
       </div>
       <div class="why-grid">
@@ -786,40 +690,17 @@
     </div>
   </section>
 
-  <!-- ---------- GALLERY ---------- -->
-  <section id="gallery">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="section-tag">A look inside</span>
-        <h2>Our classroom &amp; center</h2>
-        <p>A few glimpses of Sankalp Computer Classes — real photos of the classroom, systems and students in training.</p>
-      </div>
-      <div class="gallery-grid" id="galleryGrid">
-        <div class="gallery-tile"><img src="center-1.jpg" alt="Sankalp Computer Classes — classroom" loading="lazy" onerror="this.closest('.gallery-tile').style.display='none';"><span class="cap">Classroom</span></div>
-        <div class="gallery-tile"><img src="center-2.jpg" alt="Sankalp Computer Classes — computer lab" loading="lazy" onerror="this.closest('.gallery-tile').style.display='none';"><span class="cap">Computer lab</span></div>
-        <div class="gallery-tile"><img src="center-3.jpg" alt="Sankalp Computer Classes — students in training" loading="lazy" onerror="this.closest('.gallery-tile').style.display='none';"><span class="cap">Students in training</span></div>
-        <div class="gallery-tile"><img src="center-4.jpg" alt="Sankalp Computer Classes — entrance" loading="lazy" onerror="this.closest('.gallery-tile').style.display='none';"><span class="cap">Entrance</span></div>
-        <div class="gallery-tile"><img src="center-5.jpg" alt="Sankalp Computer Classes — practical session" loading="lazy" onerror="this.closest('.gallery-tile').style.display='none';"><span class="cap">Practical session</span></div>
-        <div class="gallery-tile"><img src="center-6.jpg" alt="Sankalp Computer Classes — certificate distribution" loading="lazy" onerror="this.closest('.gallery-tile').style.display='none';"><span class="cap">Certificate distribution</span></div>
-        <p class="gallery-empty-note" id="galleryEmptyNote">Photos coming soon — upload center-1.jpg to center-6.jpg to this folder on GitHub to show them here.</p>
-      </div>
-    </div>
-  </section>
-
   <!-- ---------- GOOGLE BUSINESS ---------- -->
   <section class="gbp-section" id="find-us" style="background:var(--paper-alt); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
     <div class="wrap">
       <div class="gbp-card">
-        <span class="section-tag">Find &amp; review us</span>
+        <span class="section-tag">find_and_review_us</span>
         <h3>See us on Google</h3>
         <div class="stars">★★★★★</div>
         <p>Visited our institute? Your review helps other students in Bidhuna find us. Once your Google Business Profile is live, replace the link below with your real profile share-link.</p>
         <a class="btn btn-teal" href="GOOGLE-BUSINESS-PROFILE-LINK-HERE" target="_blank" rel="noopener">View our Google Business profile</a>
       </div>
       <div class="gbp-map">
-        <!-- Map auto-generated from the institute address, no API key required.
-             Replace with your own Google Maps "Embed a map" code once you have
-             a confirmed Business Profile pin, if you'd prefer a precise pin. -->
         <iframe
           src="https://www.google.com/maps?q=Sankalp+Computer+Classes+Bhagat+Singh+Chauraha+Bidhuna+Auraiya+Uttar+Pradesh+206243&output=embed"
           loading="lazy"
@@ -850,6 +731,10 @@
           <span>Mobile: 92867 33232<br>Landline: 05681 297561</span>
         </div>
         <div class="item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="var(--gold)" stroke="none"/></svg>
+          <span>WhatsApp: <a href="https://wa.me/919286733232" target="_blank" rel="noopener" style="color:#fff; text-decoration:underline;">92867 33232</a></span>
+        </div>
+        <div class="item">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
           <span>Email: <a href="mailto:sankalpcomputerclasses1@gmail.com" style="color:#fff; text-decoration:underline;">sankalpcomputerclasses1@gmail.com</a></span>
         </div>
@@ -863,6 +748,10 @@
 
 </main>
 
+<a class="whatsapp-float" href="https://wa.me/919286733232?text=Hi%2C%20I%20want%20to%20know%20more%20about%20your%20courses" target="_blank" rel="noopener" aria-label="Chat with us on WhatsApp">
+  <svg viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.004 2c-5.52 0-9.998 4.478-9.998 9.997 0 1.763.462 3.484 1.34 5l-1.4 5.11 5.234-1.373a9.958 9.958 0 0 0 4.824 1.23h.004c5.52 0 9.997-4.477 9.997-9.997C22.005 6.478 17.523 2 12.004 2zm5.882 15.878a8.264 8.264 0 0 1-5.882 2.435h-.004a8.267 8.267 0 0 1-4.212-1.153l-.302-.18-3.106.815.829-3.028-.197-.312a8.245 8.245 0 0 1-1.267-4.457c0-4.567 3.72-8.287 8.29-8.287 2.215 0 4.298.863 5.863 2.43a8.235 8.235 0 0 1 2.426 5.863c0 4.567-3.72 8.286-8.31 8.286z"/></svg>
+</a>
+
 <footer>
   <div class="wrap">
     <div class="foot-brand">
@@ -874,6 +763,7 @@
 </footer>
 
 <script>
+  // Mobile nav toggle
   const menuToggle = document.getElementById('menuToggle');
   const primaryNav = document.getElementById('primaryNav');
   menuToggle.addEventListener('click', () => {
@@ -887,17 +777,108 @@
     });
   });
 
-  // Show "photos coming soon" note only if every center photo is missing
-  window.addEventListener('load', () => {
-    const grid = document.getElementById('galleryGrid');
-    if (!grid) return;
-    const tiles = grid.querySelectorAll('.gallery-tile');
-    const visibleTiles = Array.from(tiles).filter(t => t.style.display !== 'none');
-    if (visibleTiles.length === 0) {
-      const note = document.getElementById('galleryEmptyNote');
-      if (note) note.style.display = 'block';
+  // ---------- Hero photo carousel ----------
+  const track = document.getElementById('carouselTrack');
+  const dotsWrap = document.getElementById('carouselDots');
+  const prevBtn = document.getElementById('carouselPrev');
+  const nextBtn = document.getElementById('carouselNext');
+  const emptyState = document.getElementById('carouselEmpty');
+  let slides = [];
+  let activeIndex = 0;
+  let autoplayTimer = null;
+
+  function buildDots(){
+    dotsWrap.innerHTML = '';
+    slides.forEach((_, i) => {
+      const dot = document.createElement('button');
+      dot.setAttribute('aria-label', 'Go to photo ' + (i + 1));
+      if (i === activeIndex) dot.classList.add('active');
+      dot.addEventListener('click', () => goToSlide(i));
+      dotsWrap.appendChild(dot);
+    });
+  }
+
+  function updateActiveDot(){
+    const dots = dotsWrap.querySelectorAll('button');
+    dots.forEach((d, i) => d.classList.toggle('active', i === activeIndex));
+  }
+
+  function goToSlide(i){
+    if (slides.length === 0) return;
+    activeIndex = (i + slides.length) % slides.length;
+    track.scrollTo({ left: slides[activeIndex].offsetLeft, behavior: 'smooth' });
+    updateActiveDot();
+    resetAutoplay();
+  }
+
+  function resetAutoplay(){
+    if (autoplayTimer) clearInterval(autoplayTimer);
+    if (slides.length > 1){
+      autoplayTimer = setInterval(() => goToSlide(activeIndex + 1), 4500);
     }
-  });
+  }
+
+  function initCarousel(){
+    slides = Array.from(track.querySelectorAll('[data-slide]'));
+    if (slides.length === 0){
+      track.style.display = 'none';
+      prevBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+      emptyState.style.display = 'flex';
+      dotsWrap.style.display = 'none';
+      return;
+    }
+    buildDots();
+    resetAutoplay();
+
+    // Sync dots when user manually scrolls/swipes
+    let scrollTimeout;
+    track.addEventListener('scroll', () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        const trackRect = track.getBoundingClientRect();
+        let closest = 0, closestDist = Infinity;
+        slides.forEach((s, i) => {
+          const dist = Math.abs(s.getBoundingClientRect().left - trackRect.left);
+          if (dist < closestDist){ closestDist = dist; closest = i; }
+        });
+        activeIndex = closest;
+        updateActiveDot();
+      }, 100);
+    });
+
+    prevBtn.addEventListener('click', () => goToSlide(activeIndex - 1));
+    nextBtn.addEventListener('click', () => goToSlide(activeIndex + 1));
+
+    // Desktop mouse drag-to-scroll
+    let isDown = false, startX, scrollLeftStart;
+    track.addEventListener('mousedown', (e) => {
+      isDown = true;
+      track.classList.add('dragging');
+      startX = e.pageX;
+      scrollLeftStart = track.scrollLeft;
+      if (autoplayTimer) clearInterval(autoplayTimer);
+    });
+    window.addEventListener('mouseup', () => {
+      if (!isDown) return;
+      isDown = false;
+      track.classList.remove('dragging');
+      resetAutoplay();
+    });
+    track.addEventListener('mouseleave', () => { isDown = false; track.classList.remove('dragging'); });
+    track.addEventListener('mousemove', (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      track.scrollLeft = scrollLeftStart - (e.pageX - startX);
+    });
+
+    // Pause autoplay while touching (native swipe still works via scroll-snap)
+    track.addEventListener('touchstart', () => { if (autoplayTimer) clearInterval(autoplayTimer); }, { passive: true });
+    track.addEventListener('touchend', () => resetAutoplay(), { passive: true });
+  }
+
+  // Wait for image load/error attempts to settle, then initialize
+  window.addEventListener('load', () => setTimeout(initCarousel, 60));
 </script>
 
 </body>
