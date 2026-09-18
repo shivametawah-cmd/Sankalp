@@ -200,6 +200,53 @@
     .result-stats{grid-template-columns:repeat(2, 1fr);}
   }
 </style>
+<!-- Firebase: shared leaderboard across all devices/browsers -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, query, where, getDocs, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyARCHtO6xh7xbXP3UOIqoErxwwbvVSBxb4",
+    authDomain: "sankalp-quiz-5b907.firebaseapp.com",
+    projectId: "sankalp-quiz-5b907",
+    storageBucket: "sankalp-quiz-5b907.firebasestorage.app",
+    messagingSenderId: "919711308932",
+    appId: "1:919711308932:web:61c7b1a82b80f6b9b4b6d1"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Save one quiz attempt to the shared cloud leaderboard (collection "scores").
+  window.saveScoreToCloud = async function (chapterId, entry) {
+    try {
+      await addDoc(collection(db, "scores"), {
+        chapterId,
+        ...entry,
+        createdAt: serverTimestamp()
+      });
+      return true;
+    } catch (err) {
+      console.error('Firebase save failed:', err);
+      return false; // caller keeps the local copy as a fallback
+    }
+  };
+
+  // Fetch every attempt for one chapter from the shared cloud leaderboard.
+  window.getCloudLeaderboard = async function (chapterId) {
+    try {
+      const q = query(collection(db, "scores"), where("chapterId", "==", chapterId));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => d.data());
+    } catch (err) {
+      console.error('Firebase fetch failed:', err);
+      return null; // caller falls back to local scores
+    }
+  };
+</script>
+
 </head>
 <body>
 
@@ -478,30 +525,44 @@ function showResults(){
     </div>`;
   }).join('');
 
-  const scores = getScores();
-  if (!scores[CHAPTER.id]) scores[CHAPTER.id] = [];
-  scores[CHAPTER.id].push({
+  // Save score locally first (works even offline / if Firebase is blocked)
+  const entry = {
     name: currentStudent,
     correct,
     total,
     pct,
     date: new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})
-  });
+  };
+  const scores = getScores();
+  if (!scores[CHAPTER.id]) scores[CHAPTER.id] = [];
+  scores[CHAPTER.id].push(entry);
   saveScores(scores);
 
-  renderLeaderboard(scores[CHAPTER.id]);
-
   showScreen('screenResult');
+
+  // Show a quick loading state, then load the shared (cloud) leaderboard
+  document.getElementById('lbBody').innerHTML =
+    '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);">Loading leaderboard…</td></tr>';
+  loadLeaderboard(CHAPTER.id, entry, scores[CHAPTER.id]);
 }
 
-function renderLeaderboard(entries){
+async function loadLeaderboard(chapterId, myEntry, localEntries){
+  let entries = localEntries;
+  if (window.saveScoreToCloud) await window.saveScoreToCloud(chapterId, myEntry);
+  if (window.getCloudLeaderboard){
+    const cloud = await window.getCloudLeaderboard(chapterId);
+    if (cloud && cloud.length) entries = cloud;
+  }
+  renderLeaderboard(entries, myEntry);
+}
+
+function renderLeaderboard(entries, myEntry){
   document.getElementById('lbChapterLabel').textContent = CHAPTER.chapter;
   const sorted = [...entries].sort((a,b) => b.pct - a.pct || b.correct - a.correct);
   const top = sorted.slice(0, 15);
-  const myEntry = entries[entries.length - 1];
-  const myIdx = sorted.findIndex(e =>
+  const myIdx = myEntry ? sorted.findIndex(e =>
     e.name===myEntry.name && e.pct===myEntry.pct && e.correct===myEntry.correct && e.date===myEntry.date
-  );
+  ) : -1;
 
   const rankClass = i => i===0?'gold': i===1?'silver': i===2?'bronze':'';
   document.getElementById('lbBody').innerHTML = top.map((e, i) => `
