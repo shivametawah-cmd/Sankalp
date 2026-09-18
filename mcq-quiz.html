@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<!--
+  SANKALP COMPUTER CLASSES — MCQ Quiz (public page)
+  -------------------------------------------------------
+  Students can attempt chapter-wise bilingual MCQs here.
+  No login needed — anyone can attempt.
+  MCQ data is stored in localStorage (added via shivam.html admin).
+  Scores are also saved in localStorage and shown in a leaderboard.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCQ Practice — Sankalp Computer Classes</title>
+<meta name="description" content="Chapter-wise bilingual MCQ practice for CCC, ADCA, Tally and more courses at Sankalp Computer Classes, Bidhuna.">
+<link rel="icon" href="logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#132038; --ink-soft:#2b3a58; --paper:#f6f4ee; --paper-alt:#eeebe2;
+    --card:#ffffff; --gold:#d99a1f; --gold-dark:#b87f14;
+    --teal:#0f6f6c; --teal-dark:#0b524f;
+    --line:#e1ddd0; --radius:14px; --shadow:0 10px 30px -18px rgba(19,32,56,0.35);
+    --ok:#1c7c4d; --ok-bg:#eaf7f0; --danger:#b3432f; --danger-bg:#fbeae6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"Source Sans 3", system-ui, sans-serif; line-height:1.6;
+    min-height:100vh;
+  }
+  h1,h2,h3,h4{font-family:"Space Grotesk", system-ui, sans-serif; line-height:1.2;}
+  .wrap{max-width:860px; margin:0 auto; padding:0 20px;}
+  a{color:var(--teal-dark);}
+
+  /* ---- Header ---- */
+  header.topbar{background:var(--ink); padding:20px 0;}
+  header.topbar .wrap{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
+  .brand img{width:40px; height:40px; border-radius:8px; background:#fff;}
+  .brand strong{font-family:"Space Grotesk"; color:#fff; font-size:1rem; display:block;}
+  .brand span{font-size:.75rem; color:#c9cdd8;}
+  .back-link{color:#dfe2ea; text-decoration:none; font-size:.85rem; font-weight:600;}
+  .back-link:hover{color:#fff;}
+
+  /* ---- Screens ---- */
+  .screen{display:none; padding:36px 0 60px;}
+  .screen.active{display:block;}
+
+  /* ---- Home screen ---- */
+  .page-head{margin-bottom:28px;}
+  .page-head h1{font-size:1.85rem; margin-bottom:8px;}
+  .page-head p{color:var(--ink-soft); font-size:.97rem; max-width:54ch;}
+
+  /* Name entry */
+  .name-box{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:24px; box-shadow:var(--shadow); margin-bottom:28px;
+  }
+  .name-box label{display:block; font-weight:600; margin-bottom:8px; font-size:.95rem;}
+  .name-box input{
+    width:100%; padding:11px 14px; border:1px solid var(--line); border-radius:9px;
+    font-size:1rem; font-family:inherit; margin-bottom:10px;
+  }
+  .name-box input:focus{outline:none; border-color:var(--teal);}
+
+  /* Course filter */
+  .filter-row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; align-items:center;}
+  .filter-row label{font-weight:600; font-size:.9rem; color:var(--ink-soft);}
+  .filter-row select{
+    padding:9px 13px; border:1px solid var(--line); border-radius:9px;
+    font-size:.9rem; font-family:inherit; background:var(--card);
+  }
+
+  /* Chapter cards */
+  .chapter-grid{display:grid; gap:14px;}
+  .chapter-card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:20px 22px; box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    cursor:pointer; transition:border-color .18s, box-shadow .18s;
+  }
+  .chapter-card:hover{border-color:var(--teal); box-shadow:0 14px 34px -16px rgba(19,32,56,0.3);}
+  .chapter-info h3{font-size:1rem; margin-bottom:3px;}
+  .chapter-meta{font-size:.8rem; color:var(--ink-soft);}
+  .badge{
+    display:inline-block; padding:3px 10px; border-radius:999px;
+    font-size:.75rem; font-weight:700; background:var(--paper-alt); color:var(--ink-soft);
+    margin-right:6px;
+  }
+  .badge-teal{background:rgba(15,111,108,0.12); color:var(--teal-dark);}
+  .start-btn{
+    background:var(--teal); color:#fff; border:none; padding:10px 20px;
+    border-radius:9px; font-weight:700; font-size:.88rem; cursor:pointer; white-space:nowrap;
+  }
+  .start-btn:hover{background:var(--teal-dark);}
+
+  .empty-state{
+    text-align:center; padding:50px 20px; color:var(--ink-soft);
+    background:var(--card); border:1px dashed var(--line); border-radius:var(--radius);
+  }
+  .empty-state h3{margin-bottom:8px; color:var(--ink);}
+
+  /* ---- Quiz screen ---- */
+  .quiz-header{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px 22px; margin-bottom:22px; box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  }
+  .quiz-title{font-size:1.05rem;}
+  .quiz-title small{display:block; font-size:.78rem; color:var(--ink-soft); font-weight:400; margin-top:2px;}
+  .progress-wrap{flex:1; min-width:160px;}
+  .progress-label{font-size:.8rem; color:var(--ink-soft); margin-bottom:5px;}
+  .progress-bar{height:7px; background:var(--paper-alt); border-radius:999px; overflow:hidden;}
+  .progress-fill{height:100%; background:var(--teal); border-radius:999px; transition:width .3s;}
+  .q-counter{font-family:"Space Grotesk"; font-size:1.1rem; font-weight:700; white-space:nowrap;}
+
+  .question-card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px 24px; box-shadow:var(--shadow); margin-bottom:18px;
+  }
+  .q-number{font-size:.8rem; font-weight:700; color:var(--ink-soft); margin-bottom:10px;}
+  .q-text{font-size:1.05rem; font-weight:600; margin-bottom:6px; line-height:1.4;}
+  .q-text-hi{font-size:.95rem; color:var(--ink-soft); margin-bottom:18px; line-height:1.5;}
+
+  .options-list{display:grid; gap:10px;}
+  .option-btn{
+    width:100%; text-align:left; background:var(--paper-alt);
+    border:2px solid transparent; border-radius:10px;
+    padding:12px 16px; font-size:.93rem; font-family:inherit;
+    cursor:pointer; transition:border-color .15s, background .15s;
+    line-height:1.4;
+  }
+  .option-btn:hover:not(:disabled){border-color:var(--teal); background:#f0faf9;}
+  .option-btn.selected{border-color:var(--teal); background:#e0f4f3;}
+  .option-btn.correct{border-color:var(--ok); background:var(--ok-bg); color:var(--ok);}
+  .option-btn.wrong{border-color:var(--danger); background:var(--danger-bg); color:var(--danger);}
+  .option-btn:disabled{cursor:default;}
+  .option-label{font-weight:700; margin-right:8px;}
+
+  .nav-row{display:flex; gap:12px; justify-content:space-between; align-items:center; flex-wrap:wrap;}
+  .nav-row .skip-btn{background:none; border:1px solid var(--line); color:var(--ink-soft); padding:10px 18px; border-radius:9px; font-size:.9rem; cursor:pointer;}
+  .nav-row .skip-btn:hover{border-color:var(--ink-soft); color:var(--ink);}
+  .nav-row .next-btn{background:var(--teal); color:#fff; border:none; padding:10px 24px; border-radius:9px; font-weight:700; font-size:.9rem; cursor:pointer;}
+  .nav-row .next-btn:hover{background:var(--teal-dark);}
+  .nav-row .submit-btn{background:var(--gold); color:#241a02; border:none; padding:10px 24px; border-radius:9px; font-weight:700; font-size:.9rem; cursor:pointer;}
+  .nav-row .submit-btn:hover{background:var(--gold-dark);}
+
+  /* ---- Result screen ---- */
+  .result-hero{
+    text-align:center; padding:38px 24px 28px;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:22px;
+  }
+  .score-circle{
+    width:120px; height:120px; border-radius:50%; margin:0 auto 18px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:"Space Grotesk"; font-size:2rem; font-weight:700; color:#fff;
+  }
+  .score-circle.great{background:linear-gradient(135deg, var(--ok), #2db37a);}
+  .score-circle.good{background:linear-gradient(135deg, var(--teal), #1a9a97);}
+  .score-circle.low{background:linear-gradient(135deg, #e07b3a, var(--gold-dark));}
+  .score-circle.poor{background:linear-gradient(135deg, var(--danger), #d4583e);}
+  .result-hero h2{font-size:1.5rem; margin-bottom:6px;}
+  .result-hero p{color:var(--ink-soft); font-size:.95rem; max-width:40ch; margin:0 auto;}
+
+  .result-stats{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:22px;
+  }
+  .r-stat{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:16px; text-align:center; box-shadow:var(--shadow);
+  }
+  .r-stat .val{font-family:"Space Grotesk"; font-size:1.6rem; font-weight:700;}
+  .r-stat .lbl{font-size:.78rem; color:var(--ink-soft); margin-top:4px;}
+  .r-stat.ok .val{color:var(--ok);}
+  .r-stat.danger .val{color:var(--danger);}
+
+  /* Review section */
+  .review-panel{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow); margin-bottom:22px;
+  }
+  .review-panel-head{
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .review-panel-head h3{font-size:1rem;}
+  .toggle-review{background:none; border:1px solid var(--line); padding:7px 14px; border-radius:8px; font-size:.83rem; cursor:pointer;}
+  .review-list{display:none; padding:16px 20px;}
+  .review-list.open{display:block;}
+  .review-item{padding:14px 0; border-bottom:1px dashed var(--line);}
+  .review-item:last-child{border-bottom:none;}
+  .review-q{font-weight:600; font-size:.92rem; margin-bottom:4px;}
+  .review-q-hi{font-size:.83rem; color:var(--ink-soft); margin-bottom:8px;}
+  .review-ans{font-size:.85rem; margin-bottom:3px;}
+  .review-ans .label{font-weight:700; margin-right:6px;}
+  .ans-correct{color:var(--ok);}
+  .ans-wrong{color:var(--danger);}
+
+  /* Leaderboard */
+  .lb-panel{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow); margin-bottom:22px;
+  }
+  .lb-panel-head{padding:16px 20px; border-bottom:1px solid var(--line);}
+  .lb-panel-head h3{font-size:1rem;}
+  .lb-table{width:100%; border-collapse:collapse; font-size:.88rem;}
+  .lb-table thead th{background:var(--paper-alt); padding:9px 14px; text-align:left; color:var(--ink-soft); font-weight:700;}
+  .lb-table tbody td{padding:9px 14px; border-top:1px solid var(--line);}
+  .lb-table tbody tr:hover{background:var(--paper-alt);}
+  .lb-table tbody tr.me td{font-weight:700; background:rgba(15,111,108,0.06);}
+  .rank-badge{
+    display:inline-block; width:24px; height:24px; border-radius:50%;
+    background:var(--paper-alt); color:var(--ink-soft); font-weight:700;
+    font-size:.75rem; text-align:center; line-height:24px;
+  }
+  .rank-badge.gold{background:#fdf0c3; color:#7a5c08;}
+  .rank-badge.silver{background:#e8eaed; color:#4a5068;}
+  .rank-badge.bronze{background:#f5e5d8; color:#7a4020;}
+
+  .result-actions{display:flex; gap:12px; flex-wrap:wrap;}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:11px 22px; border-radius:10px; font-weight:700; font-size:.9rem;
+    border:none; cursor:pointer; text-decoration:none; font-family:inherit;
+  }
+  .btn-teal{background:var(--teal); color:#fff;}
+  .btn-teal:hover{background:var(--teal-dark);}
+  .btn-outline{background:transparent; color:var(--ink); border:1px solid var(--line);}
+  .btn-outline:hover{border-color:var(--ink-soft);}
+
+  footer{background:#0d1728; color:#aab0c0; padding:22px 0; font-size:.83rem; text-align:center;}
+
+  @media(max-width:600px){
+    .result-stats{grid-template-columns:1fr 1fr;}
+    .quiz-header{flex-direction:column; align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <img src="logo.png" alt="" onerror="this.style.background='var(--ink)'; this.src='';">
+      <div>
+        <strong>Sankalp Computer Classes</strong>
+        <span>MCQ Practice Quiz</span>
+      </div>
+    </a>
+    <a class="back-link" href="index.html">← Back to website</a>
+  </div>
+</header>
+
+<!-- ===================== HOME SCREEN ===================== -->
+<div class="screen active" id="screenHome">
+  <div class="wrap">
+    <div style="padding-top:36px;" class="page-head">
+      <h1>MCQ Practice Quiz / MCQ अभ्यास</h1>
+      <p>Chapter-wise bilingual (English + Hindi) multiple-choice questions. Attempt a chapter, get your marks instantly.</p>
+    </div>
+
+    <!-- Name entry -->
+    <div class="name-box">
+      <label for="studentName">Your name / आपका नाम <span style="color:var(--danger);">*</span></label>
+      <input type="text" id="studentName" placeholder="Enter your full name..." autocomplete="off">
+      <div style="font-size:.8rem; color:var(--ink-soft);">Your name is used to save your score on the leaderboard.</div>
+    </div>
+
+    <!-- Course filter -->
+    <div class="filter-row">
+      <label for="courseFilter">Course / कोर्स:</label>
+      <select id="courseFilter" onchange="renderChapters()">
+        <option value="">— All courses —</option>
+      </select>
+    </div>
+
+    <div id="chapterList"></div>
+  </div>
+</div>
+
+<!-- ===================== QUIZ SCREEN ===================== -->
+<div class="screen" id="screenQuiz">
+  <div class="wrap">
+    <div class="quiz-header">
+      <div class="quiz-title">
+        <span id="quizChapterTitle">Chapter</span>
+        <small id="quizCourseName"></small>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label" id="progressLabel">Question 1 of 10</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:10%"></div></div>
+      </div>
+      <div class="q-counter" id="qCounter">1 / 10</div>
+    </div>
+
+    <div class="question-card" id="questionCard">
+      <div class="q-number" id="qNumber">Q.1</div>
+      <div class="q-text" id="qText"></div>
+      <div class="q-text-hi" id="qTextHi"></div>
+      <div class="options-list" id="optionsList"></div>
+    </div>
+
+    <div class="nav-row">
+      <button class="skip-btn" onclick="goHome()">✕ Exit quiz</button>
+      <div style="display:flex; gap:10px;">
+        <button class="next-btn" id="nextBtn" onclick="nextQuestion()" style="display:none;">Next →</button>
+        <button class="submit-btn" id="submitBtn" onclick="submitQuiz()" style="display:none;">Submit Quiz ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== RESULT SCREEN ===================== -->
+<div class="screen" id="screenResult">
+  <div class="wrap">
+    <div style="padding-top:36px;"></div>
+    <div class="result-hero">
+      <div class="score-circle" id="scoreCircle">0%</div>
+      <h2 id="resultHeading">Great job!</h2>
+      <p id="resultSubtext"></p>
+    </div>
+
+    <div class="result-stats">
+      <div class="r-stat ok">
+        <div class="val" id="rCorrect">0</div>
+        <div class="lbl">Correct ✓</div>
+      </div>
+      <div class="r-stat danger">
+        <div class="val" id="rWrong">0</div>
+        <div class="lbl">Wrong ✗</div>
+      </div>
+      <div class="r-stat">
+        <div class="val" id="rTotal">0</div>
+        <div class="lbl">Total Q</div>
+      </div>
+      <div class="r-stat">
+        <div class="val" id="rPercent">0%</div>
+        <div class="lbl">Score</div>
+      </div>
+    </div>
+
+    <!-- Answer review -->
+    <div class="review-panel">
+      <div class="review-panel-head">
+        <h3>Answer Review / उत्तर देखें</h3>
+        <button class="toggle-review" onclick="toggleReview()">Show answers ▼</button>
+      </div>
+      <div class="review-list" id="reviewList"></div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="lb-panel">
+      <div class="lb-panel-head">
+        <h3>🏆 Leaderboard — <span id="lbChapterLabel"></span></h3>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="lb-table">
+          <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Correct</th><th>Date</th></tr></thead>
+          <tbody id="lbBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn btn-teal" onclick="retryQuiz()">🔁 Retry this chapter</button>
+      <button class="btn btn-outline" onclick="goHome()">← Choose another chapter</button>
+    </div>
+    <div style="height:40px;"></div>
+  </div>
+</div>
+
+<footer>&copy; 2026 Sankalp Computer Classes, Bidhuna, Auraiya, UP</footer>
+
+<script>
+// =====================================================================
+//  DATA LAYER — MCQs stored in localStorage (key: sankalp_mcq_data)
+//  Format: [ { id, course, chapter, chapterHi, questions: [ {
+//    textEn, textHi, options: [{label,en,hi}], correct (0-based index)
+//  } ] } ]
+// =====================================================================
+
+const STORAGE_KEY = 'sankalp_mcq_data';
+const SCORE_KEY   = 'sankalp_mcq_scores'; // { chapterId: [ {name, correct, total, date} ] }
+
+function getMCQData(){ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+function getScores(){ return JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); }
+function saveScores(s){ localStorage.setItem(SCORE_KEY, JSON.stringify(s)); }
+
+// =====================================================================
+//  HOME SCREEN
+// =====================================================================
+let currentStudent = '';
+let currentChapter = null;
+let userAnswers = [];
+let questionOrder = [];
+
+function renderHome(){
+  const data = getMCQData();
+  const courseFilter = document.getElementById('courseFilter');
+  const selectedCourse = courseFilter.value;
+
+  // Populate course dropdown
+  const courses = [...new Set(data.map(c => c.course))].sort();
+  const prev = courseFilter.value;
+  courseFilter.innerHTML = '<option value="">— All courses —</option>' +
+    courses.map(c => `<option value="${c}" ${c===prev?'selected':''}>${c}</option>`).join('');
+  courseFilter.value = prev;
+
+  renderChapters();
+}
+
+function renderChapters(){
+  const data = getMCQData();
+  const selectedCourse = document.getElementById('courseFilter').value;
+  const list = document.getElementById('chapterList');
+
+  const filtered = selectedCourse ? data.filter(c => c.course === selectedCourse) : data;
+
+  if (filtered.length === 0){
+    list.innerHTML = `<div class="empty-state">
+      <h3>No MCQs available yet</h3>
+      <p>Your teacher will add chapter-wise MCQs soon. Check back later!</p>
+    </div>`;
+    return;
+  }
+
+  const scores = getScores();
+  list.innerHTML = filtered.map(chapter => {
+    const chScores = scores[chapter.id] || [];
+    const attempted = chScores.length;
+    const best = attempted ? Math.max(...chScores.map(s => Math.round(s.correct/s.total*100))) : null;
+    return `
+    <div class="chapter-card" onclick="startQuiz('${chapter.id}')">
+      <div class="chapter-info">
+        <h3>${chapter.chapter}</h3>
+        <div style="margin-top:2px; font-size:.85rem; color:var(--ink-soft);">${chapter.chapterHi || ''}</div>
+        <div style="margin-top:8px;">
+          <span class="badge badge-teal">${chapter.course}</span>
+          <span class="badge">${chapter.questions.length} Q</span>
+          ${attempted ? `<span class="badge" style="background:rgba(28,124,77,0.1);color:var(--ok);">Best: ${best}%</span>` : ''}
+        </div>
+      </div>
+      <button class="start-btn" onclick="event.stopPropagation(); startQuiz('${chapter.id}')">
+        ${attempted ? 'Retry' : 'Start Quiz'} →
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function startQuiz(chapterId){
+  currentStudent = document.getElementById('studentName').value.trim();
+  if (!currentStudent){
+    document.getElementById('studentName').focus();
+    document.getElementById('studentName').style.borderColor = 'var(--danger)';
+    document.getElementById('studentName').placeholder = 'Please enter your name first!';
+    return;
+  }
+  document.getElementById('studentName').style.borderColor = '';
+
+  const data = getMCQData();
+  currentChapter = data.find(c => c.id === chapterId);
+  if (!currentChapter) return;
+
+  // Shuffle questions
+  questionOrder = currentChapter.questions.map((_, i) => i);
+  for (let i = questionOrder.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i+1));
+    [questionOrder[i], questionOrder[j]] = [questionOrder[j], questionOrder[i]];
+  }
+
+  userAnswers = new Array(questionOrder.length).fill(null);
+  currentQIndex = 0;
+
+  // Update quiz header
+  document.getElementById('quizChapterTitle').textContent = currentChapter.chapter;
+  document.getElementById('quizCourseName').textContent = currentChapter.course + (currentChapter.chapterHi ? ' — ' + currentChapter.chapterHi : '');
+
+  showScreen('screenQuiz');
+  renderQuestion();
+}
+
+// =====================================================================
+//  QUIZ SCREEN
+// =====================================================================
+let currentQIndex = 0;
+
+function renderQuestion(){
+  const total = questionOrder.length;
+  const qi = questionOrder[currentQIndex];
+  const q = currentChapter.questions[qi];
+
+  document.getElementById('qNumber').textContent = `Q.${currentQIndex + 1}`;
+  document.getElementById('qText').textContent = q.textEn;
+  document.getElementById('qTextHi').textContent = q.textHi || '';
+  document.getElementById('progressLabel').textContent = `Question ${currentQIndex+1} of ${total}`;
+  document.getElementById('progressFill').style.width = `${((currentQIndex+1)/total)*100}%`;
+  document.getElementById('qCounter').textContent = `${currentQIndex+1} / ${total}`;
+
+  const labels = ['A','B','C','D'];
+  document.getElementById('optionsList').innerHTML = q.options.map((opt, i) => `
+    <button class="option-btn ${userAnswers[currentQIndex]===i ? 'selected':''}"
+      onclick="selectOption(${i})" id="opt_${i}">
+      <span class="option-label">${labels[i]}.</span>${opt.en}${opt.hi ? '<br><span style="font-size:.85em;color:var(--ink-soft);">' + opt.hi + '</span>' : ''}
+    </button>
+  `).join('');
+
+  // Show next or submit
+  const isLast = currentQIndex === total - 1;
+  document.getElementById('nextBtn').style.display = isLast ? 'none' : '';
+  document.getElementById('submitBtn').style.display = isLast ? '' : 'none';
+}
+
+function selectOption(idx){
+  userAnswers[currentQIndex] = idx;
+  document.querySelectorAll('.option-btn').forEach((b, i) => {
+    b.classList.toggle('selected', i === idx);
+  });
+}
+
+function nextQuestion(){
+  if (userAnswers[currentQIndex] === null){
+    // Highlight unanswered
+    document.querySelectorAll('.option-btn').forEach(b => {
+      b.style.outline = '2px dashed var(--gold)';
+      setTimeout(() => b.style.outline = '', 900);
+    });
+    return;
+  }
+  currentQIndex++;
+  renderQuestion();
+}
+
+function submitQuiz(){
+  if (userAnswers[currentQIndex] === null){
+    document.querySelectorAll('.option-btn').forEach(b => {
+      b.style.outline = '2px dashed var(--gold)';
+      setTimeout(() => b.style.outline = '', 900);
+    });
+    return;
+  }
+  showResults();
+}
+
+// =====================================================================
+//  RESULT SCREEN
+// =====================================================================
+function showResults(){
+  let correct = 0;
+  const total = questionOrder.length;
+  questionOrder.forEach((qi, idx) => {
+    const q = currentChapter.questions[qi];
+    if (userAnswers[idx] === q.correct) correct++;
+  });
+  const pct = Math.round(correct / total * 100);
+
+  // Score circle
+  const circle = document.getElementById('scoreCircle');
+  circle.textContent = pct + '%';
+  circle.className = 'score-circle ' + (pct>=80?'great': pct>=60?'good': pct>=40?'low':'poor');
+
+  // Heading
+  const heading = pct>=80 ? '🎉 Excellent! / शानदार!' :
+                  pct>=60 ? '👍 Good job! / अच्छा किया!' :
+                  pct>=40 ? '📚 Keep practicing! / और अभ्यास करें!' :
+                           '💪 Don\'t give up! / हार मत मानो!';
+  document.getElementById('resultHeading').textContent = heading;
+  document.getElementById('resultSubtext').textContent =
+    `You scored ${correct} out of ${total} questions correctly.`;
+
+  document.getElementById('rCorrect').textContent = correct;
+  document.getElementById('rWrong').textContent = total - correct;
+  document.getElementById('rTotal').textContent = total;
+  document.getElementById('rPercent').textContent = pct + '%';
+
+  // Answer review
+  const labels = ['A','B','C','D'];
+  document.getElementById('reviewList').innerHTML = questionOrder.map((qi, idx) => {
+    const q = currentChapter.questions[qi];
+    const ua = userAnswers[idx];
+    const isCorrect = ua === q.correct;
+    const correctOpt = q.options[q.correct];
+    const userOpt = ua !== null ? q.options[ua] : null;
+    return `
+    <div class="review-item">
+      <div class="review-q">Q.${idx+1} ${q.textEn}</div>
+      ${q.textHi ? `<div class="review-q-hi">${q.textHi}</div>` : ''}
+      <div class="review-ans ${isCorrect?'ans-correct':'ans-wrong'}">
+        <span class="label">Your answer:</span>
+        ${ua!==null ? labels[ua]+'. '+userOpt.en : '— (skipped)'}
+        ${isCorrect ? '✓' : '✗'}
+      </div>
+      ${!isCorrect ? `<div class="review-ans ans-correct"><span class="label">Correct:</span> ${labels[q.correct]}. ${correctOpt.en}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Save score
+  const scores = getScores();
+  if (!scores[currentChapter.id]) scores[currentChapter.id] = [];
+  scores[currentChapter.id].push({
+    name: currentStudent,
+    correct,
+    total,
+    pct,
+    date: new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})
+  });
+  saveScores(scores);
+
+  // Leaderboard
+  renderLeaderboard(scores[currentChapter.id]);
+
+  showScreen('screenResult');
+  window.scrollTo(0, 0);
+}
+
+function renderLeaderboard(entries){
+  document.getElementById('lbChapterLabel').textContent = currentChapter.chapter;
+  // Sort by pct desc, then correct desc
+  const sorted = [...entries].sort((a,b) => b.pct - a.pct || b.correct - a.correct);
+  const top = sorted.slice(0, 15);
+  const myEntry = entries[entries.length - 1]; // just submitted
+  const myIdx = sorted.findIndex(e =>
+    e.name===myEntry.name && e.pct===myEntry.pct && e.correct===myEntry.correct && e.date===myEntry.date
+  );
+
+  const rankClass = i => i===0?'gold': i===1?'silver': i===2?'bronze':'';
+  document.getElementById('lbBody').innerHTML = top.map((e, i) => `
+    <tr class="${i===myIdx?'me':''}">
+      <td><span class="rank-badge ${rankClass(i)}">${i+1}</span></td>
+      <td>${e.name} ${i===myIdx?'← You':''}</td>
+      <td>${e.pct}%</td>
+      <td>${e.correct}/${e.total}</td>
+      <td>${e.date}</td>
+    </tr>
+  `).join('');
+}
+
+function toggleReview(){
+  const list = document.getElementById('reviewList');
+  const btn = document.querySelector('.toggle-review');
+  const open = list.classList.toggle('open');
+  btn.textContent = open ? 'Hide answers ▲' : 'Show answers ▼';
+}
+
+function retryQuiz(){
+  startQuiz(currentChapter.id);
+}
+
+function goHome(){
+  showScreen('screenHome');
+  renderHome();
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// Init
+window.addEventListener('DOMContentLoaded', renderHome);
+</script>
+
+</body>
+</html>

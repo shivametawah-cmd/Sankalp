@@ -1,21 +1,11 @@
 <!DOCTYPE html>
 <!--
   SANKALP COMPUTER CLASSES — Admin Dashboard (shivam.html)
-  ------------------------------------------------------------
-  SETUP NOTES:
-  1. This page is password-protected (see ADMIN_PASSWORD below) and
-     pulls data from your Google Sheet via the Apps Script backend
-     you deployed. Nobody can see this page unless they know the
-     exact URL — do NOT link to it from your public website.
-  2. Change ADMIN_PASSWORD below to something only you know.
-  3. WEB_APP_URL and SECRET_KEY are already filled in from your
-     Apps Script deployment. If you ever redeploy the script and
-     get a new URL, update WEB_APP_URL below.
-  4. To add a new month's fee for a student, just add a new row in
-     the "Fees" tab of your Google Sheet (Student Name, Course,
-     Month, Amount, Date Paid, Status). Click "Refresh Data" on this
-     page afterwards to see it reflected here.
-------------------------------------------------------------- -->
+  Updated: MCQ Manager section added — add/edit/delete chapter-wise
+  bilingual MCQs directly from this page. Data saves to localStorage
+  and is shared with mcq-quiz.html on the same browser/device.
+  For multi-device sharing, use the Export/Import JSON buttons.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -35,103 +25,66 @@
     --danger:#b3432f; --ok:#1c7c4d;
   }
   *{box-sizing:border-box;}
-  body{
-    margin:0; background:var(--paper); color:var(--ink);
-    font-family:"Source Sans 3", system-ui, sans-serif; line-height:1.55;
-  }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:"Source Sans 3", system-ui, sans-serif; line-height:1.55; }
   h1,h2,h3{font-family:"Space Grotesk", system-ui, sans-serif; margin:0;}
   .wrap{max-width:1180px; margin:0 auto; padding:0 22px;}
   button{font-family:inherit; cursor:pointer;}
 
-  /* ---------- Login gate ---------- */
-  #loginGate{
-    position:fixed; inset:0; background:var(--ink);
-    display:flex; align-items:center; justify-content:center; z-index:100;
-  }
-  .login-card{
-    background:var(--card); border-radius:var(--radius); padding:36px 32px;
-    width:100%; max-width:340px; box-shadow:0 20px 50px rgba(0,0,0,0.35); text-align:center;
-  }
+  /* Login gate */
+  #loginGate{ position:fixed; inset:0; background:var(--ink); display:flex; align-items:center; justify-content:center; z-index:100; }
+  .login-card{ background:var(--card); border-radius:var(--radius); padding:36px 32px; width:100%; max-width:340px; box-shadow:0 20px 50px rgba(0,0,0,0.35); text-align:center; }
   .login-card img{width:56px; height:56px; border-radius:12px; margin-bottom:14px; background:var(--ink);}
   .login-card h2{font-size:1.2rem; margin-bottom:6px;}
   .login-card p{color:var(--ink-soft); font-size:.88rem; margin:0 0 20px;}
-  .login-card input{
-    width:100%; padding:11px 14px; border:1px solid var(--line); border-radius:9px;
-    font-size:.95rem; margin-bottom:12px;
-  }
-  .login-card button{
-    width:100%; background:var(--teal); color:#fff; border:none; padding:11px;
-    border-radius:9px; font-weight:700; font-size:.95rem;
-  }
+  .login-card input{ width:100%; padding:11px 14px; border:1px solid var(--line); border-radius:9px; font-size:.95rem; margin-bottom:12px; }
+  .login-card button{ width:100%; background:var(--teal); color:#fff; border:none; padding:11px; border-radius:9px; font-weight:700; font-size:.95rem; }
   .login-card button:hover{background:var(--teal-dark);}
   .login-error{color:var(--danger); font-size:.85rem; margin:-4px 0 12px; display:none;}
 
-  /* ---------- Dashboard shell ---------- */
+  /* Dashboard shell */
   #dashboard{display:none;}
-  header.topbar{
-    background:var(--ink); color:#fff; padding:18px 0; position:sticky; top:0; z-index:20;
-  }
+  header.topbar{ background:var(--ink); color:#fff; padding:18px 0; position:sticky; top:0; z-index:20; }
   header.topbar .wrap{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;}
   .topbar-brand{display:flex; align-items:center; gap:12px;}
   .topbar-brand img{width:38px; height:38px; border-radius:9px; background:#fff;}
   .topbar-brand strong{font-family:"Space Grotesk"; font-size:1.05rem;}
   .topbar-brand span{display:block; font-size:.78rem; color:#c9cdd8;}
-  .topbar-actions{display:flex; gap:10px;}
-  .btn{
-    display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:8px;
-    font-weight:700; font-size:.85rem; border:1px solid transparent; text-decoration:none;
-  }
+  .topbar-actions{display:flex; gap:10px; flex-wrap:wrap;}
+  .btn{ display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:8px; font-weight:700; font-size:.85rem; border:1px solid transparent; text-decoration:none; }
   .btn-gold{background:var(--gold); color:#241a02; border:none;}
   .btn-gold:hover{background:var(--gold-dark);}
   .btn-outline{background:transparent; color:#fff; border:1px solid rgba(255,255,255,0.35);}
   .btn-outline:hover{border-color:#fff;}
+  .btn-teal{background:var(--teal); color:#fff; border:none;}
+  .btn-teal:hover{background:var(--teal-dark);}
+  .btn-danger{background:var(--danger); color:#fff; border:none; font-size:.8rem; padding:6px 12px;}
 
   main{padding:32px 0 60px;}
-  .status-banner{
-    display:none; background:#fdf1e7; border:1px solid #f0d3b0; color:#7a4a12;
-    padding:12px 16px; border-radius:10px; font-size:.88rem; margin-bottom:22px;
-  }
+  .status-banner{ display:none; background:#fdf1e7; border:1px solid #f0d3b0; color:#7a4a12; padding:12px 16px; border-radius:10px; font-size:.88rem; margin-bottom:22px; }
 
-  /* ---------- Summary cards ---------- */
+  /* Summary cards */
   .summary-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px;}
   .summary-grid-5{grid-template-columns:repeat(5,1fr);}
-  .summary-card{
-    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
-    padding:20px; box-shadow:var(--shadow);
-  }
+  .summary-card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); }
   .summary-card .label{font-size:.8rem; color:var(--ink-soft); font-weight:600;}
   .summary-card .value{font-family:"Space Grotesk"; font-size:1.7rem; margin-top:6px;}
   .summary-card.ok .value{color:var(--ok);}
   .summary-card.danger .value{color:var(--danger);}
 
-  /* ---------- Charts ---------- */
+  /* Charts */
   .chart-grid{display:grid; grid-template-columns:1.3fr 1fr; gap:18px; margin-bottom:34px;}
-  .chart-card{
-    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
-    padding:20px; box-shadow:var(--shadow);
-  }
+  .chart-card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); }
   .chart-card h3{font-size:1rem; margin-bottom:14px;}
   .chart-card canvas{max-height:260px;}
 
-  /* ---------- Tables ---------- */
-  .panel{
-    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
-    box-shadow:var(--shadow); margin-bottom:30px; overflow:hidden;
-  }
-  .panel-head{
-    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-    padding:18px 20px; border-bottom:1px solid var(--line);
-  }
+  /* Tables / Panels */
+  .panel{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:30px; overflow:hidden; }
+  .panel-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:18px 20px; border-bottom:1px solid var(--line); }
   .panel-head h3{font-size:1.05rem;}
-  .panel-head input[type="text"]{
-    padding:8px 12px; border:1px solid var(--line); border-radius:8px; font-size:.85rem; min-width:200px;
-  }
+  .panel-head input[type="text"]{ padding:8px 12px; border:1px solid var(--line); border-radius:8px; font-size:.85rem; min-width:200px; }
   .table-scroll{overflow-x:auto;}
   table{width:100%; border-collapse:collapse; font-size:.86rem; min-width:720px;}
-  thead th{
-    text-align:left; background:var(--paper-alt); color:var(--ink-soft); font-weight:700;
-    padding:10px 14px; white-space:nowrap; position:sticky; top:0;
-  }
+  thead th{ text-align:left; background:var(--paper-alt); color:var(--ink-soft); font-weight:700; padding:10px 14px; white-space:nowrap; }
   tbody td{padding:10px 14px; border-top:1px solid var(--line); white-space:nowrap;}
   tbody tr:hover{background:var(--paper-alt);}
   .pill{padding:3px 10px; border-radius:999px; font-size:.75rem; font-weight:700;}
@@ -141,16 +94,136 @@
   .link-photo{color:var(--teal-dark); font-weight:600; text-decoration:underline;}
   .empty-row td{text-align:center; color:var(--ink-soft); padding:24px;}
 
+  /* ===================== MCQ MANAGER STYLES ===================== */
+  .mcq-section-head{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    flex-wrap:wrap; margin-bottom:18px;
+  }
+  .mcq-section-head h2{font-size:1.15rem;}
+  .mcq-actions{display:flex; gap:10px; flex-wrap:wrap;}
+
+  /* Chapter list */
+  .chapter-list{display:grid; gap:14px; margin-bottom:24px;}
+  .chapter-item{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .chapter-item-head{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:16px 20px; cursor:pointer; flex-wrap:wrap;
+  }
+  .chapter-item-head:hover{background:var(--paper-alt);}
+  .chapter-name{font-weight:700; font-size:.97rem;}
+  .chapter-name small{display:block; font-size:.78rem; color:var(--ink-soft); font-weight:400;}
+  .chapter-badges{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:.75rem; font-weight:700; background:var(--paper-alt); color:var(--ink-soft); }
+  .badge-teal{background:rgba(15,111,108,0.12); color:var(--teal-dark);}
+  .chapter-btns{display:flex; gap:8px; flex-shrink:0;}
+  .icon-btn{
+    background:none; border:1px solid var(--line); border-radius:7px;
+    padding:6px 11px; font-size:.8rem; color:var(--ink-soft); cursor:pointer;
+  }
+  .icon-btn:hover{border-color:var(--ink-soft); color:var(--ink);}
+  .icon-btn.del:hover{border-color:var(--danger); color:var(--danger);}
+
+  /* Questions inside chapter */
+  .q-list{border-top:1px solid var(--line); display:none;}
+  .q-list.open{display:block;}
+  .q-item{
+    padding:14px 20px; border-bottom:1px dashed var(--line);
+    display:flex; gap:14px; align-items:flex-start;
+  }
+  .q-item:last-child{border-bottom:none;}
+  .q-num{font-family:"Space Grotesk"; font-size:.85rem; font-weight:700; color:var(--ink-soft); min-width:28px; padding-top:2px;}
+  .q-body{flex:1; min-width:0;}
+  .q-en{font-size:.92rem; font-weight:600;}
+  .q-hi{font-size:.82rem; color:var(--ink-soft); margin-top:2px;}
+  .q-opts{margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:4px 14px;}
+  .q-opt{font-size:.82rem; color:var(--ink-soft);}
+  .q-opt.correct{color:var(--ok); font-weight:700;}
+  .q-item-btns{display:flex; gap:6px; flex-shrink:0;}
+
+  /* Modal overlay */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(19,32,56,0.55);
+    z-index:200; align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--card); border-radius:var(--radius);
+    box-shadow:0 24px 60px rgba(0,0,0,0.35);
+    width:100%; max-width:720px; max-height:90vh; overflow-y:auto;
+  }
+  .modal-head{
+    padding:20px 24px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    position:sticky; top:0; background:var(--card); z-index:1;
+  }
+  .modal-head h3{font-size:1.05rem;}
+  .modal-close{background:none; border:none; font-size:1.4rem; color:var(--ink-soft); line-height:1; padding:0 4px; cursor:pointer;}
+  .modal-body{padding:22px 24px;}
+  .modal-foot{padding:16px 24px; border-top:1px solid var(--line); display:flex; gap:10px; justify-content:flex-end;}
+
+  /* Form elements */
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-weight:600; font-size:.88rem; margin-bottom:6px; color:var(--ink-soft);}
+  .field input, .field select, .field textarea{
+    width:100%; padding:10px 13px; border:1px solid var(--line); border-radius:9px;
+    font-size:.93rem; font-family:inherit; background:#fff; color:var(--ink);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--teal);}
+  .field textarea{resize:vertical; min-height:64px;}
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+
+  .q-form-block{
+    border:1px solid var(--line); border-radius:11px; padding:16px; margin-bottom:14px;
+    background:var(--paper-alt); position:relative;
+  }
+  .q-form-block-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+  .q-form-block-head span{font-weight:700; font-size:.88rem; color:var(--ink-soft);}
+  .opt-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;}
+  .opt-entry{display:flex; flex-direction:column; gap:4px;}
+  .opt-entry label{font-size:.77rem; font-weight:700; color:var(--ink-soft);}
+  .opt-entry input{padding:8px 10px; font-size:.88rem;}
+  .correct-select{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px;}
+  .correct-select label{font-size:.82rem; color:var(--ink-soft); font-weight:600;}
+  .correct-select select{padding:6px 10px; border:1px solid var(--line); border-radius:8px; font-size:.88rem; font-family:inherit;}
+
+  .add-q-btn{
+    width:100%; padding:11px; border:2px dashed var(--line); background:none;
+    border-radius:10px; color:var(--teal-dark); font-weight:700; font-size:.9rem;
+    cursor:pointer; transition:border-color .15s;
+  }
+  .add-q-btn:hover{border-color:var(--teal); background:rgba(15,111,108,0.04);}
+
+  /* Score dashboard in admin */
+  .score-chapter-block{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden;
+  }
+  .score-ch-head{
+    padding:14px 20px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .score-ch-head h4{font-size:.95rem;}
+  .score-table{width:100%; border-collapse:collapse; font-size:.84rem;}
+  .score-table thead th{background:var(--paper-alt); padding:8px 14px; text-align:left; font-weight:700; color:var(--ink-soft);}
+  .score-table tbody td{padding:8px 14px; border-top:1px solid var(--line);}
+
+  /* Responsive */
   @media (max-width: 900px){
     .summary-grid{grid-template-columns:1fr 1fr;}
     .summary-grid-5{grid-template-columns:1fr 1fr;}
     .chart-grid{grid-template-columns:1fr;}
+    .field-row{grid-template-columns:1fr;}
+    .opt-grid{grid-template-columns:1fr;}
+    .q-opts{grid-template-columns:1fr;}
   }
 </style>
 </head>
 <body>
 
-<!-- ================= LOGIN GATE ================= -->
+<!-- LOGIN GATE -->
 <div id="loginGate">
   <div class="login-card">
     <img src="logo.png" alt="" onerror="this.style.background='var(--ink)'; this.src='';">
@@ -162,7 +235,7 @@
   </div>
 </div>
 
-<!-- ================= DASHBOARD ================= -->
+<!-- DASHBOARD -->
 <div id="dashboard">
   <header class="topbar">
     <div class="wrap">
@@ -174,7 +247,7 @@
         </div>
       </div>
       <div class="topbar-actions">
-        <a class="btn btn-outline" href="https://forms.gle/REPLACE-WITH-YOUR-STUDY-MATERIAL-FORM-LINK" target="_blank" rel="noopener">+ Upload Notes/MCQ</a>
+        <a class="btn btn-outline" href="#mcqManager">📝 MCQ Manager</a>
         <a class="btn btn-outline" href="#monthlyFeeStatusPanel">Fee status</a>
         <button class="btn btn-outline" onclick="loadData()">Refresh data</button>
         <button class="btn btn-gold" onclick="logout()">Logout</button>
@@ -187,6 +260,7 @@
 
       <div class="status-banner" id="statusBanner"></div>
 
+      <!-- Summary cards -->
       <div class="summary-grid summary-grid-5">
         <div class="summary-card">
           <div class="label">Total students</div>
@@ -210,6 +284,7 @@
         </div>
       </div>
 
+      <!-- Charts -->
       <div class="chart-grid">
         <div class="chart-card">
           <h3>Students by course</h3>
@@ -221,6 +296,7 @@
         </div>
       </div>
 
+      <!-- Students table -->
       <div class="panel">
         <div class="panel-head">
           <h3>Students (<span id="studentCount">0</span>)</h3>
@@ -232,9 +308,8 @@
               <tr>
                 <th>Name</th><th>Course</th><th>Status</th><th>Admission date</th>
                 <th>Admission fee</th><th>Adm. fee status</th>
-                <th>Father's name</th>
-                <th>Mother's name</th><th>DOB</th><th>Apaar ID</th><th>Aadhar</th>
-                <th>Aadhar upload</th><th>Marksheet</th>
+                <th>Father's name</th><th>Mother's name</th><th>DOB</th>
+                <th>Apaar ID</th><th>Aadhar</th><th>Aadhar upload</th><th>Marksheet</th>
               </tr>
             </thead>
             <tbody id="studentsBody">
@@ -244,6 +319,7 @@
         </div>
       </div>
 
+      <!-- Monthly fee status -->
       <div class="panel" id="monthlyFeeStatusPanel">
         <div class="panel-head">
           <h3>Monthly fee status</h3>
@@ -254,16 +330,13 @@
         </div>
         <div class="table-scroll">
           <table>
-            <thead>
-              <tr><th>Name</th><th>Course</th><th>Status</th><th>Amount</th><th>Date paid</th></tr>
-            </thead>
-            <tbody id="monthStatusBody">
-              <tr class="empty-row"><td colspan="5">Loading…</td></tr>
-            </tbody>
+            <thead><tr><th>Name</th><th>Course</th><th>Status</th><th>Amount</th><th>Date paid</th></tr></thead>
+            <tbody id="monthStatusBody"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody>
           </table>
         </div>
       </div>
 
+      <!-- Fee records -->
       <div class="panel">
         <div class="panel-head">
           <h3>Fee records (<span id="feeCount">0</span>)</h3>
@@ -271,304 +344,514 @@
         </div>
         <div class="table-scroll">
           <table>
-            <thead>
-              <tr><th>Name</th><th>Course</th><th>Month</th><th>Amount</th><th>Date paid</th><th>Status</th></tr>
-            </thead>
-            <tbody id="feesBody">
-              <tr class="empty-row"><td colspan="6">Loading…</td></tr>
-            </tbody>
+            <thead><tr><th>Name</th><th>Course</th><th>Month</th><th>Amount</th><th>Date paid</th><th>Status</th></tr></thead>
+            <tbody id="feesBody"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody>
           </table>
         </div>
       </div>
 
-    </div>
+      <!-- ===================== MCQ MANAGER ===================== -->
+      <div id="mcqManager" style="scroll-margin-top:80px;">
+        <div class="mcq-section-head">
+          <div>
+            <h2>📝 MCQ Manager</h2>
+            <div style="font-size:.85rem; color:var(--ink-soft); margin-top:4px;">Add chapter-wise bilingual MCQs for students to practice on <a href="mcq-quiz.html" target="_blank" style="color:var(--teal-dark);">mcq-quiz.html</a></div>
+          </div>
+          <div class="mcq-actions">
+            <button class="btn btn-teal" onclick="openChapterModal()">+ Add Chapter</button>
+            <button class="btn btn-outline" style="color:var(--ink); border-color:var(--line);" onclick="exportMCQ()">⬇ Export JSON</button>
+            <label class="btn btn-outline" style="color:var(--ink); border-color:var(--line); cursor:pointer;">
+              ⬆ Import JSON
+              <input type="file" accept=".json" style="display:none;" onchange="importMCQ(event)">
+            </label>
+          </div>
+        </div>
+
+        <div id="chapterListAdmin"></div>
+
+        <!-- MCQ Stats / Scores from students -->
+        <div style="margin-top:28px;">
+          <div class="mcq-section-head" style="margin-bottom:14px;">
+            <div>
+              <h2>📊 Student Quiz Scores</h2>
+              <div style="font-size:.85rem; color:var(--ink-soft); margin-top:4px;">Scores saved from students who attempted quizzes on this device/browser</div>
+            </div>
+            <button class="btn btn-danger" onclick="clearAllScores()">🗑 Clear all scores</button>
+          </div>
+          <div id="scoresPanel"></div>
+        </div>
+      </div>
+
+    </div><!-- /wrap -->
   </main>
+</div><!-- /dashboard -->
+
+<!-- ===================== CHAPTER MODAL ===================== -->
+<div class="modal-overlay" id="chapterModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="chapterModalTitle">Add New Chapter</h3>
+      <button class="modal-close" onclick="closeChapterModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field">
+          <label>Course name (e.g. CCC, ADCA, Tally) *</label>
+          <input type="text" id="fCourse" placeholder="CCC">
+        </div>
+        <div class="field">
+          <label>Chapter name (English) *</label>
+          <input type="text" id="fChapter" placeholder="e.g. LibreOffice Calc">
+        </div>
+      </div>
+      <div class="field">
+        <label>Chapter name (Hindi / हिंदी में)</label>
+        <input type="text" id="fChapterHi" placeholder="e.g. लिब्रेऑफिस कैल्क">
+      </div>
+
+      <div style="border-top:1px solid var(--line); margin:18px 0; padding-top:18px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <strong style="font-size:.95rem;">Questions / प्रश्न</strong>
+          <button class="btn btn-teal" style="padding:7px 14px; font-size:.82rem;" onclick="addQuestionBlock()">+ Add Question</button>
+        </div>
+        <div id="questionBlocks"></div>
+        <button class="add-q-btn" onclick="addQuestionBlock()">+ Add another question</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" style="color:var(--ink); border-color:var(--line);" onclick="closeChapterModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="saveChapter()">💾 Save Chapter</button>
+    </div>
+  </div>
 </div>
 
 <script>
-  // ============ CONFIG — edit only these two lines if you redeploy ============
-  const WEB_APP_URL   = 'https://script.google.com/macros/s/AKfycbxf7m3cgFy3KKi0L6H3JT0Y5s7Dk4PtOkMMnhzIy5y3CP2pbVWuIj9jn01P7dV_ZQ/exec';
-  const SECRET_KEY    = 'Fdsa@07022026';
-  const ADMIN_PASSWORD = 'sankalp@admin1';   // <-- change this to your own password
-  // ==============================================================================
+// ======================================================================
+//  CONFIG
+// ======================================================================
+const WEB_APP_URL   = 'https://script.google.com/macros/s/AKfycbxf7m3cgFy3KKi0L6H3JT0Y5s7Dk4PtOkMMnhzIy5y3CP2pbVWuIj9jn01P7dV_ZQ/exec';
+const SECRET_KEY    = 'Fdsa@07022026';
+const ADMIN_PASSWORD = 'sankalp@admin1';
 
-  let allStudents = [];
-  let allFees = [];
+const MCQ_KEY   = 'sankalp_mcq_data';
+const SCORE_KEY = 'sankalp_mcq_scores';
 
-  function tryLogin(){
-    const val = document.getElementById('passwordInput').value;
-    if (val === ADMIN_PASSWORD){
-      sessionStorage.setItem('sankalp_admin_ok', '1');
-      document.getElementById('loginGate').style.display = 'none';
-      document.getElementById('dashboard').style.display = 'block';
-      loadData();
-    } else {
-      document.getElementById('loginError').style.display = 'block';
-    }
-  }
-  document.getElementById('passwordInput').addEventListener('keydown', function(e){
-    if (e.key === 'Enter') tryLogin();
-  });
-  function logout(){
-    sessionStorage.removeItem('sankalp_admin_ok');
-    location.reload();
-  }
-  // Stay logged in for this browser tab session only
-  if (sessionStorage.getItem('sankalp_admin_ok') === '1'){
+let allStudents = [], allFees = [];
+let editingChapterId = null;
+let questionCount = 0;
+
+// ======================================================================
+//  LOGIN
+// ======================================================================
+function tryLogin(){
+  if (document.getElementById('passwordInput').value === ADMIN_PASSWORD){
+    sessionStorage.setItem('sankalp_admin_ok','1');
     document.getElementById('loginGate').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
-    window.addEventListener('DOMContentLoaded', loadData);
+    loadData(); renderMCQManager(); renderScores();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+document.getElementById('passwordInput').addEventListener('keydown', e => { if(e.key==='Enter') tryLogin(); });
+function logout(){ sessionStorage.removeItem('sankalp_admin_ok'); location.reload(); }
+if (sessionStorage.getItem('sankalp_admin_ok')==='1'){
+  document.getElementById('loginGate').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  window.addEventListener('DOMContentLoaded', ()=>{ loadData(); renderMCQManager(); renderScores(); });
+}
+
+// ======================================================================
+//  BANNER
+// ======================================================================
+function showBanner(msg, isError){
+  const b = document.getElementById('statusBanner');
+  b.textContent = msg; b.style.display = 'block';
+  b.style.background = isError ? '#fbeae6' : '#eaf7f0';
+  b.style.color = isError ? '#7a1f10' : '#1a4d2e';
+  b.style.borderColor = isError ? '#f0c4b8' : '#bfe4cf';
+  setTimeout(()=>{ b.style.display='none'; }, 4000);
+}
+function hideBanner(){ document.getElementById('statusBanner').style.display='none'; }
+
+// ======================================================================
+//  FEES / STUDENTS (original logic, unchanged)
+// ======================================================================
+function currentMonthLabel(){ return new Date().toLocaleString('en-US',{month:'long',year:'numeric'}); }
+function normalize(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+function formatDate(v){ if(!v)return'—'; const d=new Date(v); return isNaN(d)?String(v):d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
+function formatMoney(n){ const x=parseFloat(n); return isNaN(x)?'—':'₹'+x.toLocaleString('en-IN'); }
+
+async function loadData(){
+  hideBanner();
+  document.getElementById('studentsBody').innerHTML='<tr class="empty-row"><td colspan="13">Loading…</td></tr>';
+  document.getElementById('feesBody').innerHTML='<tr class="empty-row"><td colspan="6">Loading…</td></tr>';
+  try{
+    const res = await fetch(WEB_APP_URL+'?key='+encodeURIComponent(SECRET_KEY));
+    const data = await res.json();
+    if(data.error){ showBanner('Access error: '+data.error,true); return; }
+    allStudents = data.students||[];
+    allFees = data.fees||[];
+    renderAll();
+  } catch(e){ showBanner('Could not load data. Check internet or WEB_APP_URL.',true); console.error(e); }
+}
+
+function renderAll(){ renderSummary(); renderCourseChart(); renderFeeChart(); renderStudents(); renderFees(); populateMonthDropdown(); renderMonthStatus(); }
+
+function populateMonthDropdown(){
+  const sel = document.getElementById('monthSelect');
+  const ms = new Set(); allFees.forEach(f=>{if(f.month)ms.add(String(f.month).trim());}); ms.add(currentMonthLabel());
+  const arr = Array.from(ms).sort((a,b)=>{ const da=new Date('1 '+a),db=new Date('1 '+b); return (!isNaN(da)&&!isNaN(db))?db-da:a.localeCompare(b); });
+  const prev=sel.value; sel.innerHTML=arr.map(m=>`<option value="${m}">${m}</option>`).join('');
+  sel.value=arr.includes(prev)?prev:currentMonthLabel();
+}
+
+function renderMonthStatus(){
+  const sel=document.getElementById('monthSelect'); if(!sel.value)sel.value=currentMonthLabel();
+  const sm=normalize(sel.value); const q=normalize(document.getElementById('monthStatusSearch').value);
+  const feeMap={}; allFees.forEach(f=>{if(normalize(f.month)===sm)feeMap[normalize(f.name)]=f;});
+  const active=allStudents.filter(s=>normalize(s.status)!=='completed');
+  const filtered=active.filter(s=>normalize(s.name).includes(q)||normalize(s.course).includes(q));
+  const body=document.getElementById('monthStatusBody');
+  if(!filtered.length){body.innerHTML='<tr class="empty-row"><td colspan="5">No students found.</td></tr>';return;}
+  body.innerHTML=filtered.map(s=>{
+    const fee=feeMap[normalize(s.name)]; const paid=fee&&normalize(fee.status).includes('paid');
+    return`<tr><td>${s.name||'—'}</td><td>${s.course||'—'}</td><td><span class="pill ${paid?'pill-paid':'pill-pending'}">${paid?'Paid':'Pending'}</span></td><td>${fee?formatMoney(fee.amount):'—'}</td><td>${fee?formatDate(fee.date):'—'}</td></tr>`;
+  }).join('');
+}
+
+function renderSummary(){
+  document.getElementById('statTotalStudents').textContent=allStudents.length;
+  let tc=0; allFees.forEach(f=>{if(normalize(f.status).includes('paid'))tc+=(parseFloat(f.amount)||0);});
+  allStudents.forEach(s=>{if(normalize(s.admissionFeeStatus).includes('paid'))tc+=(parseFloat(s.admissionFee)||0);});
+  document.getElementById('statTotalCollected').textContent=formatMoney(tc);
+  const active=allStudents.filter(s=>normalize(s.status)!=='completed');
+  const tm=normalize(currentMonthLabel()); const pn=new Set();
+  allFees.forEach(f=>{if(normalize(f.month)===tm&&normalize(f.status).includes('paid'))pn.add(normalize(f.name));});
+  const pc=active.filter(s=>pn.has(normalize(s.name))).length;
+  document.getElementById('statPaidThisMonth').textContent=pc;
+  document.getElementById('statPendingThisMonth').textContent=Math.max(active.length-pc,0);
+  document.getElementById('statAdmissionPending').textContent=allStudents.filter(s=>!normalize(s.admissionFeeStatus).includes('paid')).length;
+}
+
+let courseChartInst, feeChartInst;
+function renderCourseChart(){
+  const counts={}; allStudents.forEach(s=>{const c=s.course||'Other';counts[c]=(counts[c]||0)+1;});
+  if(courseChartInst)courseChartInst.destroy();
+  courseChartInst=new Chart(document.getElementById('courseChart'),{type:'bar',data:{labels:Object.keys(counts),datasets:[{label:'Students',data:Object.values(counts),backgroundColor:'#0f6f6c'}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+}
+function renderFeeChart(){
+  const active=allStudents.filter(s=>normalize(s.status)!=='completed');
+  const tm=normalize(currentMonthLabel()); const pn=new Set();
+  allFees.forEach(f=>{if(normalize(f.month)===tm&&normalize(f.status).includes('paid'))pn.add(normalize(f.name));});
+  const paid=active.filter(s=>pn.has(normalize(s.name))).length;
+  if(feeChartInst)feeChartInst.destroy();
+  feeChartInst=new Chart(document.getElementById('feeChart'),{type:'doughnut',data:{labels:['Paid','Pending'],datasets:[{data:[paid,Math.max(active.length-paid,0)],backgroundColor:['#1c7c4d','#b3432f']}]},options:{responsive:true,plugins:{legend:{position:'bottom'}}}});
+}
+function renderStudents(){
+  const q=normalize(document.getElementById('studentSearch').value);
+  const filtered=allStudents.filter(s=>normalize(s.name).includes(q)||normalize(s.course).includes(q));
+  document.getElementById('studentCount').textContent=filtered.length;
+  const body=document.getElementById('studentsBody');
+  if(!filtered.length){body.innerHTML='<tr class="empty-row"><td colspan="13">No students found.</td></tr>';return;}
+  body.innerHTML=filtered.map(s=>{
+    const sp=normalize(s.status)==='completed'?'pill-neutral':'pill-paid';
+    const ap=normalize(s.admissionFeeStatus).includes('paid')?'pill-paid':'pill-pending';
+    return`<tr><td>${s.name||'—'}</td><td>${s.course||'—'}</td><td><span class="pill ${sp}">${s.status||'Active'}</span></td><td>${formatDate(s.admissionDate)}</td><td>${formatMoney(s.admissionFee)}</td><td><span class="pill ${ap}">${s.admissionFeeStatus||'Pending'}</span></td><td>${s.fatherName||'—'}</td><td>${s.motherName||'—'}</td><td>${formatDate(s.dob)}</td><td>${s.apaarId||'—'}</td><td>${s.aadharMasked||'—'}</td><td>${s.aadharUpload?`<a class="link-photo" href="${s.aadharUpload}" target="_blank">View</a>`:'—'}</td><td>${s.marksheetUpload?`<a class="link-photo" href="${s.marksheetUpload}" target="_blank">View</a>`:'—'}</td></tr>`;
+  }).join('');
+}
+function renderFees(){
+  const q=normalize(document.getElementById('feeSearch').value);
+  const filtered=allFees.filter(f=>normalize(f.name).includes(q)||normalize(f.month).includes(q));
+  document.getElementById('feeCount').textContent=filtered.length;
+  const body=document.getElementById('feesBody');
+  if(!filtered.length){body.innerHTML='<tr class="empty-row"><td colspan="6">No fee records found.</td></tr>';return;}
+  body.innerHTML=filtered.slice().reverse().map(f=>{
+    const n=normalize(f.status); const pc=n.includes('paid')?'pill-paid':n.includes('pending')?'pill-pending':'pill-neutral';
+    return`<tr><td>${f.name||'—'}</td><td>${f.course||'—'}</td><td>${f.month||'—'}</td><td>${formatMoney(f.amount)}</td><td>${formatDate(f.date)}</td><td><span class="pill ${pc}">${f.status||'—'}</span></td></tr>`;
+  }).join('');
+}
+
+// ======================================================================
+//  MCQ DATA HELPERS
+// ======================================================================
+function getMCQData(){ return JSON.parse(localStorage.getItem(MCQ_KEY)||'[]'); }
+function saveMCQData(d){ localStorage.setItem(MCQ_KEY, JSON.stringify(d)); }
+function getScoresData(){ return JSON.parse(localStorage.getItem(SCORE_KEY)||'{}'); }
+function genId(){ return 'ch_'+Date.now()+'_'+Math.floor(Math.random()*9999); }
+
+// ======================================================================
+//  MCQ MANAGER RENDER
+// ======================================================================
+function renderMCQManager(){
+  const data = getMCQData();
+  const container = document.getElementById('chapterListAdmin');
+  if(!data.length){
+    container.innerHTML=`<div style="text-align:center;padding:40px 20px;background:var(--card);border:1px dashed var(--line);border-radius:var(--radius);color:var(--ink-soft);">
+      <div style="font-size:2rem;margin-bottom:8px;">📚</div>
+      <strong>No chapters yet</strong><br>Click "+ Add Chapter" to create your first chapter with MCQs.
+    </div>`;
+    return;
+  }
+  container.innerHTML = data.map(ch => `
+    <div class="chapter-item" id="chItem_${ch.id}">
+      <div class="chapter-item-head" onclick="toggleChapterQ('${ch.id}')">
+        <div>
+          <div class="chapter-name">${ch.chapter}<small>${ch.chapterHi||''}</small></div>
+        </div>
+        <div class="chapter-badges">
+          <span class="badge badge-teal">${ch.course}</span>
+          <span class="badge">${ch.questions.length} Question${ch.questions.length!==1?'s':''}</span>
+        </div>
+        <div class="chapter-btns" onclick="event.stopPropagation()">
+          <button class="icon-btn" onclick="openChapterModal('${ch.id}')">✏️ Edit</button>
+          <button class="icon-btn del" onclick="deleteChapter('${ch.id}')">🗑 Delete</button>
+        </div>
+      </div>
+      <div class="q-list" id="qList_${ch.id}">
+        ${ch.questions.map((q,i)=>{
+          const labels=['A','B','C','D'];
+          return`<div class="q-item">
+            <div class="q-num">Q.${i+1}</div>
+            <div class="q-body">
+              <div class="q-en">${q.textEn}</div>
+              ${q.textHi?`<div class="q-hi">${q.textHi}</div>`:''}
+              <div class="q-opts">
+                ${q.options.map((o,oi)=>`<div class="q-opt ${oi===q.correct?'correct':''}">${labels[oi]}. ${o.en}${o.hi?' / '+o.hi:''}${oi===q.correct?' ✓':''}</div>`).join('')}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleChapterQ(id){
+  document.getElementById('qList_'+id).classList.toggle('open');
+}
+
+function deleteChapter(id){
+  if(!confirm('Delete this chapter and all its questions? This cannot be undone.')) return;
+  const data = getMCQData().filter(c=>c.id!==id);
+  saveMCQData(data); renderMCQManager();
+  showBanner('Chapter deleted.', false);
+}
+
+// ======================================================================
+//  CHAPTER MODAL — open / close / save
+// ======================================================================
+function openChapterModal(editId){
+  editingChapterId = editId || null;
+  questionCount = 0;
+  document.getElementById('questionBlocks').innerHTML = '';
+  document.getElementById('chapterModalTitle').textContent = editId ? 'Edit Chapter' : 'Add New Chapter';
+
+  if(editId){
+    const ch = getMCQData().find(c=>c.id===editId);
+    if(!ch) return;
+    document.getElementById('fCourse').value = ch.course;
+    document.getElementById('fChapter').value = ch.chapter;
+    document.getElementById('fChapterHi').value = ch.chapterHi||'';
+    ch.questions.forEach(q => addQuestionBlock(q));
+  } else {
+    document.getElementById('fCourse').value='';
+    document.getElementById('fChapter').value='';
+    document.getElementById('fChapterHi').value='';
+    addQuestionBlock(); // start with 1 empty question
+  }
+  document.getElementById('chapterModal').classList.add('open');
+}
+
+function closeChapterModal(){
+  document.getElementById('chapterModal').classList.remove('open');
+}
+
+function addQuestionBlock(prefill){
+  questionCount++;
+  const n = questionCount;
+  const p = prefill || {};
+  const opts = p.options || [{en:'',hi:''},{en:'',hi:''},{en:'',hi:''},{en:'',hi:''}];
+  const correct = p.correct ?? 0;
+  const labels = ['A','B','C','D'];
+
+  const div = document.createElement('div');
+  div.className = 'q-form-block';
+  div.dataset.qn = n;
+  div.innerHTML = `
+    <div class="q-form-block-head">
+      <span>Question ${n}</span>
+      <button type="button" class="icon-btn del" onclick="this.closest('.q-form-block').remove(); renumberQuestions();">✕ Remove</button>
+    </div>
+    <div class="field">
+      <label>Question (English) *</label>
+      <textarea rows="2" class="q-en-input" placeholder="Type question in English...">${p.textEn||''}</textarea>
+    </div>
+    <div class="field">
+      <label>Question (Hindi / हिंदी में)</label>
+      <textarea rows="2" class="q-hi-input" placeholder="हिंदी में प्रश्न लिखें...">${p.textHi||''}</textarea>
+    </div>
+    <div class="opt-grid">
+      ${opts.map((o,i)=>`
+      <div class="opt-entry">
+        <label>${labels[i]}. Option (English)</label>
+        <input type="text" class="opt-en-${i}" placeholder="Option ${labels[i]} English" value="${o.en||''}">
+        <label style="margin-top:4px;">${labels[i]}. Option (Hindi)</label>
+        <input type="text" class="opt-hi-${i}" placeholder="Option ${labels[i]} हिंदी" value="${o.hi||''}">
+      </div>`).join('')}
+    </div>
+    <div class="correct-select">
+      <label>✅ Correct answer:</label>
+      <select class="correct-sel">
+        ${labels.map((l,i)=>`<option value="${i}" ${i===correct?'selected':''}>${l}</option>`).join('')}
+      </select>
+    </div>
+  `;
+  document.getElementById('questionBlocks').appendChild(div);
+}
+
+function renumberQuestions(){
+  document.querySelectorAll('.q-form-block').forEach((b,i)=>{
+    b.querySelector('.q-form-block-head span').textContent = `Question ${i+1}`;
+  });
+}
+
+function saveChapter(){
+  const course = document.getElementById('fCourse').value.trim();
+  const chapter = document.getElementById('fChapter').value.trim();
+  const chapterHi = document.getElementById('fChapterHi').value.trim();
+
+  if(!course || !chapter){
+    alert('Please fill in Course name and Chapter name.');
+    return;
   }
 
-  function showBanner(msg, isError){
-    const b = document.getElementById('statusBanner');
-    b.textContent = msg;
-    b.style.display = 'block';
-    b.style.background = isError ? '#fbeae6' : '#fdf1e7';
-    b.style.color = isError ? '#7a1f10' : '#7a4a12';
-  }
-  function hideBanner(){ document.getElementById('statusBanner').style.display = 'none'; }
+  const blocks = document.querySelectorAll('.q-form-block');
+  if(!blocks.length){ alert('Please add at least one question.'); return; }
 
-  function currentMonthLabel(){
-    return new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
-  }
-  function normalize(str){
-    return String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  }
-  function formatDate(val){
-    if (!val) return '—';
-    const d = new Date(val);
-    if (isNaN(d.getTime())) return String(val);
-    return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
-  }
-  function formatMoney(n){
-    const num = parseFloat(n);
-    if (isNaN(num)) return '—';
-    return '₹' + num.toLocaleString('en-IN');
+  const questions = [];
+  let hasError = false;
+  blocks.forEach((b,i)=>{
+    const textEn = b.querySelector('.q-en-input').value.trim();
+    const textHi = b.querySelector('.q-hi-input').value.trim();
+    const opts = [0,1,2,3].map(j=>({
+      en: b.querySelector('.opt-en-'+j).value.trim(),
+      hi: b.querySelector('.opt-hi-'+j).value.trim()
+    }));
+    const correct = parseInt(b.querySelector('.correct-sel').value);
+
+    if(!textEn || !opts[0].en || !opts[1].en){
+      alert(`Question ${i+1}: Please fill English question and at least Options A & B.`);
+      hasError = true; return;
+    }
+    // Fill missing options with blanks
+    for(let j=0;j<4;j++){ if(!opts[j].en) opts[j].en = opts[j].hi || '—'; }
+    questions.push({ textEn, textHi, options: opts, correct });
+  });
+  if(hasError) return;
+
+  const data = getMCQData();
+  if(editingChapterId){
+    const idx = data.findIndex(c=>c.id===editingChapterId);
+    if(idx>-1){ data[idx] = {...data[idx], course, chapter, chapterHi, questions}; }
+  } else {
+    data.push({ id:genId(), course, chapter, chapterHi, questions });
   }
 
-  async function loadData(){
-    hideBanner();
-    document.getElementById('studentsBody').innerHTML = '<tr class="empty-row"><td colspan="10">Loading…</td></tr>';
-    document.getElementById('feesBody').innerHTML = '<tr class="empty-row"><td colspan="6">Loading…</td></tr>';
+  saveMCQData(data);
+  closeChapterModal();
+  renderMCQManager();
+  showBanner(editingChapterId ? 'Chapter updated!' : 'Chapter added!', false);
+}
+
+// ======================================================================
+//  EXPORT / IMPORT
+// ======================================================================
+function exportMCQ(){
+  const data = getMCQData();
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sankalp_mcq_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function importMCQ(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
     try{
-      const res = await fetch(WEB_APP_URL + '?key=' + encodeURIComponent(SECRET_KEY));
-      const data = await res.json();
-      if (data.error){
-        showBanner('Access error: ' + data.error + ' — check SECRET_KEY in the code.', true);
-        return;
-      }
-      allStudents = data.students || [];
-      allFees = data.fees || [];
-      renderAll();
-    } catch(err){
-      showBanner('Could not load data. Check your internet connection or the WEB_APP_URL in the code.', true);
-      console.error(err);
-    }
+      const arr = JSON.parse(ev.target.result);
+      if(!Array.isArray(arr)) throw new Error('Invalid format');
+      const existing = getMCQData();
+      const existingIds = new Set(existing.map(c=>c.id));
+      let added=0, updated=0;
+      arr.forEach(ch=>{
+        if(!ch.id) ch.id = genId();
+        if(existingIds.has(ch.id)){ const i=existing.findIndex(c=>c.id===ch.id); existing[i]=ch; updated++; }
+        else{ existing.push(ch); added++; }
+      });
+      saveMCQData(existing);
+      renderMCQManager();
+      showBanner(`Import done! ${added} added, ${updated} updated.`, false);
+    } catch(err){ alert('Error reading file: '+err.message); }
+    e.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ======================================================================
+//  STUDENT SCORES DASHBOARD
+// ======================================================================
+function renderScores(){
+  const scores = getScoresData();
+  const mcq = getMCQData();
+  const panel = document.getElementById('scoresPanel');
+
+  const ids = Object.keys(scores);
+  if(!ids.length){
+    panel.innerHTML=`<div style="text-align:center;padding:30px;background:var(--card);border:1px dashed var(--line);border-radius:var(--radius);color:var(--ink-soft);">No quiz attempts recorded yet on this browser.</div>`;
+    return;
   }
 
-  function renderAll(){
-    renderSummary();
-    renderCourseChart();
-    renderFeeChart();
-    renderStudents();
-    renderFees();
-    populateMonthDropdown();
-    renderMonthStatus();
-  }
+  panel.innerHTML = ids.map(cid=>{
+    const ch = mcq.find(c=>c.id===cid);
+    const name = ch ? `${ch.chapter} (${ch.course})` : cid;
+    const entries = scores[cid].slice().sort((a,b)=>b.pct-a.pct);
+    return`<div class="score-chapter-block">
+      <div class="score-ch-head">
+        <h4>${name}</h4>
+        <span style="font-size:.82rem;color:var(--ink-soft);">${entries.length} attempt${entries.length!==1?'s':''}</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="score-table">
+          <thead><tr><th>Rank</th><th>Student</th><th>Score</th><th>Correct</th><th>Date</th></tr></thead>
+          <tbody>
+            ${entries.slice(0,20).map((e,i)=>`<tr>
+              <td>${i+1}</td>
+              <td>${e.name}</td>
+              <td><strong>${e.pct}%</strong></td>
+              <td>${e.correct}/${e.total}</td>
+              <td>${e.date}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
 
-  function populateMonthDropdown(){
-    const select = document.getElementById('monthSelect');
-    const monthsSet = new Set();
-    allFees.forEach(f => { if (f.month) monthsSet.add(String(f.month).trim()); });
-    monthsSet.add(currentMonthLabel());
-    // Sort months chronologically where possible, fallback to alphabetical
-    const monthsArr = Array.from(monthsSet).sort((a, b) => {
-      const da = new Date('1 ' + a), db = new Date('1 ' + b);
-      if (!isNaN(da) && !isNaN(db)) return db - da;
-      return a.localeCompare(b);
-    });
-    const prevValue = select.value;
-    select.innerHTML = monthsArr.map(m => `<option value="${m}">${m}</option>`).join('');
-    select.value = monthsArr.includes(prevValue) ? prevValue : currentMonthLabel();
-  }
+function clearAllScores(){
+  if(!confirm('Clear ALL student quiz scores? This cannot be undone.')) return;
+  localStorage.removeItem(SCORE_KEY);
+  renderScores();
+  showBanner('All scores cleared.', false);
+}
 
-  function renderMonthStatus(){
-    const select = document.getElementById('monthSelect');
-    if (!select.value) select.value = currentMonthLabel();
-    const selectedMonth = normalize(select.value);
-    const q = normalize(document.getElementById('monthStatusSearch').value);
-
-    // Build a lookup of fee entries for the selected month, keyed by normalized student name
-    const feeForMonth = {};
-    allFees.forEach(f => {
-      if (normalize(f.month) === selectedMonth){
-        feeForMonth[normalize(f.name)] = f;
-      }
-    });
-
-    const activeStudents = allStudents.filter(s => normalize(s.status) !== 'completed');
-    const filtered = activeStudents.filter(s =>
-      normalize(s.name).includes(q) || normalize(s.course).includes(q)
-    );
-
-    const body = document.getElementById('monthStatusBody');
-    if (filtered.length === 0){
-      body.innerHTML = '<tr class="empty-row"><td colspan="5">No students found.</td></tr>';
-      return;
-    }
-    body.innerHTML = filtered.map(s => {
-      const fee = feeForMonth[normalize(s.name)];
-      const isPaid = fee && normalize(fee.status).includes('paid');
-      const pillClass = isPaid ? 'pill-paid' : 'pill-pending';
-      const label = isPaid ? 'Paid' : 'Pending';
-      return `
-      <tr>
-        <td>${s.name || '—'}</td>
-        <td>${s.course || '—'}</td>
-        <td><span class="pill ${pillClass}">${label}</span></td>
-        <td>${fee ? formatMoney(fee.amount) : '—'}</td>
-        <td>${fee ? formatDate(fee.date) : '—'}</td>
-      </tr>`;
-    }).join('');
-  }
-
-  function renderSummary(){
-    document.getElementById('statTotalStudents').textContent = allStudents.length;
-
-    let totalCollected = 0;
-    allFees.forEach(f => {
-      if (normalize(f.status).includes('paid')) totalCollected += (parseFloat(f.amount) || 0);
-    });
-    allStudents.forEach(s => {
-      if (normalize(s.admissionFeeStatus).includes('paid')) totalCollected += (parseFloat(s.admissionFee) || 0);
-    });
-    document.getElementById('statTotalCollected').textContent = formatMoney(totalCollected);
-
-    const activeStudents = allStudents.filter(s => normalize(s.status) !== 'completed');
-    const thisMonth = normalize(currentMonthLabel());
-    const paidNames = new Set();
-    allFees.forEach(f => {
-      if (normalize(f.month) === thisMonth && normalize(f.status).includes('paid')){
-        paidNames.add(normalize(f.name));
-      }
-    });
-    const paidCount = activeStudents.filter(s => paidNames.has(normalize(s.name))).length;
-    const pendingCount = Math.max(activeStudents.length - paidCount, 0);
-    document.getElementById('statPaidThisMonth').textContent = paidCount;
-    document.getElementById('statPendingThisMonth').textContent = pendingCount;
-
-    const admissionPending = allStudents.filter(s => !normalize(s.admissionFeeStatus).includes('paid')).length;
-    document.getElementById('statAdmissionPending').textContent = admissionPending;
-  }
-
-  let courseChartInstance, feeChartInstance;
-
-  function renderCourseChart(){
-    const counts = {};
-    allStudents.forEach(s => {
-      const c = s.course || 'Not specified';
-      counts[c] = (counts[c] || 0) + 1;
-    });
-    const ctx = document.getElementById('courseChart');
-    if (courseChartInstance) courseChartInstance.destroy();
-    courseChartInstance = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: Object.keys(counts),
-        datasets: [{ label: 'Students', data: Object.values(counts), backgroundColor: '#0f6f6c' }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-      }
-    });
-  }
-
-  function renderFeeChart(){
-    const activeStudents = allStudents.filter(s => normalize(s.status) !== 'completed');
-    const thisMonth = normalize(currentMonthLabel());
-    const paidNames = new Set();
-    allFees.forEach(f => {
-      if (normalize(f.month) === thisMonth && normalize(f.status).includes('paid')){
-        paidNames.add(normalize(f.name));
-      }
-    });
-    const paid = activeStudents.filter(s => paidNames.has(normalize(s.name))).length;
-    const pending = Math.max(activeStudents.length - paid, 0);
-    const ctx = document.getElementById('feeChart');
-    if (feeChartInstance) feeChartInstance.destroy();
-    feeChartInstance = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Paid', 'Pending'],
-        datasets: [{ data: [paid, pending], backgroundColor: ['#1c7c4d', '#b3432f'] }]
-      },
-      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-    });
-  }
-
-  function renderStudents(){
-    const q = normalize(document.getElementById('studentSearch').value);
-    const filtered = allStudents.filter(s =>
-      normalize(s.name).includes(q) || normalize(s.course).includes(q)
-    );
-    document.getElementById('studentCount').textContent = filtered.length;
-    const body = document.getElementById('studentsBody');
-    if (filtered.length === 0){
-      body.innerHTML = '<tr class="empty-row"><td colspan="13">No students found.</td></tr>';
-      return;
-    }
-    body.innerHTML = filtered.map(s => {
-      const statusNorm = normalize(s.status);
-      const pillClass = statusNorm === 'completed' ? 'pill-neutral' : 'pill-paid';
-      const admStatusNorm = normalize(s.admissionFeeStatus);
-      const admPillClass = admStatusNorm.includes('paid') ? 'pill-paid' : 'pill-pending';
-      return `
-      <tr>
-        <td>${s.name || '—'}</td>
-        <td>${s.course || '—'}</td>
-        <td><span class="pill ${pillClass}">${s.status || 'Active'}</span></td>
-        <td>${formatDate(s.admissionDate)}</td>
-        <td>${formatMoney(s.admissionFee)}</td>
-        <td><span class="pill ${admPillClass}">${s.admissionFeeStatus || 'Pending'}</span></td>
-        <td>${s.fatherName || '—'}</td>
-        <td>${s.motherName || '—'}</td>
-        <td>${formatDate(s.dob)}</td>
-        <td>${s.apaarId || '—'}</td>
-        <td>${s.aadharMasked || '—'}</td>
-        <td>${s.aadharUpload ? `<a class="link-photo" href="${s.aadharUpload}" target="_blank" rel="noopener">View</a>` : '—'}</td>
-        <td>${s.marksheetUpload ? `<a class="link-photo" href="${s.marksheetUpload}" target="_blank" rel="noopener">View</a>` : '—'}</td>
-      </tr>`;
-    }).join('');
-  }
-
-  function renderFees(){
-    const q = normalize(document.getElementById('feeSearch').value);
-    const filtered = allFees.filter(f =>
-      normalize(f.name).includes(q) || normalize(f.month).includes(q)
-    );
-    document.getElementById('feeCount').textContent = filtered.length;
-    const body = document.getElementById('feesBody');
-    if (filtered.length === 0){
-      body.innerHTML = '<tr class="empty-row"><td colspan="6">No fee records found.</td></tr>';
-      return;
-    }
-    body.innerHTML = filtered.slice().reverse().map(f => {
-      const statusNorm = normalize(f.status);
-      const pillClass = statusNorm.includes('paid') ? 'pill-paid' : statusNorm.includes('pending') ? 'pill-pending' : 'pill-neutral';
-      return `
-      <tr>
-        <td>${f.name || '—'}</td>
-        <td>${f.course || '—'}</td>
-        <td>${f.month || '—'}</td>
-        <td>${formatMoney(f.amount)}</td>
-        <td>${formatDate(f.date)}</td>
-        <td><span class="pill ${pillClass}">${f.status || '—'}</span></td>
-      </tr>`;
-    }).join('');
-  }
+// Close modal on overlay click
+document.getElementById('chapterModal').addEventListener('click', function(e){
+  if(e.target === this) closeChapterModal();
+});
 </script>
 
 </body>
