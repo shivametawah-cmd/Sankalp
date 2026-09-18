@@ -110,7 +110,9 @@
       radial-gradient(420px 220px at 0% 100%, rgba(217,154,31,0.10), transparent 65%);
     pointer-events:none;
   }
-  .hero-inner{position:relative; padding:60px 24px 0; max-width:var(--maxw); margin:0 auto;}
+  .hero-inner{position:relative; padding:60px 24px 60px; max-width:var(--maxw); margin:0 auto;}
+  .hero-inner.split{display:grid; grid-template-columns:1.15fr 1fr; gap:44px; align-items:center;}
+  .hero-media{position:relative; min-width:0;}
   .eyebrow-tag{
     display:inline-flex; align-items:center; gap:8px; font-family:var(--mono);
     font-size:.75rem; font-weight:600; color:#e8c877;
@@ -140,10 +142,6 @@
   .hero-stats-row .stat span{font-size:.78rem; color:#c9cdd8;}
 
   /* ---------- Hero photo carousel ---------- */
-  .carousel-section{position:relative; background:var(--ink);}
-  .hero-carousel{
-    position:relative; max-width:var(--maxw); margin:0 auto; padding:0 24px 60px;
-  }
   .carousel-frame{
     position:relative; border-radius:var(--radius); overflow:hidden;
     border:1px solid rgba(255,255,255,0.14); box-shadow:0 25px 60px -20px rgba(0,0,0,0.6);
@@ -156,7 +154,7 @@
   .carousel-track.dragging{cursor:grabbing; scroll-snap-type:none;}
   .carousel-slide{
     flex:0 0 100%; scroll-snap-align:start; position:relative;
-    aspect-ratio:16/7; min-height:220px; background:var(--paper-alt);
+    aspect-ratio:4/3; min-height:220px; background:var(--paper-alt);
   }
   .carousel-slide img{width:100%; height:100%; object-fit:cover; pointer-events:none;}
   .carousel-slide .cap{
@@ -165,7 +163,7 @@
     color:#fff; font-weight:600; font-size:.9rem; padding:28px 22px 14px;
   }
   .carousel-empty{
-    display:none; align-items:center; justify-content:center; aspect-ratio:16/7; min-height:220px;
+    display:none; align-items:center; justify-content:center; aspect-ratio:4/3; min-height:220px;
     color:#c9cdd8; font-size:.9rem; text-align:center; padding:20px;
   }
   .carousel-arrow{
@@ -283,6 +281,7 @@
     nav.primary-nav a{display:block; padding:12px 4px; font-size:1.05rem;}
     .menu-toggle{display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:8px; border:1px solid var(--line); background:transparent; cursor:pointer; color:var(--ink);}
     .call-pill span.pill-text{display:none;}
+    .hero-inner.split{grid-template-columns:1fr; gap:28px;}
     .hero-stats-row{flex-direction:column;}
     .hero-stats-row .stat{border-left:none; border-top:1px solid rgba(255,255,255,0.14); padding:14px 0;}
     .hero-stats-row .stat:first-child{border-top:none;}
@@ -328,48 +327,47 @@
 
 <main id="top">
 
-  <!-- ---------- HERO ---------- -->
+  <!-- ---------- HERO (text + photo carousel side by side) ---------- -->
   <section class="hero">
-    <div class="hero-inner">
-      <span class="eyebrow-tag">new_batches --open --all_year</span>
-      <h1>Practical computer training, right here in Bidhuna.</h1>
-      <p class="hindi-line">बिधूना, औरैया में कंप्यूटर सीखना अब आसान — CCC, ADCA, Tally और बाकी सभी कोर्स एक ही जगह।</p>
-      <p class="lede">Sankalp Computer Classes was founded in 2026 to bring certificate-recognised, job-ready computer courses to students, shopkeepers and job-seekers around Bidhuna — without needing to travel to a bigger city.</p>
-      <div class="hero-ctas">
-        <a class="btn btn-gold" href="#courses">See all courses</a>
-        <a class="btn btn-outline" href="tel:+919286733232">Call 92867 33232</a>
-      </div>
-
-      <div class="hero-stats-row">
-        <div class="stat"><b>2026</b><span>Institute established</span></div>
-        <div class="stat"><b>8</b><span>Courses offered</span></div>
-        <div class="stat"><b>2</b><span>Phone lines to reach us</span></div>
-        <div class="stat"><b>100%</b><span>Practical, hands-on classes</span></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ---------- HERO PHOTO CAROUSEL ---------- -->
-  <section class="carousel-section">
-    <div class="hero-carousel">
-      <div class="carousel-frame">
-        <div class="carousel-track" id="carouselTrack">
-          <div class="carousel-slide" data-slide><img src="center-1.jpg" alt="Sankalp Computer Classes — classroom" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Classroom</span></div>
-          <div class="carousel-slide" data-slide><img src="center-2.jpg" alt="Sankalp Computer Classes — computer lab" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Computer lab</span></div>
-          <div class="carousel-slide" data-slide><img src="center-3.jpg" alt="Sankalp Computer Classes — students in training" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Students in training</span></div>
-          <div class="carousel-slide" data-slide><img src="center-4.jpg" alt="Sankalp Computer Classes — entrance" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Entrance</span></div>
-          <div class="carousel-slide" data-slide><img src="center-5.jpg" alt="Sankalp Computer Classes — practical session" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Practical session</span></div>
-          <div class="carousel-slide" data-slide><img src="center-6.jpg" alt="Sankalp Computer Classes — certificate distribution" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Certificate distribution</span></div>
+    <div class="hero-inner split">
+      <div class="hero-text">
+        <span class="eyebrow-tag">new_batches --open --all_year</span>
+        <h1>Practical computer training, right here in Bidhuna.</h1>
+        <p class="hindi-line">बिधूना, औरैया में कंप्यूटर सीखना अब आसान — CCC, ADCA, Tally और बाकी सभी कोर्स एक ही जगह।</p>
+        <p class="lede">Sankalp Computer Classes was founded in 2026 to bring certificate-recognised, job-ready computer courses to students, shopkeepers and job-seekers around Bidhuna — without needing to travel to a bigger city.</p>
+        <div class="hero-ctas">
+          <a class="btn btn-gold" href="#courses">See all courses</a>
+          <a class="btn btn-outline" href="tel:+919286733232">Call 92867 33232</a>
         </div>
-        <div class="carousel-empty" id="carouselEmpty">Photos coming soon — upload center-1.jpg to center-6.jpg to this folder on GitHub to show them here.</div>
-        <button class="carousel-arrow prev" id="carouselPrev" aria-label="Previous photo">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <button class="carousel-arrow next" id="carouselNext" aria-label="Next photo">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
+
+        <div class="hero-stats-row">
+          <div class="stat"><b>2026</b><span>Institute established</span></div>
+          <div class="stat"><b>8</b><span>Courses offered</span></div>
+          <div class="stat"><b>2</b><span>Phone lines to reach us</span></div>
+          <div class="stat"><b>100%</b><span>Practical, hands-on classes</span></div>
+        </div>
       </div>
-      <div class="carousel-dots" id="carouselDots"></div>
+
+      <div class="hero-media">
+        <div class="carousel-frame">
+          <div class="carousel-track" id="carouselTrack">
+            <div class="carousel-slide" data-slide><img src="center-1.jpg" alt="Sankalp Computer Classes — classroom" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Classroom</span></div>
+            <div class="carousel-slide" data-slide><img src="center-2.jpg" alt="Sankalp Computer Classes — computer lab" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Computer lab</span></div>
+            <div class="carousel-slide" data-slide><img src="center-3.jpg" alt="Sankalp Computer Classes — students in training" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Students in training</span></div>
+            <div class="carousel-slide" data-slide><img src="center-4.jpg" alt="Sankalp Computer Classes — entrance" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Entrance</span></div>
+            <div class="carousel-slide" data-slide><img src="center-5.jpg" alt="Sankalp Computer Classes — practical session" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Practical session</span></div>
+            <div class="carousel-slide" data-slide><img src="center-6.jpg" alt="Sankalp Computer Classes — certificate distribution" loading="lazy" onerror="this.closest('[data-slide]').remove();"><span class="cap">Certificate distribution</span></div>
+          </div>
+          <div class="carousel-empty" id="carouselEmpty">Photos coming soon — upload center-1.jpg to center-6.jpg to this folder on GitHub to show them here.</div>
+          <button class="carousel-arrow prev" id="carouselPrev" aria-label="Previous photo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="carousel-arrow next" id="carouselNext" aria-label="Next photo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <div class="carousel-dots" id="carouselDots"></div>
+      </div>
     </div>
   </section>
 
