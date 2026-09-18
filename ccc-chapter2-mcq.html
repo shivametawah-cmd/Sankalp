@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <!--
-  SANKALP COMPUTER CLASSES — CCC Chapter 2: Introduction to Operating System — Static MCQ page
+  SANKALP COMPUTER CLASSES — Chapter 2: Chapter 2: Introduction to Operating System — Interactive MCQ Quiz
   -------------------------------------------------------
-  This page lists all 50 questions and answers as plain, crawlable
-  HTML text (not loaded via JS/localStorage), so search engines can
-  index the content. For the interactive self-scoring quiz version,
-  see mcq-quiz.html.
+  Self-contained, self-scoring quiz for this chapter. Opens straight into
+  quiz mode (question by question) and shows the score on submit.
+  Structured data (JSON-LD) is kept for search engines; sibling chapter
+  quizzes and the full MCQ hub are linked from the header/footer.
 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CCC Chapter 2: Introduction to Operating System — MCQ Questions &amp; Answers (Hindi + English) | Sankalp Computer Classes</title>
-<meta name="description" content="50 bilingual (Hindi + English) multiple-choice questions with answers for CCC Chapter 2: Introduction to Operating System. Free MCQ practice for Sankalp Computer Classes, Bidhuna, Auraiya.">
+<title>CCC Chapter 2: Introduction to Operating System — MCQ Quiz (Hindi + English) | Sankalp Computer Classes</title>
+<meta name="description" content="Take a free 50-question bilingual (Hindi + English) self-scoring MCQ quiz on CCC Chapter 2: Introduction to Operating System. Question by question, instant score at the end. Sankalp Computer Classes, Bidhuna, Auraiya.">
 <link rel="icon" href="logo.png" type="image/png">
 <link rel="canonical" href="https://sankalpcomputerclasses.in/ccc-chapter2-mcq.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,7 +27,7 @@
     --card:#ffffff; --gold:#d99a1f; --gold-dark:#b87f14;
     --teal:#0f6f6c; --teal-dark:#0b524f;
     --line:#e1ddd0; --radius:14px; --shadow:0 10px 30px -18px rgba(19,32,56,0.35);
-    --ok:#1c7c4d; --ok-bg:#eaf7f0;
+    --ok:#1c7c4d; --ok-bg:#eaf7f0; --danger:#b3432f; --danger-bg:#fbeae6;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{
@@ -48,7 +48,10 @@
   .back-link{color:#dfe2ea; text-decoration:none; font-size:.85rem; font-weight:600;}
   .back-link:hover{color:#fff;}
 
-  .page-head{padding:36px 0 8px;}
+  .screen{display:none; padding:36px 0 60px;}
+  .screen.active{display:block;}
+
+  .page-head{margin-bottom:26px;}
   .page-head .eyebrow{
     display:inline-block; font-family:"Space Grotesk"; font-size:.72rem; font-weight:700;
     letter-spacing:.04em; color:var(--teal-dark); background:rgba(15,111,108,0.1);
@@ -57,44 +60,145 @@
   .page-head h1{font-size:1.7rem; margin-bottom:6px;}
   .page-head .hi{color:var(--ink-soft); font-size:1rem; margin-bottom:14px;}
   .page-head p.lede{color:var(--ink-soft); font-size:.95rem; max-width:64ch;}
-  .quiz-cta{
-    display:inline-flex; align-items:center; gap:8px; margin-top:16px;
-    background:var(--teal); color:#fff; text-decoration:none; font-weight:700;
-    font-size:.9rem; padding:11px 20px; border-radius:10px;
-  }
-  .quiz-cta:hover{background:var(--teal-dark);}
 
-  .q-list{padding:24px 0 60px;}
-  .q-block{
+  .name-box{
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
-    padding:20px 22px; margin-bottom:16px; box-shadow:var(--shadow);
+    padding:24px; box-shadow:var(--shadow); margin:22px 0;
   }
-  .q-num{font-family:"Space Grotesk"; font-weight:700; font-size:.85rem; color:var(--teal-dark); margin-bottom:8px;}
-  .q-en{font-weight:600; font-size:1.02rem; margin-bottom:3px;}
-  .q-hi{font-size:.92rem; color:var(--ink-soft); margin-bottom:14px;}
-  ul.opts{list-style:none; display:grid; gap:8px; margin-bottom:12px;}
-  ul.opts li.opt{
-    background:var(--paper-alt); border-radius:9px; padding:9px 13px; font-size:.92rem;
+  .name-box label{display:block; font-weight:600; margin-bottom:8px; font-size:.95rem;}
+  .name-box input{
+    width:100%; padding:11px 14px; border:1px solid var(--line); border-radius:9px;
+    font-size:1rem; font-family:inherit; margin-bottom:10px;
   }
-  ul.opts li.opt.correct{background:var(--ok-bg); color:var(--ok); font-weight:600;}
-  .opt-label{font-weight:700; margin-right:4px;}
-  .opt-hi{color:inherit; opacity:.85;}
-  details.ans-reveal{font-size:.88rem;}
-  details.ans-reveal summary{cursor:pointer; color:var(--teal-dark); font-weight:600; list-style:none;}
-  details.ans-reveal summary::-webkit-details-marker{display:none;}
-  details.ans-reveal summary::before{content:"▸ "; }
-  details.ans-reveal[open] summary::before{content:"▾ "; }
-  .ans-line{margin-top:8px; padding:10px 13px; background:var(--ok-bg); color:var(--ok); border-radius:9px;}
+  .name-box input:focus{outline:none; border-color:var(--teal);}
+  .start-btn-big{
+    background:var(--teal); color:#fff; border:none; padding:13px 26px;
+    border-radius:9px; font-weight:700; font-size:.98rem; cursor:pointer; font-family:inherit;
+  }
+  .start-btn-big:hover{background:var(--teal-dark);}
 
-  .page-foot-cta{
-    text-align:center; background:var(--ink); color:#f3f1ea; padding:40px 20px; border-radius:var(--radius);
-    margin:20px 0 50px;
+  .hub-link{font-size:.85rem; color:var(--ink-soft); margin-top:4px;}
+
+  /* ---- Quiz screen ---- */
+  .quiz-header{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px 22px; margin-bottom:22px; box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
   }
-  .page-foot-cta h2{color:#fff; font-size:1.3rem; margin-bottom:8px;}
-  .page-foot-cta p{color:#cfd3de; font-size:.92rem; margin-bottom:18px;}
+  .quiz-title{font-size:1.05rem;}
+  .quiz-title small{display:block; font-size:.78rem; color:var(--ink-soft); font-weight:400; margin-top:2px;}
+  .progress-wrap{flex:1; min-width:160px;}
+  .progress-label{font-size:.8rem; color:var(--ink-soft); margin-bottom:5px;}
+  .progress-bar{height:7px; background:var(--paper-alt); border-radius:999px; overflow:hidden;}
+  .progress-fill{height:100%; background:var(--teal); border-radius:999px; transition:width .3s;}
+  .q-counter{font-family:"Space Grotesk"; font-size:1.1rem; font-weight:700; white-space:nowrap;}
+
+  .question-card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px 24px; box-shadow:var(--shadow); margin-bottom:18px;
+  }
+  .q-number{font-size:.8rem; font-weight:700; color:var(--ink-soft); margin-bottom:10px;}
+  .q-text{font-size:1.05rem; font-weight:600; margin-bottom:6px; line-height:1.4;}
+  .q-text-hi{font-size:.95rem; color:var(--ink-soft); margin-bottom:18px; line-height:1.5;}
+
+  .options-list{display:grid; gap:10px;}
+  .option-btn{
+    width:100%; text-align:left; background:var(--paper-alt);
+    border:2px solid transparent; border-radius:10px;
+    padding:12px 16px; font-size:.93rem; font-family:inherit;
+    cursor:pointer; transition:border-color .15s, background .15s;
+    line-height:1.4;
+  }
+  .option-btn:hover:not(:disabled){border-color:var(--teal); background:#f0faf9;}
+  .option-btn.selected{border-color:var(--teal); background:#e0f4f3;}
+  .option-label{font-weight:700; margin-right:8px;}
+
+  .nav-row{display:flex; gap:12px; justify-content:space-between; align-items:center; flex-wrap:wrap;}
+  .nav-row .skip-btn{background:none; border:1px solid var(--line); color:var(--ink-soft); padding:10px 18px; border-radius:9px; font-size:.9rem; cursor:pointer; font-family:inherit;}
+  .nav-row .skip-btn:hover{border-color:var(--ink-soft); color:var(--ink);}
+  .nav-row .next-btn{background:var(--teal); color:#fff; border:none; padding:10px 24px; border-radius:9px; font-weight:700; font-size:.9rem; cursor:pointer; font-family:inherit;}
+  .nav-row .next-btn:hover{background:var(--teal-dark);}
+  .nav-row .submit-btn{background:var(--gold); color:#241a02; border:none; padding:10px 24px; border-radius:9px; font-weight:700; font-size:.9rem; cursor:pointer; font-family:inherit;}
+  .nav-row .submit-btn:hover{background:var(--gold-dark);}
+
+  /* ---- Result screen ---- */
+  .result-hero{
+    text-align:center; padding:38px 24px 28px;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:22px;
+  }
+  .score-circle{
+    width:120px; height:120px; border-radius:50%; margin:0 auto 18px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:"Space Grotesk"; font-size:2rem; font-weight:700; color:#fff;
+  }
+  .score-circle.great{background:linear-gradient(135deg, var(--ok), #2db37a);}
+  .score-circle.good{background:linear-gradient(135deg, var(--teal), #1a9a97);}
+  .score-circle.low{background:linear-gradient(135deg, #e07b3a, var(--gold-dark));}
+  .score-circle.poor{background:linear-gradient(135deg, var(--danger), #d4583e);}
+  .result-hero h2{font-size:1.5rem; margin-bottom:6px;}
+  .result-hero p{color:var(--ink-soft); font-size:.95rem; max-width:40ch; margin:0 auto;}
+
+  .result-stats{display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:22px;}
+  .r-stat{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:16px; text-align:center; box-shadow:var(--shadow);
+  }
+  .r-stat .val{font-family:"Space Grotesk"; font-size:1.6rem; font-weight:700;}
+  .r-stat .lbl{font-size:.78rem; color:var(--ink-soft); margin-top:4px;}
+  .r-stat.ok .val{color:var(--ok);}
+  .r-stat.danger .val{color:var(--danger);}
+
+  .review-panel{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow); margin-bottom:22px;
+  }
+  .review-panel-head{
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .review-panel-head h3{font-size:1rem;}
+  .toggle-review{background:none; border:1px solid var(--line); color:var(--ink-soft); padding:7px 14px; border-radius:8px; font-size:.82rem; cursor:pointer; font-family:inherit;}
+  .review-list{display:none; padding:6px 20px 18px;}
+  .review-list.open{display:block;}
+  .review-item{padding:14px 0; border-bottom:1px solid var(--line);}
+  .review-item:last-child{border-bottom:none;}
+  .review-q{font-weight:600; font-size:.92rem; margin-bottom:2px;}
+  .review-q-hi{font-size:.85rem; color:var(--ink-soft); margin-bottom:8px;}
+  .review-ans{font-size:.85rem; padding:8px 12px; border-radius:8px; margin-top:6px;}
+  .review-ans .label{font-weight:700; margin-right:4px;}
+  .ans-correct{background:var(--ok-bg); color:var(--ok);}
+  .ans-wrong{background:var(--danger-bg); color:var(--danger);}
+
+  .lb-panel{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow); margin-bottom:26px;
+  }
+  .lb-panel-head{padding:16px 20px; border-bottom:1px solid var(--line);}
+  .lb-panel-head h3{font-size:1rem;}
+  .lb-table{width:100%; border-collapse:collapse; font-size:.88rem;}
+  .lb-table th{text-align:left; padding:10px 16px; color:var(--ink-soft); font-size:.78rem; text-transform:uppercase; letter-spacing:.03em; border-bottom:1px solid var(--line);}
+  .lb-table td{padding:10px 16px; border-bottom:1px solid var(--line);}
+  .lb-table tr:last-child td{border-bottom:none;}
+  .lb-table tr.me{background:rgba(15,111,108,0.08);}
+  .rank-badge{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; background:var(--paper-alt); font-weight:700; font-size:.78rem;}
+  .rank-badge.gold{background:#f3d27a; color:#5c4200;}
+  .rank-badge.silver{background:#dfe3ea; color:#3a3f4a;}
+  .rank-badge.bronze{background:#e8bd94; color:#5a3417;}
+
+  .result-actions{display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-bottom:10px;}
+  .btn{padding:11px 22px; border-radius:9px; font-weight:700; font-size:.9rem; cursor:pointer; text-decoration:none; display:inline-block; font-family:inherit; border:none;}
+  .btn-teal{background:var(--teal); color:#fff;}
+  .btn-teal:hover{background:var(--teal-dark);}
+  .btn-outline{background:none; border:1px solid var(--line); color:var(--ink);}
+  .btn-outline:hover{border-color:var(--ink-soft);}
 
   footer{background:#0d1728; color:#aab0c0; padding:22px 0; font-size:.83rem; text-align:center;}
   footer a{color:#c9cdd8;}
+
+  @media (max-width:560px){
+    .result-stats{grid-template-columns:repeat(2, 1fr);}
+  }
 </style>
 </head>
 <body>
@@ -105,884 +209,323 @@
       <img src="logo.png" alt="" onerror="this.style.background='var(--ink)'; this.src='';">
       <div>
         <strong>Sankalp Computer Classes</strong>
-        <span>CCC MCQ Question Bank</span>
+        <span>Chapter 2 Quiz</span>
       </div>
     </a>
-    <a class="back-link" href="mcq-quiz.html">← Take the interactive quiz</a>
+    <a class="back-link" href="mcq-quiz.html">← All MCQ chapters</a>
   </div>
 </header>
 
-<div class="wrap">
-  <div class="page-head">
-    <span class="eyebrow">CCC &middot; 50 Questions</span>
-    <h1>Chapter 2: Introduction to Operating System — MCQ Questions and Answers</h1>
-    <div class="hi">अध्याय 2: ऑपरेटिंग सिस्टम का परिचय — प्रश्न और उत्तर</div>
-    <p class="lede">All 50 bilingual (English + Hindi) multiple-choice questions for CCC Chapter 2: Introduction to Operating System, with answers. Tap "Show answer" under any question to reveal it, or take the self-scoring quiz version instead.</p>
-    <a class="quiz-cta" href="mcq-quiz.html">▶ Take the interactive quiz instead</a>
-  </div>
+<!-- ===================== START SCREEN ===================== -->
+<div class="screen active" id="screenStart">
+  <div class="wrap">
+    <div class="page-head" style="padding-top:36px;">
+      <span class="eyebrow">CCC · 50 Questions</span>
+      <h1>Chapter 2: Introduction to Operating System</h1>
+      <div class="hi">अध्याय 2: ऑपरेटिंग सिस्टम का परिचय</div>
+      <p class="lede">All 50 bilingual (English + Hindi) multiple-choice questions for CCC Chapter 2: Introduction to Operating System — attempted one question at a time. Enter your name and start; your score, answer review and leaderboard rank appear as soon as you submit.</p>
+    </div>
 
-  <div class="q-list">
+    <div class="name-box">
+      <label for="studentName">Your name / आपका नाम <span style="color:var(--danger);">*</span></label>
+      <input type="text" id="studentName" placeholder="Enter your full name..." autocomplete="off">
+      <div style="font-size:.8rem; color:var(--ink-soft); margin-bottom:16px;">Your name is used to save your score on the leaderboard.</div>
+      <button class="start-btn-big" onclick="startQuiz()">▶ Start Quiz</button>
+    </div>
 
-      <div class="q-block" id="q1">
-        <div class="q-num">Q1.</div>
-        <div class="q-text">
-          <p class="q-en">What is the primary function of an operating system?</p>
-          <p class="q-hi">ऑपरेटिंग सिस्टम का प्राथमिक कार्य क्या है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Manage hardware and software resources<span class="opt-hi"> / हार्डवेयर और सॉफ्टवेयर संसाधनों का प्रबंधन करना</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Only run games<span class="opt-hi"> / केवल गेम चलाना</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Create documents<span class="opt-hi"> / दस्तावेज़ बनाना</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Design websites<span class="opt-hi"> / वेबसाइट डिज़ाइन करना</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Manage hardware and software resources / हार्डवेयर और सॉफ्टवेयर संसाधनों का प्रबंधन करना</p>
-        </details>
-      </div>
-      <div class="q-block" id="q2">
-        <div class="q-num">Q2.</div>
-        <div class="q-text">
-          <p class="q-en">Which of the following is NOT an operating system?</p>
-          <p class="q-hi">निम्नलिखित में से कौन सा ऑपरेटिंग सिस्टम नहीं है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt"><span class="opt-label">A.</span> Windows<span class="opt-hi"> / विंडोज</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Linux<span class="opt-hi"> / लिनक्स</span></li>
-          <li class="opt correct"><span class="opt-label">C.</span> MS Word<span class="opt-hi"> / एमएस वर्ड</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Ubuntu<span class="opt-hi"> / उबंटू</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: C</strong> — MS Word / एमएस वर्ड</p>
-        </details>
-      </div>
-      <div class="q-block" id="q3">
-        <div class="q-num">Q3.</div>
-        <div class="q-text">
-          <p class="q-en">GUI stands for:</p>
-          <p class="q-hi">GUI का पूर्ण रूप है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Graphical User Interface<span class="opt-hi"> / ग्राफिकल यूजर इंटरफेस</span></li>
-          <li class="opt"><span class="opt-label">B.</span> General User Interface<span class="opt-hi"> / जनरल यूजर इंटरफेस</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Graphic Utility Interface<span class="opt-hi"> / ग्राफिक यूटिलिटी इंटरफेस</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Graphical Unit Interface<span class="opt-hi"> / ग्राफिकल यूनिट इंटरफेस</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Graphical User Interface / ग्राफिकल यूजर इंटरफेस</p>
-        </details>
-      </div>
-      <div class="q-block" id="q4">
-        <div class="q-num">Q4.</div>
-        <div class="q-text">
-          <p class="q-en">CLI stands for:</p>
-          <p class="q-hi">CLI का पूर्ण रूप है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Command Line Interface<span class="opt-hi"> / कमांड लाइन इंटरफेस</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Computer Language Interface<span class="opt-hi"> / कंप्यूटर लैंग्वेज इंटरफेस</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Control Line Interface<span class="opt-hi"> / कंट्रोल लाइन इंटरफेस</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Command Level Interface<span class="opt-hi"> / कमांड लेवल इंटरफेस</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Command Line Interface / कमांड लाइन इंटरफेस</p>
-        </details>
-      </div>
-      <div class="q-block" id="q5">
-        <div class="q-num">Q5.</div>
-        <div class="q-text">
-          <p class="q-en">Which of the following is an open-source operating system?</p>
-          <p class="q-hi">निम्नलिखित में से कौन सा एक ओपन-सोर्स ऑपरेटिंग सिस्टम है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt"><span class="opt-label">A.</span> Windows<span class="opt-hi"> / विंडोज</span></li>
-          <li class="opt correct"><span class="opt-label">B.</span> Linux<span class="opt-hi"> / लिनक्स</span></li>
-          <li class="opt"><span class="opt-label">C.</span> macOS<span class="opt-hi"> / मैक ओएस</span></li>
-          <li class="opt"><span class="opt-label">D.</span> iOS<span class="opt-hi"> / आईओएस</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: B</strong> — Linux / लिनक्स</p>
-        </details>
-      </div>
-      <div class="q-block" id="q6">
-        <div class="q-num">Q6.</div>
-        <div class="q-text">
-          <p class="q-en">The small pictures representing programs or files on the desktop are called:</p>
-          <p class="q-hi">डेस्कटॉप पर प्रोग्राम या फाइलों को दर्शाने वाली छोटी तस्वीरों को कहा जाता है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Icons<span class="opt-hi"> / आइकन</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Widgets<span class="opt-hi"> / विजेट्स</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Menus<span class="opt-hi"> / मेनू</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Tabs<span class="opt-hi"> / टैब्स</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Icons / आइकन</p>
-        </details>
-      </div>
-      <div class="q-block" id="q7">
-        <div class="q-num">Q7.</div>
-        <div class="q-text">
-          <p class="q-en">The horizontal bar at the bottom of the Windows desktop is called:</p>
-          <p class="q-hi">विंडोज डेस्कटॉप के नीचे की क्षैतिज पट्टी को कहा जाता है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt"><span class="opt-label">A.</span> Menu bar<span class="opt-hi"> / मेनू बार</span></li>
-          <li class="opt correct"><span class="opt-label">B.</span> Taskbar<span class="opt-hi"> / टास्कबार</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Title bar<span class="opt-hi"> / टाइटल बार</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Status bar<span class="opt-hi"> / स्टेटस बार</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: B</strong> — Taskbar / टास्कबार</p>
-        </details>
-      </div>
-      <div class="q-block" id="q8">
-        <div class="q-num">Q8.</div>
-        <div class="q-text">
-          <p class="q-en">Which key combination is used to switch between open windows?</p>
-          <p class="q-hi">खुली हुई विंडोज़ के बीच स्विच करने के लिए किस की-कॉम्बिनेशन का उपयोग किया जाता है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Alt + Tab<span class="opt-hi"> / Alt + Tab</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Ctrl + Tab<span class="opt-hi"> / Ctrl + Tab</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Shift + Tab<span class="opt-hi"> / Shift + Tab</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Ctrl + Shift + Tab<span class="opt-hi"> / Ctrl + Shift + Tab</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Alt + Tab / Alt + Tab</p>
-        </details>
-      </div>
-      <div class="q-block" id="q9">
-        <div class="q-num">Q9.</div>
-        <div class="q-text">
-          <p class="q-en">Which shortcut key directly opens Task Manager in Windows?</p>
-          <p class="q-hi">विंडोज में सीधे टास्क मैनेजर खोलने के लिए किस शॉर्टकट कुंजी का उपयोग किया जाता है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt"><span class="opt-label">A.</span> Ctrl + Alt + Delete<span class="opt-hi"> / Ctrl + Alt + Delete</span></li>
-          <li class="opt correct"><span class="opt-label">B.</span> Ctrl + Shift + Esc<span class="opt-hi"> / Ctrl + Shift + Esc</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Alt + F4<span class="opt-hi"> / Alt + F4</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Ctrl + Esc<span class="opt-hi"> / Ctrl + Esc</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: B</strong> — Ctrl + Shift + Esc / Ctrl + Shift + Esc</p>
-        </details>
-      </div>
-      <div class="q-block" id="q10">
-        <div class="q-num">Q10.</div>
-        <div class="q-text">
-          <p class="q-en">The shortcut key to rename a selected file or folder is:</p>
-          <p class="q-hi">चयनित फ़ाइल या फ़ोल्डर का नाम बदलने की शॉर्टकट कुंजी है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> F2<span class="opt-hi"> / F2</span></li>
-          <li class="opt"><span class="opt-label">B.</span> F5<span class="opt-hi"> / F5</span></li>
-          <li class="opt"><span class="opt-label">C.</span> F1<span class="opt-hi"> / F1</span></li>
-          <li class="opt"><span class="opt-label">D.</span> F3<span class="opt-hi"> / F3</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — F2 / F2</p>
-        </details>
-      </div>
-      <div class="q-block" id="q11">
-        <div class="q-num">Q11.</div>
-        <div class="q-text">
-          <p class="q-en">The shortcut key to refresh the desktop or an open window is:</p>
-          <p class="q-hi">डेस्कटॉप या किसी खुली विंडो को रिफ्रेश करने की शॉर्टकट कुंजी है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> F5<span class="opt-hi"> / F5</span></li>
-          <li class="opt"><span class="opt-label">B.</span> F2<span class="opt-hi"> / F2</span></li>
-          <li class="opt"><span class="opt-label">C.</span> F4<span class="opt-hi"> / F4</span></li>
-          <li class="opt"><span class="opt-label">D.</span> F6<span class="opt-hi"> / F6</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — F5 / F5</p>
-        </details>
-      </div>
-      <div class="q-block" id="q12">
-        <div class="q-num">Q12.</div>
-        <div class="q-text">
-          <p class="q-en">The process of starting or restarting a computer is called:</p>
-          <p class="q-hi">कंप्यूटर को शुरू या पुनः प्रारंभ करने की प्रक्रिया कहलाती है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Booting<span class="opt-hi"> / बूटिंग</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Formatting<span class="opt-hi"> / फॉर्मेटिंग</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Installing<span class="opt-hi"> / इंस्टॉलिंग</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Saving<span class="opt-hi"> / सेविंग</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Booting / बूटिंग</p>
-        </details>
-      </div>
-      <div class="q-block" id="q13">
-        <div class="q-num">Q13.</div>
-        <div class="q-text">
-          <p class="q-en">Restarting a computer that is already switched on is called:</p>
-          <p class="q-hi">पहले से चालू कंप्यूटर को पुनः प्रारंभ करना कहलाता है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt"><span class="opt-label">A.</span> Cold booting<span class="opt-hi"> / कोल्ड बूटिंग</span></li>
-          <li class="opt correct"><span class="opt-label">B.</span> Warm booting<span class="opt-hi"> / वार्म बूटिंग</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Hot booting<span class="opt-hi"> / हॉट बूटिंग</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Soft booting<span class="opt-hi"> / सॉफ्ट बूटिंग</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: B</strong> — Warm booting / वार्म बूटिंग</p>
-        </details>
-      </div>
-      <div class="q-block" id="q14">
-        <div class="q-num">Q14.</div>
-        <div class="q-text">
-          <p class="q-en">Which of the following is a file management function of an operating system?</p>
-          <p class="q-hi">निम्नलिखित में से कौन सा ऑपरेटिंग सिस्टम का फ़ाइल प्रबंधन कार्य है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Creating, deleting and organizing files<span class="opt-hi"> / फाइलें बनाना, हटाना और व्यवस्थित करना</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Printing documents only<span class="opt-hi"> / केवल दस्तावेज़ प्रिंट करना</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Browsing internet<span class="opt-hi"> / इंटरनेट ब्राउज़ करना</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Playing music<span class="opt-hi"> / संगीत बजाना</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Creating, deleting and organizing files / फाइलें बनाना, हटाना और व्यवस्थित करना</p>
-        </details>
-      </div>
-      <div class="q-block" id="q15">
-        <div class="q-num">Q15.</div>
-        <div class="q-text">
-          <p class="q-en">Which of the following is a mobile operating system?</p>
-          <p class="q-hi">निम्नलिखित में से कौन सा एक मोबाइल ऑपरेटिंग सिस्टम है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Android<span class="opt-hi"> / एंड्रॉइड</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Windows 11<span class="opt-hi"> / विंडोज 11</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Ubuntu<span class="opt-hi"> / उबंटू</span></li>
-          <li class="opt"><span class="opt-label">D.</span> DOS<span class="opt-hi"> / डॉस</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Android / एंड्रॉइड</p>
-        </details>
-      </div>
-      <div class="q-block" id="q16">
-        <div class="q-num">Q16.</div>
-        <div class="q-text">
-          <p class="q-en">The Linux kernel was originally developed by:</p>
-          <p class="q-hi">लिनक्स कर्नल को मूल रूप से विकसित किया था:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Linus Torvalds<span class="opt-hi"> / लिनुस टोरवाल्ड्स</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Bill Gates<span class="opt-hi"> / बिल गेट्स</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Steve Jobs<span class="opt-hi"> / स्टीव जॉब्स</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Dennis Ritchie<span class="opt-hi"> / डेनिस रिची</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Linus Torvalds / लिनुस टोरवाल्ड्स</p>
-        </details>
-      </div>
-      <div class="q-block" id="q17">
-        <div class="q-num">Q17.</div>
-        <div class="q-text">
-          <p class="q-en">The Windows operating system is developed by which company?</p>
-          <p class="q-hi">विंडोज ऑपरेटिंग सिस्टम किस कंपनी द्वारा विकसित किया गया है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Microsoft<span class="opt-hi"> / माइक्रोसॉफ्ट</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Apple<span class="opt-hi"> / एप्पल</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Google<span class="opt-hi"> / गूगल</span></li>
-          <li class="opt"><span class="opt-label">D.</span> IBM<span class="opt-hi"> / आईबीएम</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Microsoft / माइक्रोसॉफ्ट</p>
-        </details>
-      </div>
-      <div class="q-block" id="q18">
-        <div class="q-num">Q18.</div>
-        <div class="q-text">
-          <p class="q-en">macOS is developed by which company?</p>
-          <p class="q-hi">macOS किस कंपनी द्वारा विकसित किया गया है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Apple<span class="opt-hi"> / एप्पल</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Microsoft<span class="opt-hi"> / माइक्रोसॉफ्ट</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Google<span class="opt-hi"> / गूगल</span></li>
-          <li class="opt"><span class="opt-label">D.</span> IBM<span class="opt-hi"> / आईबीएम</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Apple / एप्पल</p>
-        </details>
-      </div>
-      <div class="q-block" id="q19">
-        <div class="q-num">Q19.</div>
-        <div class="q-text">
-          <p class="q-en">The Android operating system is developed by:</p>
-          <p class="q-hi">एंड्रॉइड ऑपरेटिंग सिस्टम किसके द्वारा विकसित किया गया है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Google<span class="opt-hi"> / गूगल</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Apple<span class="opt-hi"> / एप्पल</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Microsoft<span class="opt-hi"> / माइक्रोसॉफ्ट</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Samsung<span class="opt-hi"> / सैमसंग</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Google / गूगल</p>
-        </details>
-      </div>
-      <div class="q-block" id="q20">
-        <div class="q-num">Q20.</div>
-        <div class="q-text">
-          <p class="q-en">Based on the number of users, operating systems can be classified as:</p>
-          <p class="q-hi">उपयोगकर्ताओं की संख्या के आधार पर ऑपरेटिंग सिस्टम को वर्गीकृत किया जा सकता है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt"><span class="opt-label">A.</span> Single-user OS<span class="opt-hi"> / सिंगल-यूज़र ओएस</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Multi-user OS<span class="opt-hi"> / मल्टी-यूज़र ओएस</span></li>
-          <li class="opt correct"><span class="opt-label">C.</span> Both A and B<span class="opt-hi"> / A और B दोनों</span></li>
-          <li class="opt"><span class="opt-label">D.</span> None of these<span class="opt-hi"> / इनमें से कोई नहीं</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: C</strong> — Both A and B / A और B दोनों</p>
-        </details>
-      </div>
-      <div class="q-block" id="q21">
-        <div class="q-num">Q21.</div>
-        <div class="q-text">
-          <p class="q-en">An operating system that allows only one task to run at a time is called:</p>
-          <p class="q-hi">एक ऑपरेटिंग सिस्टम जो एक समय में केवल एक कार्य चलाने की अनुमति देता है, कहलाता है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Single-tasking OS<span class="opt-hi"> / सिंगल-टास्किंग ओएस</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Multi-tasking OS<span class="opt-hi"> / मल्टी-टास्किंग ओएस</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Multi-user OS<span class="opt-hi"> / मल्टी-यूज़र ओएस</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Real-time OS<span class="opt-hi"> / रियल-टाइम ओएस</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Single-tasking OS / सिंगल-टास्किंग ओएस</p>
-        </details>
-      </div>
-      <div class="q-block" id="q22">
-        <div class="q-num">Q22.</div>
-        <div class="q-text">
-          <p class="q-en">An operating system that allows multiple programs to run at the same time is called:</p>
-          <p class="q-hi">एक ऑपरेटिंग सिस्टम जो एक साथ कई प्रोग्राम चलाने की अनुमति देता है, कहलाता है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt"><span class="opt-label">A.</span> Single-tasking OS<span class="opt-hi"> / सिंगल-टास्किंग ओएस</span></li>
-          <li class="opt correct"><span class="opt-label">B.</span> Multi-tasking OS<span class="opt-hi"> / मल्टी-टास्किंग ओएस</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Single-user OS<span class="opt-hi"> / सिंगल-यूज़र ओएस</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Batch OS<span class="opt-hi"> / बैच ओएस</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: B</strong> — Multi-tasking OS / मल्टी-टास्किंग ओएस</p>
-        </details>
-      </div>
-      <div class="q-block" id="q23">
-        <div class="q-num">Q23.</div>
-        <div class="q-text">
-          <p class="q-en">An operating system designed to respond to input within a strict time limit (e.g. used in medical or industrial systems) is called:</p>
-          <p class="q-hi">एक ऑपरेटिंग सिस्टम जो एक निश्चित समय सीमा के भीतर इनपुट का जवाब देने के लिए डिज़ाइन किया गया है (जैसे मेडिकल या औद्योगिक प्रणालियों में उपयोग होता है), कहलाता है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Real-time OS<span class="opt-hi"> / रियल-टाइम ओएस</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Batch OS<span class="opt-hi"> / बैच ओएस</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Distributed OS<span class="opt-hi"> / डिस्ट्रिब्यूटेड ओएस</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Time-sharing OS<span class="opt-hi"> / टाइम-शेयरिंग ओएस</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Real-time OS / रियल-टाइम ओएस</p>
-        </details>
-      </div>
-      <div class="q-block" id="q24">
-        <div class="q-num">Q24.</div>
-        <div class="q-text">
-          <p class="q-en">The folder that temporarily stores deleted files in Windows is called:</p>
-          <p class="q-hi">विंडोज में हटाई गई फाइलों को अस्थायी रूप से संग्रहीत करने वाले फ़ोल्डर को कहा जाता है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Recycle Bin<span class="opt-hi"> / रीसायकल बिन</span></li>
-          <li class="opt"><span class="opt-label">B.</span> My Computer<span class="opt-hi"> / माय कंप्यूटर</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Control Panel<span class="opt-hi"> / कंट्रोल पैनल</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Task Manager<span class="opt-hi"> / टास्क मैनेजर</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Recycle Bin / रीसायकल बिन</p>
-        </details>
-      </div>
-      <div class="q-block" id="q25">
-        <div class="q-num">Q25.</div>
-        <div class="q-text">
-          <p class="q-en">Which shortcut is used to permanently delete a file, bypassing the Recycle Bin?</p>
-          <p class="q-hi">रीसायकल बिन को बायपास करके किसी फाइल को स्थायी रूप से हटाने के लिए किस शॉर्टकट का उपयोग किया जाता है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt"><span class="opt-label">A.</span> Delete<span class="opt-hi"> / Delete</span></li>
-          <li class="opt correct"><span class="opt-label">B.</span> Shift + Delete<span class="opt-hi"> / Shift + Delete</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Ctrl + Delete<span class="opt-hi"> / Ctrl + Delete</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Alt + Delete<span class="opt-hi"> / Alt + Delete</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: B</strong> — Shift + Delete / Shift + Delete</p>
-        </details>
-      </div>
-      <div class="q-block" id="q26">
-        <div class="q-num">Q26.</div>
-        <div class="q-text">
-          <p class="q-en">Which part of Windows allows the user to change system settings like display, sound and network?</p>
-          <p class="q-hi">विंडोज का कौन सा भाग उपयोगकर्ता को डिस्प्ले, साउंड और नेटवर्क जैसी सिस्टम सेटिंग्स बदलने की अनुमति देता है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Control Panel / Settings<span class="opt-hi"> / कंट्रोल पैनल / सेटिंग्स</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Notepad<span class="opt-hi"> / नोटपैड</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Paint<span class="opt-hi"> / पेंट</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Calculator<span class="opt-hi"> / कैलकुलेटर</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Control Panel / Settings / कंट्रोल पैनल / सेटिंग्स</p>
-        </details>
-      </div>
-      <div class="q-block" id="q27">
-        <div class="q-num">Q27.</div>
-        <div class="q-text">
-          <p class="q-en">In Windows, which shortcut key opens File Explorer?</p>
-          <p class="q-hi">विंडोज में फाइल एक्सप्लोरर खोलने के लिए कौन सी शॉर्टकट कुंजी है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Windows + E<span class="opt-hi"> / Windows + E</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Windows + R<span class="opt-hi"> / Windows + R</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Windows + D<span class="opt-hi"> / Windows + D</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Windows + L<span class="opt-hi"> / Windows + L</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Windows + E / Windows + E</p>
-        </details>
-      </div>
-      <div class="q-block" id="q28">
-        <div class="q-num">Q28.</div>
-        <div class="q-text">
-          <p class="q-en">Which shortcut key opens the Run dialog box in Windows?</p>
-          <p class="q-hi">विंडोज में रन डायलॉग बॉक्स खोलने के लिए कौन सी शॉर्टकट कुंजी है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Windows + R<span class="opt-hi"> / Windows + R</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Windows + E<span class="opt-hi"> / Windows + E</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Windows + Tab<span class="opt-hi"> / Windows + Tab</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Windows + S<span class="opt-hi"> / Windows + S</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Windows + R / Windows + R</p>
-        </details>
-      </div>
-      <div class="q-block" id="q29">
-        <div class="q-num">Q29.</div>
-        <div class="q-text">
-          <p class="q-en">Which shortcut key locks the computer in Windows?</p>
-          <p class="q-hi">विंडोज में कंप्यूटर को लॉक करने के लिए कौन सी शॉर्टकट कुंजी है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Windows + L<span class="opt-hi"> / Windows + L</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Windows + D<span class="opt-hi"> / Windows + D</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Windows + E<span class="opt-hi"> / Windows + E</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Windows + Tab<span class="opt-hi"> / Windows + Tab</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Windows + L / Windows + L</p>
-        </details>
-      </div>
-      <div class="q-block" id="q30">
-        <div class="q-num">Q30.</div>
-        <div class="q-text">
-          <p class="q-en">Which shortcut key minimizes all open windows and shows the desktop?</p>
-          <p class="q-hi">सभी खुली हुई विंडोज़ को छोटा करके डेस्कटॉप दिखाने के लिए कौन सी शॉर्टकट कुंजी है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Windows + D<span class="opt-hi"> / Windows + D</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Windows + M<span class="opt-hi"> / Windows + M</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Windows + L<span class="opt-hi"> / Windows + L</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Windows + Tab<span class="opt-hi"> / Windows + Tab</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Windows + D / Windows + D</p>
-        </details>
-      </div>
-      <div class="q-block" id="q31">
-        <div class="q-num">Q31.</div>
-        <div class="q-text">
-          <p class="q-en">In Windows, which of the following characters is NOT allowed in a file name?</p>
-          <p class="q-hi">विंडोज में, निम्नलिखित में से कौन सा वर्ण फ़ाइल के नाम में अनुमत नहीं है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt"><span class="opt-label">A.</span> Underscore (_)<span class="opt-hi"> / अंडरस्कोर (_)</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Hyphen (-)<span class="opt-hi"> / हाइफ़न (-)</span></li>
-          <li class="opt correct"><span class="opt-label">C.</span> Slash (/)<span class="opt-hi"> / स्लैश (/)</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Dot (.)<span class="opt-hi"> / डॉट (.)</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: C</strong> — Slash (/) / स्लैश (/)</p>
-        </details>
-      </div>
-      <div class="q-block" id="q32">
-        <div class="q-num">Q32.</div>
-        <div class="q-text">
-          <p class="q-en">The default file extension of a text file created in Notepad is:</p>
-          <p class="q-hi">नोटपैड में बनाई गई टेक्स्ट फाइल का डिफ़ॉल्ट फ़ाइल एक्सटेंशन है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> .txt<span class="opt-hi"> / .txt</span></li>
-          <li class="opt"><span class="opt-label">B.</span> .doc<span class="opt-hi"> / .doc</span></li>
-          <li class="opt"><span class="opt-label">C.</span> .exe<span class="opt-hi"> / .exe</span></li>
-          <li class="opt"><span class="opt-label">D.</span> .jpg<span class="opt-hi"> / .jpg</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — .txt / .txt</p>
-        </details>
-      </div>
-      <div class="q-block" id="q33">
-        <div class="q-num">Q33.</div>
-        <div class="q-text">
-          <p class="q-en">Which of the following is a utility used to compress files to save storage space?</p>
-          <p class="q-hi">भंडारण स्थान बचाने के लिए फाइलों को कंप्रेस करने के लिए निम्नलिखित में से किस यूटिलिटी का उपयोग किया जाता है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> WinRAR / WinZip<span class="opt-hi"> / WinRAR / WinZip</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Notepad<span class="opt-hi"> / नोटपैड</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Paint<span class="opt-hi"> / पेंट</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Calculator<span class="opt-hi"> / कैलकुलेटर</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — WinRAR / WinZip / WinRAR / WinZip</p>
-        </details>
-      </div>
-      <div class="q-block" id="q34">
-        <div class="q-num">Q34.</div>
-        <div class="q-text">
-          <p class="q-en">The full form of BIOS is:</p>
-          <p class="q-hi">BIOS का पूर्ण रूप है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Basic Input Output System<span class="opt-hi"> / बेसिक इनपुट आउटपुट सिस्टम</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Binary Input Output System<span class="opt-hi"> / बाइनरी इनपुट आउटपुट सिस्टम</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Basic Internal Output System<span class="opt-hi"> / बेसिक इंटरनल आउटपुट सिस्टम</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Basic Input Operating System<span class="opt-hi"> / बेसिक इनपुट ऑपरेटिंग सिस्टम</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Basic Input Output System / बेसिक इनपुट आउटपुट सिस्टम</p>
-        </details>
-      </div>
-      <div class="q-block" id="q35">
-        <div class="q-num">Q35.</div>
-        <div class="q-text">
-          <p class="q-en">Which of the following is responsible for loading the operating system into memory during booting?</p>
-          <p class="q-hi">बूटिंग के दौरान ऑपरेटिंग सिस्टम को मेमोरी में लोड करने के लिए कौन जिम्मेदार होता है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> BIOS / Bootstrap loader<span class="opt-hi"> / BIOS / बूटस्ट्रैप लोडर</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Antivirus<span class="opt-hi"> / एंटीवायरस</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Web browser<span class="opt-hi"> / वेब ब्राउज़र</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Notepad<span class="opt-hi"> / नोटपैड</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — BIOS / Bootstrap loader / BIOS / बूटस्ट्रैप लोडर</p>
-        </details>
-      </div>
-      <div class="q-block" id="q36">
-        <div class="q-num">Q36.</div>
-        <div class="q-text">
-          <p class="q-en">Safe Mode in Windows is mainly used for:</p>
-          <p class="q-hi">विंडोज में सेफ मोड मुख्य रूप से किसके लिए उपयोग किया जाता है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Troubleshooting problems<span class="opt-hi"> / समस्याओं का निवारण करना</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Playing games<span class="opt-hi"> / गेम खेलना</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Browsing internet faster<span class="opt-hi"> / तेज इंटरनेट ब्राउज़िंग</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Printing documents<span class="opt-hi"> / दस्तावेज़ प्रिंट करना</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Troubleshooting problems / समस्याओं का निवारण करना</p>
-        </details>
-      </div>
-      <div class="q-block" id="q37">
-        <div class="q-num">Q37.</div>
-        <div class="q-text">
-          <p class="q-en">A device driver is mainly used to:</p>
-          <p class="q-hi">डिवाइस ड्राइवर का मुख्य रूप से उपयोग किया जाता है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Allow the OS to communicate with hardware devices<span class="opt-hi"> / OS को हार्डवेयर डिवाइस के साथ संचार करने में सक्षम बनाना</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Browse the internet<span class="opt-hi"> / इंटरनेट ब्राउज़ करना</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Create spreadsheets<span class="opt-hi"> / स्प्रेडशीट बनाना</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Compress files<span class="opt-hi"> / फाइलों को कंप्रेस करना</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Allow the OS to communicate with hardware devices / OS को हार्डवेयर डिवाइस के साथ संचार करने में सक्षम बनाना</p>
-        </details>
-      </div>
-      <div class="q-block" id="q38">
-        <div class="q-num">Q38.</div>
-        <div class="q-text">
-          <p class="q-en">What is the default file manager in Windows called?</p>
-          <p class="q-hi">विंडोज के डिफ़ॉल्ट फाइल मैनेजर को क्या कहा जाता है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> File Explorer<span class="opt-hi"> / फाइल एक्सप्लोरर</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Finder<span class="opt-hi"> / फाइंडर</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Nautilus<span class="opt-hi"> / नॉटिलस</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Files<span class="opt-hi"> / फाइल्स</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — File Explorer / फाइल एक्सप्लोरर</p>
-        </details>
-      </div>
-      <div class="q-block" id="q39">
-        <div class="q-num">Q39.</div>
-        <div class="q-text">
-          <p class="q-en">Finder is the default file manager of which operating system?</p>
-          <p class="q-hi">फाइंडर किस ऑपरेटिंग सिस्टम का डिफ़ॉल्ट फाइल मैनेजर है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> macOS<span class="opt-hi"> / मैक ओएस</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Windows<span class="opt-hi"> / विंडोज</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Linux<span class="opt-hi"> / लिनक्स</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Android<span class="opt-hi"> / एंड्रॉइड</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — macOS / मैक ओएस</p>
-        </details>
-      </div>
-      <div class="q-block" id="q40">
-        <div class="q-num">Q40.</div>
-        <div class="q-text">
-          <p class="q-en">In the context of Linux, what is a "distro"?</p>
-          <p class="q-hi">लिनक्स के संदर्भ में "डिस्ट्रो" (distro) क्या है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> A version/distribution of Linux packaged with software<span class="opt-hi"> / सॉफ्टवेयर के साथ पैक किया गया लिनक्स का एक संस्करण/वितरण</span></li>
-          <li class="opt"><span class="opt-label">B.</span> A type of computer virus<span class="opt-hi"> / एक प्रकार का कंप्यूटर वायरस</span></li>
-          <li class="opt"><span class="opt-label">C.</span> A printer driver<span class="opt-hi"> / एक प्रिंटर ड्राइवर</span></li>
-          <li class="opt"><span class="opt-label">D.</span> A search engine<span class="opt-hi"> / एक सर्च इंजन</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — A version/distribution of Linux packaged with software / सॉफ्टवेयर के साथ पैक किया गया लिनक्स का एक संस्करण/वितरण</p>
-        </details>
-      </div>
-      <div class="q-block" id="q41">
-        <div class="q-num">Q41.</div>
-        <div class="q-text">
-          <p class="q-en">Which of the following is a popular Linux distribution?</p>
-          <p class="q-hi">निम्नलिखित में से कौन सा एक लोकप्रिय लिनक्स डिस्ट्रीब्यूशन है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Ubuntu<span class="opt-hi"> / उबंटू</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Windows 10<span class="opt-hi"> / विंडोज 10</span></li>
-          <li class="opt"><span class="opt-label">C.</span> macOS<span class="opt-hi"> / मैक ओएस</span></li>
-          <li class="opt"><span class="opt-label">D.</span> iOS<span class="opt-hi"> / आईओएस</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Ubuntu / उबंटू</p>
-        </details>
-      </div>
-      <div class="q-block" id="q42">
-        <div class="q-num">Q42.</div>
-        <div class="q-text">
-          <p class="q-en">What is the function of Task Manager in Windows?</p>
-          <p class="q-hi">विंडोज में टास्क मैनेजर का कार्य क्या है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> To view and manage running programs/processes<span class="opt-hi"> / चल रहे प्रोग्राम/प्रक्रियाओं को देखना और प्रबंधित करना</span></li>
-          <li class="opt"><span class="opt-label">B.</span> To edit photos<span class="opt-hi"> / फोटो संपादित करना</span></li>
-          <li class="opt"><span class="opt-label">C.</span> To browse the internet<span class="opt-hi"> / इंटरनेट ब्राउज़ करना</span></li>
-          <li class="opt"><span class="opt-label">D.</span> To create presentations<span class="opt-hi"> / प्रेजेंटेशन बनाना</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — To view and manage running programs/processes / चल रहे प्रोग्राम/प्रक्रियाओं को देखना और प्रबंधित करना</p>
-        </details>
-      </div>
-      <div class="q-block" id="q43">
-        <div class="q-num">Q43.</div>
-        <div class="q-text">
-          <p class="q-en">Which Windows setting is used to change the desktop background/wallpaper?</p>
-          <p class="q-hi">डेस्कटॉप बैकग्राउंड/वॉलपेपर बदलने के लिए विंडोज की कौन सी सेटिंग उपयोग की जाती है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Personalization settings<span class="opt-hi"> / पर्सनलाइज़ेशन सेटिंग्स</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Task Manager<span class="opt-hi"> / टास्क मैनेजर</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Notepad<span class="opt-hi"> / नोटपैड</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Command Prompt<span class="opt-hi"> / कमांड प्रॉम्प्ट</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Personalization settings / पर्सनलाइज़ेशन सेटिंग्स</p>
-        </details>
-      </div>
-      <div class="q-block" id="q44">
-        <div class="q-num">Q44.</div>
-        <div class="q-text">
-          <p class="q-en">The main screen that appears after starting the computer, containing icons and the taskbar, is called:</p>
-          <p class="q-hi">कंप्यूटर शुरू करने के बाद दिखाई देने वाली मुख्य स्क्रीन, जिसमें आइकन और टास्कबार होते हैं, कहलाती है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Desktop<span class="opt-hi"> / डेस्कटॉप</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Dashboard<span class="opt-hi"> / डैशबोर्ड</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Homepage<span class="opt-hi"> / होमपेज</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Window<span class="opt-hi"> / विंडो</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Desktop / डेस्कटॉप</p>
-        </details>
-      </div>
-      <div class="q-block" id="q45">
-        <div class="q-num">Q45.</div>
-        <div class="q-text">
-          <p class="q-en">Which of the following correctly defines a "multi-user operating system"?</p>
-          <p class="q-hi">निम्नलिखित में से कौन सा "मल्टी-यूज़र ऑपरेटिंग सिस्टम" को सही ढंग से परिभाषित करता है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Allows multiple users to access the computer's resources at the same time<span class="opt-hi"> / एक साथ कई उपयोगकर्ताओं को कंप्यूटर के संसाधनों तक पहुंचने की अनुमति देता है</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Allows only one user at a time<span class="opt-hi"> / एक समय में केवल एक उपयोगकर्ता की अनुमति देता है</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Has no user accounts<span class="opt-hi"> / इसमें कोई उपयोगकर्ता खाता नहीं होता</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Only used on mobile phones<span class="opt-hi"> / केवल मोबाइल फोन पर उपयोग होता है</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Allows multiple users to access the computer's resources at the same time / एक साथ कई उपयोगकर्ताओं को कंप्यूटर के संसाधनों तक पहुंचने की अनुमति देता है</p>
-        </details>
-      </div>
-      <div class="q-block" id="q46">
-        <div class="q-num">Q46.</div>
-        <div class="q-text">
-          <p class="q-en">Which of the following is used to quickly search for files or programs in Windows?</p>
-          <p class="q-hi">विंडोज में फाइलों या प्रोग्रामों को तेज़ी से खोजने के लिए निम्नलिखित में से किसका उपयोग किया जाता है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Search bar<span class="opt-hi"> / सर्च बार</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Paint<span class="opt-hi"> / पेंट</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Calculator<span class="opt-hi"> / कैलकुलेटर</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Notepad<span class="opt-hi"> / नोटपैड</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Search bar / सर्च बार</p>
-        </details>
-      </div>
-      <div class="q-block" id="q47">
-        <div class="q-num">Q47.</div>
-        <div class="q-text">
-          <p class="q-en">Which shortcut key is used to close the currently active window or application?</p>
-          <p class="q-hi">वर्तमान में सक्रिय विंडो या एप्लिकेशन को बंद करने के लिए किस शॉर्टकट कुंजी का उपयोग किया जाता है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Alt + F4<span class="opt-hi"> / Alt + F4</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Ctrl + F4<span class="opt-hi"> / Ctrl + F4</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Shift + F4<span class="opt-hi"> / Shift + F4</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Windows + F4<span class="opt-hi"> / Windows + F4</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Alt + F4 / Alt + F4</p>
-        </details>
-      </div>
-      <div class="q-block" id="q48">
-        <div class="q-num">Q48.</div>
-        <div class="q-text">
-          <p class="q-en">Which operating system is mainly used in Apple's iPhones?</p>
-          <p class="q-hi">एप्पल के आईफोन में मुख्य रूप से किस ऑपरेटिंग सिस्टम का उपयोग किया जाता है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> iOS<span class="opt-hi"> / आईओएस</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Android<span class="opt-hi"> / एंड्रॉइड</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Windows Mobile<span class="opt-hi"> / विंडोज मोबाइल</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Linux<span class="opt-hi"> / लिनक्स</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — iOS / आईओएस</p>
-        </details>
-      </div>
-      <div class="q-block" id="q49">
-        <div class="q-num">Q49.</div>
-        <div class="q-text">
-          <p class="q-en">Which of the following is NOT a function of an operating system?</p>
-          <p class="q-hi">निम्नलिखित में से कौन सा ऑपरेटिंग सिस्टम का कार्य नहीं है?</p>
-        </div>
-        <ul class="opts">
-          <li class="opt"><span class="opt-label">A.</span> Memory management<span class="opt-hi"> / मेमोरी प्रबंधन</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Process management<span class="opt-hi"> / प्रक्रिया प्रबंधन</span></li>
-          <li class="opt correct"><span class="opt-label">C.</span> Creating spreadsheets and formulas<span class="opt-hi"> / स्प्रेडशीट और फॉर्मूले बनाना</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Device management<span class="opt-hi"> / डिवाइस प्रबंधन</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: C</strong> — Creating spreadsheets and formulas / स्प्रेडशीट और फॉर्मूले बनाना</p>
-        </details>
-      </div>
-      <div class="q-block" id="q50">
-        <div class="q-num">Q50.</div>
-        <div class="q-text">
-          <p class="q-en">The full form of DOS is:</p>
-          <p class="q-hi">DOS का पूर्ण रूप है:</p>
-        </div>
-        <ul class="opts">
-          <li class="opt correct"><span class="opt-label">A.</span> Disk Operating System<span class="opt-hi"> / डिस्क ऑपरेटिंग सिस्टम</span></li>
-          <li class="opt"><span class="opt-label">B.</span> Data Operating System<span class="opt-hi"> / डेटा ऑपरेटिंग सिस्टम</span></li>
-          <li class="opt"><span class="opt-label">C.</span> Digital Operating System<span class="opt-hi"> / डिजिटल ऑपरेटिंग सिस्टम</span></li>
-          <li class="opt"><span class="opt-label">D.</span> Device Operating System<span class="opt-hi"> / डिवाइस ऑपरेटिंग सिस्टम</span></li>
-        </ul>
-        <details class="ans-reveal">
-          <summary>Show answer / उत्तर देखें</summary>
-          <p class="ans-line"><strong>Answer / उत्तर: A</strong> — Disk Operating System / डिस्क ऑपरेटिंग सिस्टम</p>
-        </details>
-      </div>
-  </div>
-
-  <div class="page-foot-cta">
-    <h2>Want to test yourself with a timer and score?</h2>
-    <p>Try the interactive version — get instant marks and see how you rank on the leaderboard.</p>
-    <a class="quiz-cta" href="mcq-quiz.html">▶ Start the interactive quiz</a>
+    <p class="hub-link">Want a different chapter? <a href="mcq-quiz.html">Browse all MCQ chapters →</a></p>
   </div>
 </div>
 
-<footer>&copy; 2026 Sankalp Computer Classes, Bidhuna, Auraiya, UP &middot; <a href="index.html">Home</a> &middot; <a href="mcq-quiz.html">MCQ Quiz</a></footer>
+<!-- ===================== QUIZ SCREEN ===================== -->
+<div class="screen" id="screenQuiz">
+  <div class="wrap">
+    <div class="quiz-header">
+      <div class="quiz-title">
+        <span id="quizChapterTitle">Chapter 2: Introduction to Operating System</span>
+        <small id="quizCourseName"></small>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label" id="progressLabel">Question 1 of 10</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:10%"></div></div>
+      </div>
+      <div class="q-counter" id="qCounter">1 / 10</div>
+    </div>
+
+    <div class="question-card" id="questionCard">
+      <div class="q-number" id="qNumber">Q.1</div>
+      <div class="q-text" id="qText"></div>
+      <div class="q-text-hi" id="qTextHi"></div>
+      <div class="options-list" id="optionsList"></div>
+    </div>
+
+    <div class="nav-row">
+      <button class="skip-btn" onclick="goStart()">✕ Exit quiz</button>
+      <div style="display:flex; gap:10px;">
+        <button class="next-btn" id="nextBtn" onclick="nextQuestion()" style="display:none;">Next →</button>
+        <button class="submit-btn" id="submitBtn" onclick="submitQuiz()" style="display:none;">Submit Quiz ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== RESULT SCREEN ===================== -->
+<div class="screen" id="screenResult">
+  <div class="wrap">
+    <div style="padding-top:36px;"></div>
+    <div class="result-hero">
+      <div class="score-circle" id="scoreCircle">0%</div>
+      <h2 id="resultHeading">Great job!</h2>
+      <p id="resultSubtext"></p>
+    </div>
+
+    <div class="result-stats">
+      <div class="r-stat ok">
+        <div class="val" id="rCorrect">0</div>
+        <div class="lbl">Correct ✓</div>
+      </div>
+      <div class="r-stat danger">
+        <div class="val" id="rWrong">0</div>
+        <div class="lbl">Wrong ✗</div>
+      </div>
+      <div class="r-stat">
+        <div class="val" id="rTotal">0</div>
+        <div class="lbl">Total Q</div>
+      </div>
+      <div class="r-stat">
+        <div class="val" id="rPercent">0%</div>
+        <div class="lbl">Score</div>
+      </div>
+    </div>
+
+    <div class="review-panel">
+      <div class="review-panel-head">
+        <h3>Answer Review / उत्तर देखें</h3>
+        <button class="toggle-review" onclick="toggleReview()">Show answers ▼</button>
+      </div>
+      <div class="review-list" id="reviewList"></div>
+    </div>
+
+    <div class="lb-panel">
+      <div class="lb-panel-head">
+        <h3>🏆 Leaderboard — <span id="lbChapterLabel"></span></h3>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="lb-table">
+          <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Correct</th><th>Date</th></tr></thead>
+          <tbody id="lbBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn btn-teal" onclick="retryQuiz()">🔁 Retry this chapter</button>
+      <a class="btn btn-outline" href="ccc-chapter1-mcq.html">Chapter 1 Quiz →</a>
+      <a class="btn btn-outline" href="mcq-quiz.html">← All chapters</a>
+    </div>
+    <div style="height:40px;"></div>
+  </div>
+</div>
+
+<footer>&copy; 2026 Sankalp Computer Classes, Bidhuna, Auraiya, UP &middot; <a href="mcq-quiz.html">All MCQ Chapters</a> &middot; <a href="ccc-chapter1-mcq.html">Chapter 1 Quiz</a></footer>
+
+<script>
+// =====================================================================
+//  CHAPTER DATA — embedded so this page works standalone as a quiz
+// =====================================================================
+const CHAPTER = {"id": "ccc-ch2", "course": "CCC", "chapter": "Chapter 2: Introduction to Operating System", "chapterHi": "अध्याय 2: ऑपरेटिंग सिस्टम का परिचय", "questions": [{"textEn": "What is the primary function of an operating system?", "textHi": "ऑपरेटिंग सिस्टम का प्राथमिक कार्य क्या है?", "options": [{"en": "Manage hardware and software resources", "hi": "हार्डवेयर और सॉफ्टवेयर संसाधनों का प्रबंधन करना"}, {"en": "Only run games", "hi": "केवल गेम चलाना"}, {"en": "Create documents", "hi": "दस्तावेज़ बनाना"}, {"en": "Design websites", "hi": "वेबसाइट डिज़ाइन करना"}], "correct": 0}, {"textEn": "Which of the following is NOT an operating system?", "textHi": "निम्नलिखित में से कौन सा ऑपरेटिंग सिस्टम नहीं है?", "options": [{"en": "Windows", "hi": "विंडोज"}, {"en": "Linux", "hi": "लिनक्स"}, {"en": "MS Word", "hi": "एमएस वर्ड"}, {"en": "Ubuntu", "hi": "उबंटू"}], "correct": 2}, {"textEn": "GUI stands for:", "textHi": "GUI का पूर्ण रूप है:", "options": [{"en": "Graphical User Interface", "hi": "ग्राफिकल यूजर इंटरफेस"}, {"en": "General User Interface", "hi": "जनरल यूजर इंटरफेस"}, {"en": "Graphic Utility Interface", "hi": "ग्राफिक यूटिलिटी इंटरफेस"}, {"en": "Graphical Unit Interface", "hi": "ग्राफिकल यूनिट इंटरफेस"}], "correct": 0}, {"textEn": "CLI stands for:", "textHi": "CLI का पूर्ण रूप है:", "options": [{"en": "Command Line Interface", "hi": "कमांड लाइन इंटरफेस"}, {"en": "Computer Language Interface", "hi": "कंप्यूटर लैंग्वेज इंटरफेस"}, {"en": "Control Line Interface", "hi": "कंट्रोल लाइन इंटरफेस"}, {"en": "Command Level Interface", "hi": "कमांड लेवल इंटरफेस"}], "correct": 0}, {"textEn": "Which of the following is an open-source operating system?", "textHi": "निम्नलिखित में से कौन सा एक ओपन-सोर्स ऑपरेटिंग सिस्टम है?", "options": [{"en": "Windows", "hi": "विंडोज"}, {"en": "Linux", "hi": "लिनक्स"}, {"en": "macOS", "hi": "मैक ओएस"}, {"en": "iOS", "hi": "आईओएस"}], "correct": 1}, {"textEn": "The small pictures representing programs or files on the desktop are called:", "textHi": "डेस्कटॉप पर प्रोग्राम या फाइलों को दर्शाने वाली छोटी तस्वीरों को कहा जाता है:", "options": [{"en": "Icons", "hi": "आइकन"}, {"en": "Widgets", "hi": "विजेट्स"}, {"en": "Menus", "hi": "मेनू"}, {"en": "Tabs", "hi": "टैब्स"}], "correct": 0}, {"textEn": "The horizontal bar at the bottom of the Windows desktop is called:", "textHi": "विंडोज डेस्कटॉप के नीचे की क्षैतिज पट्टी को कहा जाता है:", "options": [{"en": "Menu bar", "hi": "मेनू बार"}, {"en": "Taskbar", "hi": "टास्कबार"}, {"en": "Title bar", "hi": "टाइटल बार"}, {"en": "Status bar", "hi": "स्टेटस बार"}], "correct": 1}, {"textEn": "Which key combination is used to switch between open windows?", "textHi": "खुली हुई विंडोज़ के बीच स्विच करने के लिए किस की-कॉम्बिनेशन का उपयोग किया जाता है?", "options": [{"en": "Alt + Tab", "hi": "Alt + Tab"}, {"en": "Ctrl + Tab", "hi": "Ctrl + Tab"}, {"en": "Shift + Tab", "hi": "Shift + Tab"}, {"en": "Ctrl + Shift + Tab", "hi": "Ctrl + Shift + Tab"}], "correct": 0}, {"textEn": "Which shortcut key directly opens Task Manager in Windows?", "textHi": "विंडोज में सीधे टास्क मैनेजर खोलने के लिए किस शॉर्टकट कुंजी का उपयोग किया जाता है?", "options": [{"en": "Ctrl + Alt + Delete", "hi": "Ctrl + Alt + Delete"}, {"en": "Ctrl + Shift + Esc", "hi": "Ctrl + Shift + Esc"}, {"en": "Alt + F4", "hi": "Alt + F4"}, {"en": "Ctrl + Esc", "hi": "Ctrl + Esc"}], "correct": 1}, {"textEn": "The shortcut key to rename a selected file or folder is:", "textHi": "चयनित फ़ाइल या फ़ोल्डर का नाम बदलने की शॉर्टकट कुंजी है:", "options": [{"en": "F2", "hi": "F2"}, {"en": "F5", "hi": "F5"}, {"en": "F1", "hi": "F1"}, {"en": "F3", "hi": "F3"}], "correct": 0}, {"textEn": "The shortcut key to refresh the desktop or an open window is:", "textHi": "डेस्कटॉप या किसी खुली विंडो को रिफ्रेश करने की शॉर्टकट कुंजी है:", "options": [{"en": "F5", "hi": "F5"}, {"en": "F2", "hi": "F2"}, {"en": "F4", "hi": "F4"}, {"en": "F6", "hi": "F6"}], "correct": 0}, {"textEn": "The process of starting or restarting a computer is called:", "textHi": "कंप्यूटर को शुरू या पुनः प्रारंभ करने की प्रक्रिया कहलाती है:", "options": [{"en": "Booting", "hi": "बूटिंग"}, {"en": "Formatting", "hi": "फॉर्मेटिंग"}, {"en": "Installing", "hi": "इंस्टॉलिंग"}, {"en": "Saving", "hi": "सेविंग"}], "correct": 0}, {"textEn": "Restarting a computer that is already switched on is called:", "textHi": "पहले से चालू कंप्यूटर को पुनः प्रारंभ करना कहलाता है:", "options": [{"en": "Cold booting", "hi": "कोल्ड बूटिंग"}, {"en": "Warm booting", "hi": "वार्म बूटिंग"}, {"en": "Hot booting", "hi": "हॉट बूटिंग"}, {"en": "Soft booting", "hi": "सॉफ्ट बूटिंग"}], "correct": 1}, {"textEn": "Which of the following is a file management function of an operating system?", "textHi": "निम्नलिखित में से कौन सा ऑपरेटिंग सिस्टम का फ़ाइल प्रबंधन कार्य है?", "options": [{"en": "Creating, deleting and organizing files", "hi": "फाइलें बनाना, हटाना और व्यवस्थित करना"}, {"en": "Printing documents only", "hi": "केवल दस्तावेज़ प्रिंट करना"}, {"en": "Browsing internet", "hi": "इंटरनेट ब्राउज़ करना"}, {"en": "Playing music", "hi": "संगीत बजाना"}], "correct": 0}, {"textEn": "Which of the following is a mobile operating system?", "textHi": "निम्नलिखित में से कौन सा एक मोबाइल ऑपरेटिंग सिस्टम है?", "options": [{"en": "Android", "hi": "एंड्रॉइड"}, {"en": "Windows 11", "hi": "विंडोज 11"}, {"en": "Ubuntu", "hi": "उबंटू"}, {"en": "DOS", "hi": "डॉस"}], "correct": 0}, {"textEn": "The Linux kernel was originally developed by:", "textHi": "लिनक्स कर्नल को मूल रूप से विकसित किया था:", "options": [{"en": "Linus Torvalds", "hi": "लिनुस टोरवाल्ड्स"}, {"en": "Bill Gates", "hi": "बिल गेट्स"}, {"en": "Steve Jobs", "hi": "स्टीव जॉब्स"}, {"en": "Dennis Ritchie", "hi": "डेनिस रिची"}], "correct": 0}, {"textEn": "The Windows operating system is developed by which company?", "textHi": "विंडोज ऑपरेटिंग सिस्टम किस कंपनी द्वारा विकसित किया गया है?", "options": [{"en": "Microsoft", "hi": "माइक्रोसॉफ्ट"}, {"en": "Apple", "hi": "एप्पल"}, {"en": "Google", "hi": "गूगल"}, {"en": "IBM", "hi": "आईबीएम"}], "correct": 0}, {"textEn": "macOS is developed by which company?", "textHi": "macOS किस कंपनी द्वारा विकसित किया गया है?", "options": [{"en": "Apple", "hi": "एप्पल"}, {"en": "Microsoft", "hi": "माइक्रोसॉफ्ट"}, {"en": "Google", "hi": "गूगल"}, {"en": "IBM", "hi": "आईबीएम"}], "correct": 0}, {"textEn": "The Android operating system is developed by:", "textHi": "एंड्रॉइड ऑपरेटिंग सिस्टम किसके द्वारा विकसित किया गया है:", "options": [{"en": "Google", "hi": "गूगल"}, {"en": "Apple", "hi": "एप्पल"}, {"en": "Microsoft", "hi": "माइक्रोसॉफ्ट"}, {"en": "Samsung", "hi": "सैमसंग"}], "correct": 0}, {"textEn": "Based on the number of users, operating systems can be classified as:", "textHi": "उपयोगकर्ताओं की संख्या के आधार पर ऑपरेटिंग सिस्टम को वर्गीकृत किया जा सकता है:", "options": [{"en": "Single-user OS", "hi": "सिंगल-यूज़र ओएस"}, {"en": "Multi-user OS", "hi": "मल्टी-यूज़र ओएस"}, {"en": "Both A and B", "hi": "A और B दोनों"}, {"en": "None of these", "hi": "इनमें से कोई नहीं"}], "correct": 2}, {"textEn": "An operating system that allows only one task to run at a time is called:", "textHi": "एक ऑपरेटिंग सिस्टम जो एक समय में केवल एक कार्य चलाने की अनुमति देता है, कहलाता है:", "options": [{"en": "Single-tasking OS", "hi": "सिंगल-टास्किंग ओएस"}, {"en": "Multi-tasking OS", "hi": "मल्टी-टास्किंग ओएस"}, {"en": "Multi-user OS", "hi": "मल्टी-यूज़र ओएस"}, {"en": "Real-time OS", "hi": "रियल-टाइम ओएस"}], "correct": 0}, {"textEn": "An operating system that allows multiple programs to run at the same time is called:", "textHi": "एक ऑपरेटिंग सिस्टम जो एक साथ कई प्रोग्राम चलाने की अनुमति देता है, कहलाता है:", "options": [{"en": "Single-tasking OS", "hi": "सिंगल-टास्किंग ओएस"}, {"en": "Multi-tasking OS", "hi": "मल्टी-टास्किंग ओएस"}, {"en": "Single-user OS", "hi": "सिंगल-यूज़र ओएस"}, {"en": "Batch OS", "hi": "बैच ओएस"}], "correct": 1}, {"textEn": "An operating system designed to respond to input within a strict time limit (e.g. used in medical or industrial systems) is called:", "textHi": "एक ऑपरेटिंग सिस्टम जो एक निश्चित समय सीमा के भीतर इनपुट का जवाब देने के लिए डिज़ाइन किया गया है (जैसे मेडिकल या औद्योगिक प्रणालियों में उपयोग होता है), कहलाता है:", "options": [{"en": "Real-time OS", "hi": "रियल-टाइम ओएस"}, {"en": "Batch OS", "hi": "बैच ओएस"}, {"en": "Distributed OS", "hi": "डिस्ट्रिब्यूटेड ओएस"}, {"en": "Time-sharing OS", "hi": "टाइम-शेयरिंग ओएस"}], "correct": 0}, {"textEn": "The folder that temporarily stores deleted files in Windows is called:", "textHi": "विंडोज में हटाई गई फाइलों को अस्थायी रूप से संग्रहीत करने वाले फ़ोल्डर को कहा जाता है:", "options": [{"en": "Recycle Bin", "hi": "रीसायकल बिन"}, {"en": "My Computer", "hi": "माय कंप्यूटर"}, {"en": "Control Panel", "hi": "कंट्रोल पैनल"}, {"en": "Task Manager", "hi": "टास्क मैनेजर"}], "correct": 0}, {"textEn": "Which shortcut is used to permanently delete a file, bypassing the Recycle Bin?", "textHi": "रीसायकल बिन को बायपास करके किसी फाइल को स्थायी रूप से हटाने के लिए किस शॉर्टकट का उपयोग किया जाता है?", "options": [{"en": "Delete", "hi": "Delete"}, {"en": "Shift + Delete", "hi": "Shift + Delete"}, {"en": "Ctrl + Delete", "hi": "Ctrl + Delete"}, {"en": "Alt + Delete", "hi": "Alt + Delete"}], "correct": 1}, {"textEn": "Which part of Windows allows the user to change system settings like display, sound and network?", "textHi": "विंडोज का कौन सा भाग उपयोगकर्ता को डिस्प्ले, साउंड और नेटवर्क जैसी सिस्टम सेटिंग्स बदलने की अनुमति देता है?", "options": [{"en": "Control Panel / Settings", "hi": "कंट्रोल पैनल / सेटिंग्स"}, {"en": "Notepad", "hi": "नोटपैड"}, {"en": "Paint", "hi": "पेंट"}, {"en": "Calculator", "hi": "कैलकुलेटर"}], "correct": 0}, {"textEn": "In Windows, which shortcut key opens File Explorer?", "textHi": "विंडोज में फाइल एक्सप्लोरर खोलने के लिए कौन सी शॉर्टकट कुंजी है?", "options": [{"en": "Windows + E", "hi": "Windows + E"}, {"en": "Windows + R", "hi": "Windows + R"}, {"en": "Windows + D", "hi": "Windows + D"}, {"en": "Windows + L", "hi": "Windows + L"}], "correct": 0}, {"textEn": "Which shortcut key opens the Run dialog box in Windows?", "textHi": "विंडोज में रन डायलॉग बॉक्स खोलने के लिए कौन सी शॉर्टकट कुंजी है?", "options": [{"en": "Windows + R", "hi": "Windows + R"}, {"en": "Windows + E", "hi": "Windows + E"}, {"en": "Windows + Tab", "hi": "Windows + Tab"}, {"en": "Windows + S", "hi": "Windows + S"}], "correct": 0}, {"textEn": "Which shortcut key locks the computer in Windows?", "textHi": "विंडोज में कंप्यूटर को लॉक करने के लिए कौन सी शॉर्टकट कुंजी है?", "options": [{"en": "Windows + L", "hi": "Windows + L"}, {"en": "Windows + D", "hi": "Windows + D"}, {"en": "Windows + E", "hi": "Windows + E"}, {"en": "Windows + Tab", "hi": "Windows + Tab"}], "correct": 0}, {"textEn": "Which shortcut key minimizes all open windows and shows the desktop?", "textHi": "सभी खुली हुई विंडोज़ को छोटा करके डेस्कटॉप दिखाने के लिए कौन सी शॉर्टकट कुंजी है?", "options": [{"en": "Windows + D", "hi": "Windows + D"}, {"en": "Windows + M", "hi": "Windows + M"}, {"en": "Windows + L", "hi": "Windows + L"}, {"en": "Windows + Tab", "hi": "Windows + Tab"}], "correct": 0}, {"textEn": "In Windows, which of the following characters is NOT allowed in a file name?", "textHi": "विंडोज में, निम्नलिखित में से कौन सा वर्ण फ़ाइल के नाम में अनुमत नहीं है?", "options": [{"en": "Underscore (_)", "hi": "अंडरस्कोर (_)"}, {"en": "Hyphen (-)", "hi": "हाइफ़न (-)"}, {"en": "Slash (/)", "hi": "स्लैश (/)"}, {"en": "Dot (.)", "hi": "डॉट (.)"}], "correct": 2}, {"textEn": "The default file extension of a text file created in Notepad is:", "textHi": "नोटपैड में बनाई गई टेक्स्ट फाइल का डिफ़ॉल्ट फ़ाइल एक्सटेंशन है:", "options": [{"en": ".txt", "hi": ".txt"}, {"en": ".doc", "hi": ".doc"}, {"en": ".exe", "hi": ".exe"}, {"en": ".jpg", "hi": ".jpg"}], "correct": 0}, {"textEn": "Which of the following is a utility used to compress files to save storage space?", "textHi": "भंडारण स्थान बचाने के लिए फाइलों को कंप्रेस करने के लिए निम्नलिखित में से किस यूटिलिटी का उपयोग किया जाता है?", "options": [{"en": "WinRAR / WinZip", "hi": "WinRAR / WinZip"}, {"en": "Notepad", "hi": "नोटपैड"}, {"en": "Paint", "hi": "पेंट"}, {"en": "Calculator", "hi": "कैलकुलेटर"}], "correct": 0}, {"textEn": "The full form of BIOS is:", "textHi": "BIOS का पूर्ण रूप है:", "options": [{"en": "Basic Input Output System", "hi": "बेसिक इनपुट आउटपुट सिस्टम"}, {"en": "Binary Input Output System", "hi": "बाइनरी इनपुट आउटपुट सिस्टम"}, {"en": "Basic Internal Output System", "hi": "बेसिक इंटरनल आउटपुट सिस्टम"}, {"en": "Basic Input Operating System", "hi": "बेसिक इनपुट ऑपरेटिंग सिस्टम"}], "correct": 0}, {"textEn": "Which of the following is responsible for loading the operating system into memory during booting?", "textHi": "बूटिंग के दौरान ऑपरेटिंग सिस्टम को मेमोरी में लोड करने के लिए कौन जिम्मेदार होता है?", "options": [{"en": "BIOS / Bootstrap loader", "hi": "BIOS / बूटस्ट्रैप लोडर"}, {"en": "Antivirus", "hi": "एंटीवायरस"}, {"en": "Web browser", "hi": "वेब ब्राउज़र"}, {"en": "Notepad", "hi": "नोटपैड"}], "correct": 0}, {"textEn": "Safe Mode in Windows is mainly used for:", "textHi": "विंडोज में सेफ मोड मुख्य रूप से किसके लिए उपयोग किया जाता है:", "options": [{"en": "Troubleshooting problems", "hi": "समस्याओं का निवारण करना"}, {"en": "Playing games", "hi": "गेम खेलना"}, {"en": "Browsing internet faster", "hi": "तेज इंटरनेट ब्राउज़िंग"}, {"en": "Printing documents", "hi": "दस्तावेज़ प्रिंट करना"}], "correct": 0}, {"textEn": "A device driver is mainly used to:", "textHi": "डिवाइस ड्राइवर का मुख्य रूप से उपयोग किया जाता है:", "options": [{"en": "Allow the OS to communicate with hardware devices", "hi": "OS को हार्डवेयर डिवाइस के साथ संचार करने में सक्षम बनाना"}, {"en": "Browse the internet", "hi": "इंटरनेट ब्राउज़ करना"}, {"en": "Create spreadsheets", "hi": "स्प्रेडशीट बनाना"}, {"en": "Compress files", "hi": "फाइलों को कंप्रेस करना"}], "correct": 0}, {"textEn": "What is the default file manager in Windows called?", "textHi": "विंडोज के डिफ़ॉल्ट फाइल मैनेजर को क्या कहा जाता है?", "options": [{"en": "File Explorer", "hi": "फाइल एक्सप्लोरर"}, {"en": "Finder", "hi": "फाइंडर"}, {"en": "Nautilus", "hi": "नॉटिलस"}, {"en": "Files", "hi": "फाइल्स"}], "correct": 0}, {"textEn": "Finder is the default file manager of which operating system?", "textHi": "फाइंडर किस ऑपरेटिंग सिस्टम का डिफ़ॉल्ट फाइल मैनेजर है?", "options": [{"en": "macOS", "hi": "मैक ओएस"}, {"en": "Windows", "hi": "विंडोज"}, {"en": "Linux", "hi": "लिनक्स"}, {"en": "Android", "hi": "एंड्रॉइड"}], "correct": 0}, {"textEn": "In the context of Linux, what is a \"distro\"?", "textHi": "लिनक्स के संदर्भ में \"डिस्ट्रो\" (distro) क्या है?", "options": [{"en": "A version/distribution of Linux packaged with software", "hi": "सॉफ्टवेयर के साथ पैक किया गया लिनक्स का एक संस्करण/वितरण"}, {"en": "A type of computer virus", "hi": "एक प्रकार का कंप्यूटर वायरस"}, {"en": "A printer driver", "hi": "एक प्रिंटर ड्राइवर"}, {"en": "A search engine", "hi": "एक सर्च इंजन"}], "correct": 0}, {"textEn": "Which of the following is a popular Linux distribution?", "textHi": "निम्नलिखित में से कौन सा एक लोकप्रिय लिनक्स डिस्ट्रीब्यूशन है?", "options": [{"en": "Ubuntu", "hi": "उबंटू"}, {"en": "Windows 10", "hi": "विंडोज 10"}, {"en": "macOS", "hi": "मैक ओएस"}, {"en": "iOS", "hi": "आईओएस"}], "correct": 0}, {"textEn": "What is the function of Task Manager in Windows?", "textHi": "विंडोज में टास्क मैनेजर का कार्य क्या है?", "options": [{"en": "To view and manage running programs/processes", "hi": "चल रहे प्रोग्राम/प्रक्रियाओं को देखना और प्रबंधित करना"}, {"en": "To edit photos", "hi": "फोटो संपादित करना"}, {"en": "To browse the internet", "hi": "इंटरनेट ब्राउज़ करना"}, {"en": "To create presentations", "hi": "प्रेजेंटेशन बनाना"}], "correct": 0}, {"textEn": "Which Windows setting is used to change the desktop background/wallpaper?", "textHi": "डेस्कटॉप बैकग्राउंड/वॉलपेपर बदलने के लिए विंडोज की कौन सी सेटिंग उपयोग की जाती है?", "options": [{"en": "Personalization settings", "hi": "पर्सनलाइज़ेशन सेटिंग्स"}, {"en": "Task Manager", "hi": "टास्क मैनेजर"}, {"en": "Notepad", "hi": "नोटपैड"}, {"en": "Command Prompt", "hi": "कमांड प्रॉम्प्ट"}], "correct": 0}, {"textEn": "The main screen that appears after starting the computer, containing icons and the taskbar, is called:", "textHi": "कंप्यूटर शुरू करने के बाद दिखाई देने वाली मुख्य स्क्रीन, जिसमें आइकन और टास्कबार होते हैं, कहलाती है:", "options": [{"en": "Desktop", "hi": "डेस्कटॉप"}, {"en": "Dashboard", "hi": "डैशबोर्ड"}, {"en": "Homepage", "hi": "होमपेज"}, {"en": "Window", "hi": "विंडो"}], "correct": 0}, {"textEn": "Which of the following correctly defines a \"multi-user operating system\"?", "textHi": "निम्नलिखित में से कौन सा \"मल्टी-यूज़र ऑपरेटिंग सिस्टम\" को सही ढंग से परिभाषित करता है?", "options": [{"en": "Allows multiple users to access the computer's resources at the same time", "hi": "एक साथ कई उपयोगकर्ताओं को कंप्यूटर के संसाधनों तक पहुंचने की अनुमति देता है"}, {"en": "Allows only one user at a time", "hi": "एक समय में केवल एक उपयोगकर्ता की अनुमति देता है"}, {"en": "Has no user accounts", "hi": "इसमें कोई उपयोगकर्ता खाता नहीं होता"}, {"en": "Only used on mobile phones", "hi": "केवल मोबाइल फोन पर उपयोग होता है"}], "correct": 0}, {"textEn": "Which of the following is used to quickly search for files or programs in Windows?", "textHi": "विंडोज में फाइलों या प्रोग्रामों को तेज़ी से खोजने के लिए निम्नलिखित में से किसका उपयोग किया जाता है?", "options": [{"en": "Search bar", "hi": "सर्च बार"}, {"en": "Paint", "hi": "पेंट"}, {"en": "Calculator", "hi": "कैलकुलेटर"}, {"en": "Notepad", "hi": "नोटपैड"}], "correct": 0}, {"textEn": "Which shortcut key is used to close the currently active window or application?", "textHi": "वर्तमान में सक्रिय विंडो या एप्लिकेशन को बंद करने के लिए किस शॉर्टकट कुंजी का उपयोग किया जाता है?", "options": [{"en": "Alt + F4", "hi": "Alt + F4"}, {"en": "Ctrl + F4", "hi": "Ctrl + F4"}, {"en": "Shift + F4", "hi": "Shift + F4"}, {"en": "Windows + F4", "hi": "Windows + F4"}], "correct": 0}, {"textEn": "Which operating system is mainly used in Apple's iPhones?", "textHi": "एप्पल के आईफोन में मुख्य रूप से किस ऑपरेटिंग सिस्टम का उपयोग किया जाता है?", "options": [{"en": "iOS", "hi": "आईओएस"}, {"en": "Android", "hi": "एंड्रॉइड"}, {"en": "Windows Mobile", "hi": "विंडोज मोबाइल"}, {"en": "Linux", "hi": "लिनक्स"}], "correct": 0}, {"textEn": "Which of the following is NOT a function of an operating system?", "textHi": "निम्नलिखित में से कौन सा ऑपरेटिंग सिस्टम का कार्य नहीं है?", "options": [{"en": "Memory management", "hi": "मेमोरी प्रबंधन"}, {"en": "Process management", "hi": "प्रक्रिया प्रबंधन"}, {"en": "Creating spreadsheets and formulas", "hi": "स्प्रेडशीट और फॉर्मूले बनाना"}, {"en": "Device management", "hi": "डिवाइस प्रबंधन"}], "correct": 2}, {"textEn": "The full form of DOS is:", "textHi": "DOS का पूर्ण रूप है:", "options": [{"en": "Disk Operating System", "hi": "डिस्क ऑपरेटिंग सिस्टम"}, {"en": "Data Operating System", "hi": "डेटा ऑपरेटिंग सिस्टम"}, {"en": "Digital Operating System", "hi": "डिजिटल ऑपरेटिंग सिस्टम"}, {"en": "Device Operating System", "hi": "डिवाइस ऑपरेटिंग सिस्टम"}], "correct": 0}]};
+
+const SCORE_KEY = 'sankalp_mcq_scores'; // shared with mcq-quiz.html: { chapterId: [ {name, correct, total, date} ] }
+function getScores(){ return JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); }
+function saveScores(s){ localStorage.setItem(SCORE_KEY, JSON.stringify(s)); }
+
+let currentStudent = '';
+let currentQIndex = 0;
+let userAnswers = [];
+let questionOrder = [];
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goStart(){ showScreen('screenStart'); }
+
+function startQuiz(){
+  currentStudent = document.getElementById('studentName').value.trim();
+  if (!currentStudent){
+    document.getElementById('studentName').focus();
+    document.getElementById('studentName').style.borderColor = 'var(--danger)';
+    document.getElementById('studentName').placeholder = 'Please enter your name first!';
+    return;
+  }
+  document.getElementById('studentName').style.borderColor = '';
+
+  questionOrder = CHAPTER.questions.map((_, i) => i);
+  for (let i = questionOrder.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i+1));
+    [questionOrder[i], questionOrder[j]] = [questionOrder[j], questionOrder[i]];
+  }
+  userAnswers = new Array(questionOrder.length).fill(null);
+  currentQIndex = 0;
+
+  document.getElementById('quizChapterTitle').textContent = CHAPTER.chapter;
+  document.getElementById('quizCourseName').textContent = CHAPTER.course + (CHAPTER.chapterHi ? ' — ' + CHAPTER.chapterHi : '');
+
+  showScreen('screenQuiz');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const total = questionOrder.length;
+  const qi = questionOrder[currentQIndex];
+  const q = CHAPTER.questions[qi];
+
+  document.getElementById('qNumber').textContent = `Q.${currentQIndex + 1}`;
+  document.getElementById('qText').textContent = q.textEn;
+  document.getElementById('qTextHi').textContent = q.textHi || '';
+  document.getElementById('progressLabel').textContent = `Question ${currentQIndex+1} of ${total}`;
+  document.getElementById('progressFill').style.width = `${((currentQIndex+1)/total)*100}%`;
+  document.getElementById('qCounter').textContent = `${currentQIndex+1} / ${total}`;
+
+  const labels = ['A','B','C','D'];
+  document.getElementById('optionsList').innerHTML = q.options.map((opt, i) => `
+    <button class="option-btn ${userAnswers[currentQIndex]===i ? 'selected':''}"
+      onclick="selectOption(${i})" id="opt_${i}">
+      <span class="option-label">${labels[i]}.</span>${opt.en}${opt.hi ? '<br><span style="font-size:.85em;color:var(--ink-soft);">' + opt.hi + '</span>' : ''}
+    </button>
+  `).join('');
+
+  const isLast = currentQIndex === total - 1;
+  document.getElementById('nextBtn').style.display = isLast ? 'none' : '';
+  document.getElementById('submitBtn').style.display = isLast ? '' : 'none';
+}
+
+function selectOption(idx){
+  userAnswers[currentQIndex] = idx;
+  document.querySelectorAll('.option-btn').forEach((b, i) => {
+    b.classList.toggle('selected', i === idx);
+  });
+}
+
+function nextQuestion(){
+  if (userAnswers[currentQIndex] === null){
+    document.querySelectorAll('.option-btn').forEach(b => {
+      b.style.outline = '2px dashed var(--gold)';
+      setTimeout(() => b.style.outline = '', 900);
+    });
+    return;
+  }
+  currentQIndex++;
+  renderQuestion();
+}
+
+function submitQuiz(){
+  if (userAnswers[currentQIndex] === null){
+    document.querySelectorAll('.option-btn').forEach(b => {
+      b.style.outline = '2px dashed var(--gold)';
+      setTimeout(() => b.style.outline = '', 900);
+    });
+    return;
+  }
+  showResults();
+}
+
+function showResults(){
+  let correct = 0;
+  const total = questionOrder.length;
+  questionOrder.forEach((qi, idx) => {
+    const q = CHAPTER.questions[qi];
+    if (userAnswers[idx] === q.correct) correct++;
+  });
+  const pct = Math.round(correct / total * 100);
+
+  const circle = document.getElementById('scoreCircle');
+  circle.textContent = pct + '%';
+  circle.className = 'score-circle ' + (pct>=80?'great': pct>=60?'good': pct>=40?'low':'poor');
+
+  const heading = pct>=80 ? '🎉 Excellent! / शानदार!' :
+                  pct>=60 ? '👍 Good job! / अच्छा किया!' :
+                  pct>=40 ? '📚 Keep practicing! / और अभ्यास करें!' :
+                           '💪 Don\'t give up! / हार मत मानो!';
+  document.getElementById('resultHeading').textContent = heading;
+  document.getElementById('resultSubtext').textContent =
+    `You scored ${correct} out of ${total} questions correctly.`;
+
+  document.getElementById('rCorrect').textContent = correct;
+  document.getElementById('rWrong').textContent = total - correct;
+  document.getElementById('rTotal').textContent = total;
+  document.getElementById('rPercent').textContent = pct + '%';
+
+  const labels = ['A','B','C','D'];
+  document.getElementById('reviewList').innerHTML = questionOrder.map((qi, idx) => {
+    const q = CHAPTER.questions[qi];
+    const ua = userAnswers[idx];
+    const isCorrect = ua === q.correct;
+    const correctOpt = q.options[q.correct];
+    const userOpt = ua !== null ? q.options[ua] : null;
+    return `
+    <div class="review-item">
+      <div class="review-q">Q.${idx+1} ${q.textEn}</div>
+      ${q.textHi ? `<div class="review-q-hi">${q.textHi}</div>` : ''}
+      <div class="review-ans ${isCorrect?'ans-correct':'ans-wrong'}">
+        <span class="label">Your answer:</span>
+        ${ua!==null ? labels[ua]+'. '+userOpt.en : '— (skipped)'}
+        ${isCorrect ? '✓' : '✗'}
+      </div>
+      ${!isCorrect ? `<div class="review-ans ans-correct"><span class="label">Correct:</span> ${labels[q.correct]}. ${correctOpt.en}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const scores = getScores();
+  if (!scores[CHAPTER.id]) scores[CHAPTER.id] = [];
+  scores[CHAPTER.id].push({
+    name: currentStudent,
+    correct,
+    total,
+    pct,
+    date: new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})
+  });
+  saveScores(scores);
+
+  renderLeaderboard(scores[CHAPTER.id]);
+
+  showScreen('screenResult');
+}
+
+function renderLeaderboard(entries){
+  document.getElementById('lbChapterLabel').textContent = CHAPTER.chapter;
+  const sorted = [...entries].sort((a,b) => b.pct - a.pct || b.correct - a.correct);
+  const top = sorted.slice(0, 15);
+  const myEntry = entries[entries.length - 1];
+  const myIdx = sorted.findIndex(e =>
+    e.name===myEntry.name && e.pct===myEntry.pct && e.correct===myEntry.correct && e.date===myEntry.date
+  );
+
+  const rankClass = i => i===0?'gold': i===1?'silver': i===2?'bronze':'';
+  document.getElementById('lbBody').innerHTML = top.map((e, i) => `
+    <tr class="${i===myIdx?'me':''}">
+      <td><span class="rank-badge ${rankClass(i)}">${i+1}</span></td>
+      <td>${e.name} ${i===myIdx?'← You':''}</td>
+      <td>${e.pct}%</td>
+      <td>${e.correct}/${e.total}</td>
+      <td>${e.date}</td>
+    </tr>
+  `).join('');
+}
+
+function toggleReview(){
+  const list = document.getElementById('reviewList');
+  const btn = document.querySelector('.toggle-review');
+  const open = list.classList.toggle('open');
+  btn.textContent = open ? 'Hide answers ▲' : 'Show answers ▼';
+}
+
+function retryQuiz(){
+  startQuiz();
+}
+</script>
 
 </body>
 </html>

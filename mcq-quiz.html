@@ -263,13 +263,6 @@
       <p>Chapter-wise bilingual (English + Hindi) multiple-choice questions. Attempt a chapter, get your marks instantly.</p>
     </div>
 
-    <!-- Read-only question bank links (static pages, all Q&A visible without playing the quiz) -->
-    <div style="margin-bottom:28px; font-size:.9rem; color:var(--ink-soft);">
-      Just want to read the questions? Browse the full list:
-      <a href="ccc-chapter1-mcq.html" style="font-weight:700;">CCC Chapter 1 MCQs</a> &middot;
-      <a href="ccc-chapter2-mcq.html" style="font-weight:700;">CCC Chapter 2 MCQs</a>
-    </div>
-
     <!-- Name entry -->
     <div class="name-box">
       <label for="studentName">Your name / आपका नाम <span style="color:var(--danger);">*</span></label>
@@ -380,7 +373,7 @@
   </div>
 </div>
 
-<footer>&copy; 2026 Sankalp Computer Classes, Bidhuna, Auraiya, UP &middot; <a href="ccc-chapter1-mcq.html">CCC Ch.1 MCQs</a> &middot; <a href="ccc-chapter2-mcq.html">CCC Ch.2 MCQs</a></footer>
+<footer>&copy; 2026 Sankalp Computer Classes, Bidhuna, Auraiya, UP &middot; <a href="ccc-chapter1-mcq.html">CCC Ch.1 Quiz</a> &middot; <a href="ccc-chapter2-mcq.html">CCC Ch.2 Quiz</a></footer>
 
 <script>
 // =====================================================================
@@ -392,6 +385,15 @@
 
 const STORAGE_KEY = 'sankalp_mcq_data';
 const SCORE_KEY   = 'sankalp_mcq_scores'; // { chapterId: [ {name, correct, total, date} ] }
+
+// Chapters that live in their own standalone quiz page (self-contained,
+// question-by-question, own scoring) rather than in localStorage. Clicking
+// "Start Quiz" on these takes the student straight to that page.
+// Leaderboard entries are shared via SCORE_KEY using the same chapter id.
+const STATIC_CHAPTERS = [
+  { id:'ccc-ch1', course:'CCC', chapter:'Chapter 1: Introduction to Computer', chapterHi:'अध्याय 1: कंप्यूटर का परिचय', questionCount:50, url:'ccc-chapter1-mcq.html' },
+  { id:'ccc-ch2', course:'CCC', chapter:'Chapter 2: Introduction to Operating System', chapterHi:'अध्याय 2: ऑपरेटिंग सिस्टम का परिचय', questionCount:50, url:'ccc-chapter2-mcq.html' }
+];
 
 function getMCQData(){ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
 function getScores(){ return JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); }
@@ -406,7 +408,7 @@ let userAnswers = [];
 let questionOrder = [];
 
 function renderHome(){
-  const data = getMCQData();
+  const data = [...STATIC_CHAPTERS, ...getMCQData()];
   const courseFilter = document.getElementById('courseFilter');
   const selectedCourse = courseFilter.value;
 
@@ -421,7 +423,7 @@ function renderHome(){
 }
 
 function renderChapters(){
-  const data = getMCQData();
+  const data = [...STATIC_CHAPTERS, ...getMCQData()];
   const selectedCourse = document.getElementById('courseFilter').value;
   const list = document.getElementById('chapterList');
 
@@ -437,25 +439,32 @@ function renderChapters(){
 
   const scores = getScores();
   list.innerHTML = filtered.map(chapter => {
+    const isStatic = !!chapter.url;
+    const qCount = isStatic ? chapter.questionCount : chapter.questions.length;
     const chScores = scores[chapter.id] || [];
     const attempted = chScores.length;
     const best = attempted ? Math.max(...chScores.map(s => Math.round(s.correct/s.total*100))) : null;
+    const action = isStatic ? `goToChapterPage('${chapter.url}')` : `startQuiz('${chapter.id}')`;
     return `
-    <div class="chapter-card" onclick="startQuiz('${chapter.id}')">
+    <div class="chapter-card" onclick="${action}">
       <div class="chapter-info">
         <h3>${chapter.chapter}</h3>
         <div style="margin-top:2px; font-size:.85rem; color:var(--ink-soft);">${chapter.chapterHi || ''}</div>
         <div style="margin-top:8px;">
           <span class="badge badge-teal">${chapter.course}</span>
-          <span class="badge">${chapter.questions.length} Q</span>
+          <span class="badge">${qCount} Q</span>
           ${attempted ? `<span class="badge" style="background:rgba(28,124,77,0.1);color:var(--ok);">Best: ${best}%</span>` : ''}
         </div>
       </div>
-      <button class="start-btn" onclick="event.stopPropagation(); startQuiz('${chapter.id}')">
+      <button class="start-btn" onclick="event.stopPropagation(); ${action}">
         ${attempted ? 'Retry' : 'Start Quiz'} →
       </button>
     </div>`;
   }).join('');
+}
+
+function goToChapterPage(url){
+  window.location.href = url;
 }
 
 function startQuiz(chapterId){
