@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<!--
+  SANKALP COMPUTER CLASSES — Chapter 3: Introduction to Word Processing — Interactive MCQ Quiz
+  -------------------------------------------------------
+  Self-contained, self-scoring quiz for this chapter. Opens straight into
+  quiz mode (question by question) and shows the score on submit.
+  PDF download feature: student can download their result as PDF after submit.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCC Chapter 3: Introduction to Word Processing — MCQ Quiz (Hindi + English) | Sankalp Computer Classes</title>
+<meta name="description" content="Take a free 50-question bilingual (Hindi + English) self-scoring MCQ quiz on CCC Chapter 3: Introduction to Word Processing. Question by question, instant score at the end. Sankalp Computer Classes, Bidhuna, Auraiya.">
+<link rel="icon" href="logo.png" type="image/png">
+<link rel="canonical" href="https://sankalpcomputerclasses.in/ccc-chapter3-mcq.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is the default file extension of a Microsoft Word document?", "acceptedAnswer": {"@type": "Answer", "text": ".docx"}}, {"@type": "Question", "name": "Which shortcut key is used to Bold text in MS Word?", "acceptedAnswer": {"@type": "Answer", "text": "Ctrl + B"}}, {"@type": "Question", "name": "Which shortcut key is used to Save a document in MS Word?", "acceptedAnswer": {"@type": "Answer", "text": "Ctrl + S"}}]}
+</script>
+<style>
+  :root{
+    --ink:#132038; --ink-soft:#2b3a58; --paper:#f6f4ee; --paper-alt:#eeebe2;
+    --card:#ffffff; --gold:#d99a1f; --gold-dark:#b87f14;
+    --teal:#0f6f6c; --teal-dark:#0b524f;
+    --line:#e1ddd0; --radius:14px; --shadow:0 10px 30px -18px rgba(19,32,56,0.35);
+    --ok:#1c7c4d; --ok-bg:#eaf7f0; --danger:#b3432f; --danger-bg:#fbeae6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"Source Sans 3", system-ui, sans-serif; line-height:1.6;
+    min-height:100vh;
+  }
+  h1,h2,h3,h4{font-family:"Space Grotesk", system-ui, sans-serif; line-height:1.25;}
+  .wrap{max-width:860px; margin:0 auto; padding:0 20px;}
+  a{color:var(--teal-dark);}
+
+  header.topbar{background:var(--ink); padding:20px 0;}
+  header.topbar .wrap{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
+  .brand img{width:40px; height:40px; border-radius:8px; background:#fff;}
+  .brand strong{font-family:"Space Grotesk"; color:#fff; font-size:1rem; display:block;}
+  .brand span{font-size:.75rem; color:#c9cdd8;}
+  .back-link{color:#dfe2ea; text-decoration:none; font-size:.85rem; font-weight:600;}
+  .back-link:hover{color:#fff;}
+
+  .screen{display:none; padding:36px 0 60px;}
+  .screen.active{display:block;}
+
+  .page-head{margin-bottom:26px;}
+  .page-head .eyebrow{
+    display:inline-block; font-family:"Space Grotesk"; font-size:.72rem; font-weight:700;
+    letter-spacing:.04em; color:var(--teal-dark); background:rgba(15,111,108,0.1);
+    padding:5px 11px; border-radius:999px; margin-bottom:12px;
+  }
+  .page-head h1{font-size:1.7rem; margin-bottom:6px;}
+  .page-head .hi{color:var(--ink-soft); font-size:1rem; margin-bottom:14px;}
+  .page-head p.lede{color:var(--ink-soft); font-size:.95rem; max-width:64ch;}
+
+  .name-box{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:24px; box-shadow:var(--shadow); margin:22px 0;
+  }
+  .name-box label{display:block; font-weight:600; margin-bottom:8px; font-size:.95rem;}
+  .name-box input{
+    width:100%; padding:11px 14px; border:1px solid var(--line); border-radius:9px;
+    font-size:1rem; font-family:inherit; margin-bottom:10px;
+  }
+  .name-box input:focus{outline:none; border-color:var(--teal);}
+  .start-btn-big{
+    background:var(--teal); color:#fff; border:none; padding:13px 26px;
+    border-radius:9px; font-weight:700; font-size:.98rem; cursor:pointer; font-family:inherit;
+  }
+  .start-btn-big:hover{background:var(--teal-dark);}
+
+  .hub-link{font-size:.85rem; color:var(--ink-soft); margin-top:4px;}
+
+  /* ---- Quiz screen ---- */
+  .quiz-header{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px 22px; margin-bottom:22px; box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  }
+  .quiz-title{font-size:1.05rem;}
+  .quiz-title small{display:block; font-size:.78rem; color:var(--ink-soft); font-weight:400; margin-top:2px;}
+  .progress-wrap{flex:1; min-width:160px;}
+  .progress-label{font-size:.8rem; color:var(--ink-soft); margin-bottom:5px;}
+  .progress-bar{height:7px; background:var(--paper-alt); border-radius:999px; overflow:hidden;}
+  .progress-fill{height:100%; background:var(--teal); border-radius:999px; transition:width .3s;}
+  .q-counter{font-family:"Space Grotesk"; font-size:1.1rem; font-weight:700; white-space:nowrap;}
+
+  .question-card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px 24px; box-shadow:var(--shadow); margin-bottom:18px;
+  }
+  .q-number{font-size:.8rem; font-weight:700; color:var(--ink-soft); margin-bottom:10px;}
+  .q-text{font-size:1.05rem; font-weight:600; margin-bottom:6px; line-height:1.4;}
+  .q-text-hi{font-size:.95rem; color:var(--ink-soft); margin-bottom:18px; line-height:1.5;}
+
+  .options-list{display:grid; gap:10px;}
+  .option-btn{
+    width:100%; text-align:left; background:var(--paper-alt);
+    border:2px solid transparent; border-radius:10px;
+    padding:12px 16px; font-size:.93rem; font-family:inherit;
+    cursor:pointer; transition:border-color .15s, background .15s;
+    line-height:1.4;
+  }
+  .option-btn:hover:not(:disabled){border-color:var(--teal); background:#f0faf9;}
+  .option-btn.selected{border-color:var(--teal); background:#e0f4f3;}
+  .option-label{font-weight:700; margin-right:8px;}
+
+  .nav-row{display:flex; gap:12px; justify-content:space-between; align-items:center; flex-wrap:wrap;}
+  .nav-row .skip-btn{background:none; border:1px solid var(--line); color:var(--ink-soft); padding:10px 18px; border-radius:9px; font-size:.9rem; cursor:pointer; font-family:inherit;}
+  .nav-row .skip-btn:hover{border-color:var(--ink-soft); color:var(--ink);}
+  .nav-row .next-btn{background:var(--teal); color:#fff; border:none; padding:10px 24px; border-radius:9px; font-weight:700; font-size:.9rem; cursor:pointer; font-family:inherit;}
+  .nav-row .next-btn:hover{background:var(--teal-dark);}
+  .nav-row .submit-btn{background:var(--gold); color:#241a02; border:none; padding:10px 24px; border-radius:9px; font-weight:700; font-size:.9rem; cursor:pointer; font-family:inherit;}
+  .nav-row .submit-btn:hover{background:var(--gold-dark);}
+
+  /* ---- Result screen ---- */
+  .result-hero{
+    text-align:center; padding:38px 24px 28px;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:22px;
+  }
+  .score-circle{
+    width:120px; height:120px; border-radius:50%; margin:0 auto 18px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:"Space Grotesk"; font-size:2rem; font-weight:700; color:#fff;
+  }
+  .score-circle.great{background:linear-gradient(135deg, var(--ok), #2db37a);}
+  .score-circle.good{background:linear-gradient(135deg, var(--teal), #1a9a97);}
+  .score-circle.low{background:linear-gradient(135deg, #e07b3a, var(--gold-dark));}
+  .score-circle.poor{background:linear-gradient(135deg, var(--danger), #d4583e);}
+  .result-hero h2{font-size:1.5rem; margin-bottom:6px;}
+  .result-hero p{color:var(--ink-soft); font-size:.95rem; max-width:40ch; margin:0 auto;}
+
+  .result-stats{display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:22px;}
+  .r-stat{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:16px; text-align:center; box-shadow:var(--shadow);
+  }
+  .r-stat .val{font-family:"Space Grotesk"; font-size:1.6rem; font-weight:700;}
+  .r-stat .lbl{font-size:.78rem; color:var(--ink-soft); margin-top:4px;}
+  .r-stat.ok .val{color:var(--ok);}
+  .r-stat.danger .val{color:var(--danger);}
+
+  .review-panel{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow); margin-bottom:22px;
+  }
+  .review-panel-head{
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .review-panel-head h3{font-size:1rem;}
+  .toggle-review{background:none; border:1px solid var(--line); color:var(--ink-soft); padding:7px 14px; border-radius:8px; font-size:.82rem; cursor:pointer; font-family:inherit;}
+  .review-list{display:none; padding:6px 20px 18px;}
+  .review-list.open{display:block;}
+  .review-item{padding:14px 0; border-bottom:1px solid var(--line);}
+  .review-item:last-child{border-bottom:none;}
+  .review-q{font-weight:600; font-size:.92rem; margin-bottom:2px;}
+  .review-q-hi{font-size:.85rem; color:var(--ink-soft); margin-bottom:8px;}
+  .review-ans{font-size:.85rem; padding:8px 12px; border-radius:8px; margin-top:6px;}
+  .review-ans .label{font-weight:700; margin-right:4px;}
+  .ans-correct{background:var(--ok-bg); color:var(--ok);}
+  .ans-wrong{background:var(--danger-bg); color:var(--danger);}
+
+  .lb-panel{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow); margin-bottom:26px;
+  }
+  .lb-panel-head{padding:16px 20px; border-bottom:1px solid var(--line);}
+  .lb-panel-head h3{font-size:1rem;}
+  .lb-table{width:100%; border-collapse:collapse; font-size:.88rem;}
+  .lb-table th{text-align:left; padding:10px 16px; color:var(--ink-soft); font-size:.78rem; text-transform:uppercase; letter-spacing:.03em; border-bottom:1px solid var(--line);}
+  .lb-table td{padding:10px 16px; border-bottom:1px solid var(--line);}
+  .lb-table tr:last-child td{border-bottom:none;}
+  .lb-table tr.me{background:rgba(15,111,108,0.08);}
+  .rank-badge{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; background:var(--paper-alt); font-weight:700; font-size:.78rem;}
+  .rank-badge.gold{background:#f3d27a; color:#5c4200;}
+  .rank-badge.silver{background:#dfe3ea; color:#3a3f4a;}
+  .rank-badge.bronze{background:#e8bd94; color:#5a3417;}
+
+  .result-actions{display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-bottom:10px;}
+  .btn{padding:11px 22px; border-radius:9px; font-weight:700; font-size:.9rem; cursor:pointer; text-decoration:none; display:inline-block; font-family:inherit; border:none;}
+  .btn-teal{background:var(--teal); color:#fff;}
+  .btn-teal:hover{background:var(--teal-dark);}
+  .btn-outline{background:none; border:1px solid var(--line); color:var(--ink);}
+  .btn-outline:hover{border-color:var(--ink-soft);}
+  .btn-pdf{background:var(--danger); color:#fff;}
+  .btn-pdf:hover{background:#952e1f;}
+
+  footer{background:#0d1728; color:#aab0c0; padding:22px 0; font-size:.83rem; text-align:center;}
+  footer a{color:#c9cdd8;}
+
+  @media (max-width:560px){
+    .result-stats{grid-template-columns:repeat(2, 1fr);}
+  }
+
+  /* PDF Print styles */
+  @media print {
+    header, footer, .result-actions, .lb-panel, .quiz-header, .nav-row,
+    .toggle-review, .back-link, .name-box, .start-btn-big, .hub-link,
+    #screenStart, #screenQuiz { display: none !important; }
+    body { background: white; font-family: Arial, sans-serif; }
+    .screen { display: block !important; padding: 0; }
+    #screenResult { display: block !important; }
+    .result-hero { box-shadow: none; border: 1px solid #ccc; page-break-after: avoid; }
+    .review-list { display: block !important; }
+    .review-panel { box-shadow: none; border: 1px solid #ccc; }
+    .wrap { max-width: 100%; padding: 0 10px; }
+    .result-stats { grid-template-columns: repeat(4,1fr); }
+    .review-item { page-break-inside: avoid; }
+  }
+</style>
+<!-- Firebase: shared leaderboard across all devices/browsers -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, query, where, getDocs, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyARCHtO6xh7xbXP3UOIqoErxwwbvVSBxb4",
+    authDomain: "sankalp-quiz-5b907.firebaseapp.com",
+    projectId: "sankalp-quiz-5b907",
+    storageBucket: "sankalp-quiz-5b907.firebasestorage.app",
+    messagingSenderId: "919711308932",
+    appId: "1:919711308932:web:61c7b1a82b80f6b9b4b6d1"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.saveScoreToCloud = async function (chapterId, entry) {
+    try {
+      await addDoc(collection(db, "scores"), {
+        chapterId,
+        ...entry,
+        createdAt: serverTimestamp()
+      });
+      return true;
+    } catch (err) {
+      console.error('Firebase save failed:', err);
+      return false;
+    }
+  };
+
+  window.getCloudLeaderboard = async function (chapterId) {
+    try {
+      const q = query(collection(db, "scores"), where("chapterId", "==", chapterId));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => d.data());
+    } catch (err) {
+      console.error('Firebase fetch failed:', err);
+      return null;
+    }
+  };
+</script>
+
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <img src="logo.png" alt="" onerror="this.style.background='var(--ink)'; this.src='';">
+      <div>
+        <strong>Sankalp Computer Classes</strong>
+        <span>Chapter 3 Quiz</span>
+      </div>
+    </a>
+    <a class="back-link" href="mcq-quiz.html">← All MCQ chapters</a>
+  </div>
+</header>
+
+<!-- ===================== START SCREEN ===================== -->
+<div class="screen active" id="screenStart">
+  <div class="wrap">
+    <div class="page-head" style="padding-top:36px;">
+      <span class="eyebrow">CCC · 50 Questions</span>
+      <h1>Chapter 3: Introduction to Word Processing</h1>
+      <div class="hi">अध्याय 3: वर्ड प्रोसेसिंग का परिचय (LibreOffice Writer / MS Word)</div>
+      <p class="lede">All 50 bilingual (English + Hindi) multiple-choice questions for CCC Chapter 3: Introduction to Word Processing — attempted one question at a time. Enter your name and start; your score, answer review and PDF download appear as soon as you submit.</p>
+    </div>
+
+    <div class="name-box">
+      <label for="studentName">Your name / आपका नाम <span style="color:var(--danger);">*</span></label>
+      <input type="text" id="studentName" placeholder="Enter your full name..." autocomplete="off">
+      <div style="font-size:.8rem; color:var(--ink-soft); margin-bottom:16px;">Your name is used to save your score on the leaderboard.</div>
+      <button class="start-btn-big" onclick="startQuiz()">▶ Start Quiz</button>
+    </div>
+
+    <p class="hub-link">Want a different chapter? <a href="mcq-quiz.html">Browse all MCQ chapters →</a></p>
+  </div>
+</div>
+
+<!-- ===================== QUIZ SCREEN ===================== -->
+<div class="screen" id="screenQuiz">
+  <div class="wrap">
+    <div class="quiz-header">
+      <div class="quiz-title">
+        <span id="quizChapterTitle">Chapter 3: Introduction to Word Processing</span>
+        <small id="quizCourseName"></small>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label" id="progressLabel">Question 1 of 50</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:2%"></div></div>
+      </div>
+      <div class="q-counter" id="qCounter">1 / 50</div>
+    </div>
+
+    <div class="question-card" id="questionCard">
+      <div class="q-number" id="qNumber">Q.1</div>
+      <div class="q-text" id="qText"></div>
+      <div class="q-text-hi" id="qTextHi"></div>
+      <div class="options-list" id="optionsList"></div>
+    </div>
+
+    <div class="nav-row">
+      <button class="skip-btn" onclick="goStart()">✕ Exit quiz</button>
+      <div style="display:flex; gap:10px;">
+        <button class="next-btn" id="nextBtn" onclick="nextQuestion()" style="display:none;">Next →</button>
+        <button class="submit-btn" id="submitBtn" onclick="submitQuiz()" style="display:none;">Submit Quiz ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== RESULT SCREEN ===================== -->
+<div class="screen" id="screenResult">
+  <div class="wrap">
+    <div style="padding-top:36px;"></div>
+    <div class="result-hero">
+      <div class="score-circle" id="scoreCircle">0%</div>
+      <h2 id="resultHeading">Great job!</h2>
+      <p id="resultSubtext"></p>
+    </div>
+
+    <div class="result-stats">
+      <div class="r-stat ok">
+        <div class="val" id="rCorrect">0</div>
+        <div class="lbl">Correct ✓</div>
+      </div>
+      <div class="r-stat danger">
+        <div class="val" id="rWrong">0</div>
+        <div class="lbl">Wrong ✗</div>
+      </div>
+      <div class="r-stat">
+        <div class="val" id="rTotal">0</div>
+        <div class="lbl">Total Q</div>
+      </div>
+      <div class="r-stat">
+        <div class="val" id="rPercent">0%</div>
+        <div class="lbl">Score</div>
+      </div>
+    </div>
+
+    <div class="review-panel">
+      <div class="review-panel-head">
+        <h3>Answer Review / उत्तर देखें</h3>
+        <button class="toggle-review" onclick="toggleReview()">Show answers ▼</button>
+      </div>
+      <div class="review-list" id="reviewList"></div>
+    </div>
+
+    <div class="lb-panel">
+      <div class="lb-panel-head">
+        <h3>🏆 Leaderboard — <span id="lbChapterLabel"></span></h3>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="lb-table">
+          <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Correct</th><th>Date</th></tr></thead>
+          <tbody id="lbBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn btn-teal" onclick="retryQuiz()">🔁 Retry this chapter</button>
+      <button class="btn btn-pdf" onclick="downloadPDF()">📄 Download PDF Result</button>
+      <a class="btn btn-outline" href="ccc-chapter2-mcq.html">← Chapter 2</a>
+      <a class="btn btn-outline" href="mcq-quiz.html">← All chapters</a>
+    </div>
+    <div style="height:40px;"></div>
+  </div>
+</div>
+
+<footer>&copy; 2026 Sankalp Computer Classes, Bidhuna, Auraiya, UP &middot; <a href="mcq-quiz.html">All MCQ Chapters</a> &middot; <a href="ccc-chapter2-mcq.html">Chapter 2 Quiz</a></footer>
+
+<script>
+// =====================================================================
+//  CHAPTER DATA — CCC Chapter 3: Introduction to Word Processing
+// =====================================================================
+const CHAPTER = {
+  "id": "ccc-ch3",
+  "course": "CCC",
+  "chapter": "Chapter 3: Introduction to Word Processing",
+  "chapterHi": "अध्याय 3: वर्ड प्रोसेसिंग का परिचय",
+  "questions": [
+    {"textEn": "What is the default file extension of a Microsoft Word 2007 and later document?", "textHi": "Microsoft Word 2007 और बाद के दस्तावेज़ का डिफ़ॉल्ट फ़ाइल एक्सटेंशन क्या है?", "options": [{"en": ".doc", "hi": ".doc"}, {"en": ".docx", "hi": ".docx"}, {"en": ".txt", "hi": ".txt"}, {"en": ".odt", "hi": ".odt"}], "correct": 1},
+    {"textEn": "Which shortcut key is used to Bold text in MS Word?", "textHi": "MS Word में टेक्स्ट को बोल्ड करने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + I", "hi": "Ctrl + I"}, {"en": "Ctrl + U", "hi": "Ctrl + U"}, {"en": "Ctrl + B", "hi": "Ctrl + B"}, {"en": "Ctrl + E", "hi": "Ctrl + E"}], "correct": 2},
+    {"textEn": "Which shortcut key is used to Italicize text in MS Word?", "textHi": "MS Word में टेक्स्ट को इटैलिक करने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + B", "hi": "Ctrl + B"}, {"en": "Ctrl + I", "hi": "Ctrl + I"}, {"en": "Ctrl + U", "hi": "Ctrl + U"}, {"en": "Ctrl + L", "hi": "Ctrl + L"}], "correct": 1},
+    {"textEn": "Which shortcut key is used to Underline text in MS Word?", "textHi": "MS Word में टेक्स्ट को अंडरलाइन करने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + B", "hi": "Ctrl + B"}, {"en": "Ctrl + I", "hi": "Ctrl + I"}, {"en": "Ctrl + U", "hi": "Ctrl + U"}, {"en": "Ctrl + P", "hi": "Ctrl + P"}], "correct": 2},
+    {"textEn": "Which shortcut key is used to Save a document in MS Word?", "textHi": "MS Word में दस्तावेज़ को सेव करने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + P", "hi": "Ctrl + P"}, {"en": "Ctrl + O", "hi": "Ctrl + O"}, {"en": "Ctrl + S", "hi": "Ctrl + S"}, {"en": "Ctrl + N", "hi": "Ctrl + N"}], "correct": 2},
+    {"textEn": "Which shortcut key is used to Print a document in MS Word?", "textHi": "MS Word में दस्तावेज़ को प्रिंट करने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + S", "hi": "Ctrl + S"}, {"en": "Ctrl + P", "hi": "Ctrl + P"}, {"en": "Ctrl + D", "hi": "Ctrl + D"}, {"en": "Ctrl + F", "hi": "Ctrl + F"}], "correct": 1},
+    {"textEn": "Which shortcut key is used to open the Find and Replace dialog box in MS Word?", "textHi": "MS Word में Find and Replace डायलॉग बॉक्स खोलने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + F", "hi": "Ctrl + F"}, {"en": "Ctrl + H", "hi": "Ctrl + H"}, {"en": "Ctrl + G", "hi": "Ctrl + G"}, {"en": "Ctrl + R", "hi": "Ctrl + R"}], "correct": 1},
+    {"textEn": "Which shortcut key is used to Undo the last action in MS Word?", "textHi": "MS Word में अंतिम क्रिया को Undo करने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + Y", "hi": "Ctrl + Y"}, {"en": "Ctrl + Z", "hi": "Ctrl + Z"}, {"en": "Ctrl + X", "hi": "Ctrl + X"}, {"en": "Ctrl + A", "hi": "Ctrl + A"}], "correct": 1},
+    {"textEn": "Which shortcut key is used to Redo an action in MS Word?", "textHi": "MS Word में किसी क्रिया को Redo करने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + Z", "hi": "Ctrl + Z"}, {"en": "Ctrl + Y", "hi": "Ctrl + Y"}, {"en": "Ctrl + R", "hi": "Ctrl + R"}, {"en": "Ctrl + A", "hi": "Ctrl + A"}], "correct": 1},
+    {"textEn": "Which shortcut key is used to Select All text in a MS Word document?", "textHi": "MS Word दस्तावेज़ में सभी टेक्स्ट को चुनने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + C", "hi": "Ctrl + C"}, {"en": "Ctrl + V", "hi": "Ctrl + V"}, {"en": "Ctrl + A", "hi": "Ctrl + A"}, {"en": "Ctrl + X", "hi": "Ctrl + X"}], "correct": 2},
+    {"textEn": "Which shortcut key is used to Copy selected text in MS Word?", "textHi": "MS Word में चुने गए टेक्स्ट को Copy करने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + V", "hi": "Ctrl + V"}, {"en": "Ctrl + X", "hi": "Ctrl + X"}, {"en": "Ctrl + C", "hi": "Ctrl + C"}, {"en": "Ctrl + Z", "hi": "Ctrl + Z"}], "correct": 2},
+    {"textEn": "Which shortcut key is used to Paste text in MS Word?", "textHi": "MS Word में टेक्स्ट Paste करने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + C", "hi": "Ctrl + C"}, {"en": "Ctrl + X", "hi": "Ctrl + X"}, {"en": "Ctrl + V", "hi": "Ctrl + V"}, {"en": "Ctrl + P", "hi": "Ctrl + P"}], "correct": 2},
+    {"textEn": "Which shortcut key is used to Cut selected text in MS Word?", "textHi": "MS Word में चुने गए टेक्स्ट को Cut करने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + C", "hi": "Ctrl + C"}, {"en": "Ctrl + X", "hi": "Ctrl + X"}, {"en": "Ctrl + V", "hi": "Ctrl + V"}, {"en": "Ctrl + D", "hi": "Ctrl + D"}], "correct": 1},
+    {"textEn": "The default page orientation in MS Word is:", "textHi": "MS Word में डिफ़ॉल्ट पेज ओरिएंटेशन है:", "options": [{"en": "Landscape", "hi": "लैंडस्केप"}, {"en": "Portrait", "hi": "पोर्ट्रेट"}, {"en": "Horizontal", "hi": "हॉरिजॉन्टल"}, {"en": "Vertical", "hi": "वर्टिकल"}], "correct": 1},
+    {"textEn": "Which tab in MS Word contains the option to change page margins?", "textHi": "MS Word में पेज मार्जिन बदलने का विकल्प किस टैब में है?", "options": [{"en": "Home", "hi": "होम"}, {"en": "Insert", "hi": "इन्सर्ट"}, {"en": "Layout / Page Layout", "hi": "लेआउट / पेज लेआउट"}, {"en": "View", "hi": "व्यू"}], "correct": 2},
+    {"textEn": "The default font in MS Word 2016 and later is:", "textHi": "MS Word 2016 और बाद में डिफ़ॉल्ट फ़ॉन्ट है:", "options": [{"en": "Times New Roman", "hi": "Times New Roman"}, {"en": "Arial", "hi": "Arial"}, {"en": "Calibri", "hi": "Calibri"}, {"en": "Verdana", "hi": "Verdana"}], "correct": 2},
+    {"textEn": "The default font size in MS Word is:", "textHi": "MS Word में डिफ़ॉल्ट फ़ॉन्ट साइज़ है:", "options": [{"en": "10", "hi": "10"}, {"en": "11", "hi": "11"}, {"en": "12", "hi": "12"}, {"en": "14", "hi": "14"}], "correct": 1},
+    {"textEn": "Which feature in MS Word automatically corrects common spelling mistakes?", "textHi": "MS Word में कौन सी सुविधा सामान्य वर्तनी की गलतियों को स्वचालित रूप से ठीक करती है?", "options": [{"en": "AutoFormat", "hi": "ऑटोफॉर्मेट"}, {"en": "AutoCorrect", "hi": "ऑटोकरेक्ट"}, {"en": "Spell Check", "hi": "स्पेल चेक"}, {"en": "AutoFill", "hi": "ऑटोफिल"}], "correct": 1},
+    {"textEn": "What does the 'Spelling & Grammar' check shortcut key in MS Word?", "textHi": "MS Word में 'Spelling & Grammar' चेक करने की शॉर्टकट की क्या है?", "options": [{"en": "F5", "hi": "F5"}, {"en": "F6", "hi": "F6"}, {"en": "F7", "hi": "F7"}, {"en": "F8", "hi": "F8"}], "correct": 2},
+    {"textEn": "Which of the following is NOT a text alignment option in MS Word?", "textHi": "निम्नलिखित में से कौन सा MS Word में टेक्स्ट अलाइनमेंट विकल्प नहीं है?", "options": [{"en": "Left", "hi": "लेफ्ट"}, {"en": "Right", "hi": "राइट"}, {"en": "Center", "hi": "सेंटर"}, {"en": "Diagonal", "hi": "डायगोनल"}], "correct": 3},
+    {"textEn": "Ctrl + E in MS Word is used to:", "textHi": "MS Word में Ctrl + E का उपयोग किया जाता है:", "options": [{"en": "Left align text", "hi": "टेक्स्ट को बाईं ओर अलाइन करना"}, {"en": "Right align text", "hi": "टेक्स्ट को दाईं ओर अलाइन करना"}, {"en": "Center align text", "hi": "टेक्स्ट को मध्य में अलाइन करना"}, {"en": "Justify text", "hi": "टेक्स्ट को जस्टिफाई करना"}], "correct": 2},
+    {"textEn": "Ctrl + L in MS Word is used to:", "textHi": "MS Word में Ctrl + L का उपयोग किया जाता है:", "options": [{"en": "Left align text", "hi": "टेक्स्ट को बाईं ओर अलाइन करना"}, {"en": "Center align text", "hi": "टेक्स्ट को मध्य में अलाइन करना"}, {"en": "Right align text", "hi": "टेक्स्ट को दाईं ओर अलाइन करना"}, {"en": "Justify text", "hi": "टेक्स्ट को जस्टिफाई करना"}], "correct": 0},
+    {"textEn": "Ctrl + J in MS Word is used to:", "textHi": "MS Word में Ctrl + J का उपयोग किया जाता है:", "options": [{"en": "Left align", "hi": "लेफ्ट अलाइन"}, {"en": "Center align", "hi": "सेंटर अलाइन"}, {"en": "Right align", "hi": "राइट अलाइन"}, {"en": "Justify text", "hi": "टेक्स्ट को जस्टिफाई करना"}], "correct": 3},
+    {"textEn": "Which shortcut key is used to increase font size in MS Word?", "textHi": "MS Word में फ़ॉन्ट साइज़ बढ़ाने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + Shift + <", "hi": "Ctrl + Shift + <"}, {"en": "Ctrl + Shift + >", "hi": "Ctrl + Shift + >"}, {"en": "Ctrl + +", "hi": "Ctrl + +"}, {"en": "Ctrl + =", "hi": "Ctrl + ="}], "correct": 1},
+    {"textEn": "Which shortcut key creates a new document in MS Word?", "textHi": "MS Word में नया दस्तावेज़ बनाने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + O", "hi": "Ctrl + O"}, {"en": "Ctrl + N", "hi": "Ctrl + N"}, {"en": "Ctrl + W", "hi": "Ctrl + W"}, {"en": "Ctrl + D", "hi": "Ctrl + D"}], "correct": 1},
+    {"textEn": "Which shortcut key opens an existing document in MS Word?", "textHi": "MS Word में मौजूदा दस्तावेज़ खोलने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + N", "hi": "Ctrl + N"}, {"en": "Ctrl + O", "hi": "Ctrl + O"}, {"en": "Ctrl + S", "hi": "Ctrl + S"}, {"en": "Ctrl + W", "hi": "Ctrl + W"}], "correct": 1},
+    {"textEn": "Which shortcut key is used to close the current document in MS Word?", "textHi": "MS Word में वर्तमान दस्तावेज़ बंद करने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + N", "hi": "Ctrl + N"}, {"en": "Ctrl + O", "hi": "Ctrl + O"}, {"en": "Ctrl + W", "hi": "Ctrl + W"}, {"en": "Ctrl + Q", "hi": "Ctrl + Q"}], "correct": 2},
+    {"textEn": "The function of the Tab key in MS Word is:", "textHi": "MS Word में Tab key का कार्य है:", "options": [{"en": "Delete text", "hi": "टेक्स्ट हटाना"}, {"en": "Move to the next line", "hi": "अगली पंक्ति पर जाना"}, {"en": "Indent text / move to next cell in table", "hi": "टेक्स्ट इंडेंट करना / टेबल में अगले सेल में जाना"}, {"en": "Select all text", "hi": "सभी टेक्स्ट चुनना"}], "correct": 2},
+    {"textEn": "In MS Word, which feature is used to insert automatic page numbers?", "textHi": "MS Word में स्वचालित पेज नंबर डालने के लिए कौन सी सुविधा का उपयोग किया जाता है?", "options": [{"en": "Home tab → Paragraph", "hi": "होम टैब → पैराग्राफ"}, {"en": "Insert tab → Page Number", "hi": "इन्सर्ट टैब → पेज नंबर"}, {"en": "View tab → Header", "hi": "व्यू टैब → हेडर"}, {"en": "Layout tab → Columns", "hi": "लेआउट टैब → कॉलम"}], "correct": 1},
+    {"textEn": "Header and Footer in MS Word can be inserted from which tab?", "textHi": "MS Word में Header और Footer किस टैब से डाला जा सकता है?", "options": [{"en": "Home", "hi": "होम"}, {"en": "Insert", "hi": "इन्सर्ट"}, {"en": "View", "hi": "व्यू"}, {"en": "References", "hi": "रेफरेंस"}], "correct": 1},
+    {"textEn": "Which of the following is a word processing software?", "textHi": "निम्नलिखित में से कौन सा वर्ड प्रोसेसिंग सॉफ्टवेयर है?", "options": [{"en": "MS Excel", "hi": "MS Excel"}, {"en": "MS PowerPoint", "hi": "MS PowerPoint"}, {"en": "LibreOffice Writer", "hi": "LibreOffice Writer"}, {"en": "Tally", "hi": "Tally"}], "correct": 2},
+    {"textEn": "The default file extension of a LibreOffice Writer document is:", "textHi": "LibreOffice Writer दस्तावेज़ का डिफ़ॉल्ट फ़ाइल एक्सटेंशन है:", "options": [{"en": ".docx", "hi": ".docx"}, {"en": ".odt", "hi": ".odt"}, {"en": ".txt", "hi": ".txt"}, {"en": ".pdf", "hi": ".pdf"}], "correct": 1},
+    {"textEn": "Which tab in MS Word contains options for formatting paragraphs?", "textHi": "MS Word में पैराग्राफ फॉर्मेटिंग के विकल्प किस टैब में हैं?", "options": [{"en": "Insert", "hi": "इन्सर्ट"}, {"en": "Home", "hi": "होम"}, {"en": "View", "hi": "व्यू"}, {"en": "Layout", "hi": "लेआउट"}], "correct": 1},
+    {"textEn": "In MS Word, 'Mail Merge' feature is mainly used to:", "textHi": "MS Word में 'Mail Merge' सुविधा का मुख्य उपयोग है:", "options": [{"en": "Format text automatically", "hi": "टेक्स्ट को स्वचालित रूप से फॉर्मेट करना"}, {"en": "Send emails directly", "hi": "सीधे ईमेल भेजना"}, {"en": "Create personalized letters for multiple recipients", "hi": "कई प्राप्तकर्ताओं के लिए व्यक्तिगत पत्र बनाना"}, {"en": "Merge multiple documents into one", "hi": "कई दस्तावेज़ों को एक में मर्ज करना"}], "correct": 2},
+    {"textEn": "What is the function of 'Ctrl + Home' in MS Word?", "textHi": "MS Word में 'Ctrl + Home' का कार्य क्या है?", "options": [{"en": "Go to the end of the document", "hi": "दस्तावेज़ के अंत में जाना"}, {"en": "Go to the beginning of the document", "hi": "दस्तावेज़ की शुरुआत में जाना"}, {"en": "Select all text", "hi": "सभी टेक्स्ट चुनना"}, {"en": "Close the document", "hi": "दस्तावेज़ बंद करना"}], "correct": 1},
+    {"textEn": "What is the function of 'Ctrl + End' in MS Word?", "textHi": "MS Word में 'Ctrl + End' का कार्य क्या है?", "options": [{"en": "Go to the beginning of the document", "hi": "दस्तावेज़ की शुरुआत में जाना"}, {"en": "Go to the end of the document", "hi": "दस्तावेज़ के अंत में जाना"}, {"en": "Delete the document", "hi": "दस्तावेज़ को हटाना"}, {"en": "Open a new document", "hi": "नया दस्तावेज़ खोलना"}], "correct": 1},
+    {"textEn": "Which shortcut key is used to insert a page break in MS Word?", "textHi": "MS Word में पेज ब्रेक डालने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + Enter", "hi": "Ctrl + Enter"}, {"en": "Shift + Enter", "hi": "Shift + Enter"}, {"en": "Alt + Enter", "hi": "Alt + Enter"}, {"en": "Ctrl + P", "hi": "Ctrl + P"}], "correct": 0},
+    {"textEn": "Subscript text in MS Word can be applied using:", "textHi": "MS Word में Subscript टेक्स्ट लागू किया जा सकता है:", "options": [{"en": "Ctrl + Shift + +", "hi": "Ctrl + Shift + +"}, {"en": "Ctrl + =", "hi": "Ctrl + ="}, {"en": "Ctrl + +", "hi": "Ctrl + +"}, {"en": "Alt + S", "hi": "Alt + S"}], "correct": 1},
+    {"textEn": "Superscript text in MS Word can be applied using:", "textHi": "MS Word में Superscript टेक्स्ट लागू किया जा सकता है:", "options": [{"en": "Ctrl + =", "hi": "Ctrl + ="}, {"en": "Ctrl + Shift + +", "hi": "Ctrl + Shift + +"}, {"en": "Ctrl + Alt + S", "hi": "Ctrl + Alt + S"}, {"en": "Ctrl + U", "hi": "Ctrl + U"}], "correct": 1},
+    {"textEn": "Which shortcut key opens the 'Font' dialog box in MS Word?", "textHi": "MS Word में 'Font' डायलॉग बॉक्स खोलने के लिए कौन सी शॉर्टकट की का उपयोग किया जाता है?", "options": [{"en": "Ctrl + F", "hi": "Ctrl + F"}, {"en": "Ctrl + D", "hi": "Ctrl + D"}, {"en": "Ctrl + T", "hi": "Ctrl + T"}, {"en": "Ctrl + G", "hi": "Ctrl + G"}], "correct": 1},
+    {"textEn": "The 'Word Count' option in MS Word is found in which tab?", "textHi": "MS Word में 'Word Count' विकल्प किस टैब में पाया जाता है?", "options": [{"en": "Home", "hi": "होम"}, {"en": "Insert", "hi": "इन्सर्ट"}, {"en": "Review", "hi": "रिव्यू"}, {"en": "View", "hi": "व्यू"}], "correct": 2},
+    {"textEn": "Which of the following is used to track changes made to a document in MS Word?", "textHi": "MS Word में दस्तावेज़ में किए गए परिवर्तनों को ट्रैक करने के लिए निम्नलिखित में से क्या उपयोग किया जाता है?", "options": [{"en": "Macro", "hi": "मैक्रो"}, {"en": "Track Changes", "hi": "ट्रैक चेंजेस"}, {"en": "AutoCorrect", "hi": "ऑटोकरेक्ट"}, {"en": "Comments", "hi": "कमेंट्स"}], "correct": 1},
+    {"textEn": "In MS Word, the 'Table of Contents' is inserted from which tab?", "textHi": "MS Word में 'Table of Contents' किस टैब से डाला जाता है?", "options": [{"en": "Home", "hi": "होम"}, {"en": "Insert", "hi": "इन्सर्ट"}, {"en": "References", "hi": "रेफरेंस"}, {"en": "View", "hi": "व्यू"}], "correct": 2},
+    {"textEn": "Which view in MS Word shows the document exactly as it will appear when printed?", "textHi": "MS Word में कौन सा व्यू दस्तावेज़ को ठीक वैसे दिखाता है जैसा प्रिंट होने पर दिखेगा?", "options": [{"en": "Draft View", "hi": "ड्राफ्ट व्यू"}, {"en": "Outline View", "hi": "आउटलाइन व्यू"}, {"en": "Print Layout View", "hi": "प्रिंट लेआउट व्यू"}, {"en": "Web Layout View", "hi": "वेब लेआउट व्यू"}], "correct": 2},
+    {"textEn": "What does 'WYSIWYG' stand for in the context of word processing?", "textHi": "वर्ड प्रोसेसिंग में 'WYSIWYG' का पूर्ण रूप क्या है?", "options": [{"en": "What You See Is What You Get", "hi": "व्हाट यू सी इज़ व्हाट यू गेट"}, {"en": "Where You Store Is Where You Go", "hi": "व्हेयर यू स्टोर इज़ व्हेयर यू गो"}, {"en": "What You Send Is What You Get", "hi": "व्हाट यू सेंड इज़ व्हाट यू गेट"}, {"en": "When You See Is What You Get", "hi": "व्हेन यू सी इज़ व्हाट यू गेट"}], "correct": 0},
+    {"textEn": "The shortcut key to open 'Go To' dialog (to navigate to a specific page) in MS Word is:", "textHi": "MS Word में किसी विशिष्ट पेज पर जाने के लिए 'Go To' डायलॉग खोलने की शॉर्टकट की है:", "options": [{"en": "Ctrl + G or F5", "hi": "Ctrl + G या F5"}, {"en": "Ctrl + F", "hi": "Ctrl + F"}, {"en": "Ctrl + H", "hi": "Ctrl + H"}, {"en": "Ctrl + P", "hi": "Ctrl + P"}], "correct": 0},
+    {"textEn": "In MS Word, the keyboard shortcut to apply 'Strikethrough' formatting is:", "textHi": "MS Word में 'Strikethrough' फॉर्मेटिंग लागू करने की शॉर्टकट की है:", "options": [{"en": "Ctrl + U", "hi": "Ctrl + U"}, {"en": "Ctrl + D", "hi": "Ctrl + D"}, {"en": "Alt + H + 4", "hi": "Alt + H + 4"}, {"en": "Ctrl + S", "hi": "Ctrl + S"}], "correct": 2},
+    {"textEn": "In MS Word, pressing Backspace key:", "textHi": "MS Word में Backspace की दबाने पर:", "options": [{"en": "Deletes the character after the cursor", "hi": "कर्सर के बाद का अक्षर मिटाता है"}, {"en": "Deletes the character before the cursor", "hi": "कर्सर से पहले का अक्षर मिटाता है"}, {"en": "Moves the cursor to the previous line", "hi": "कर्सर को पिछली पंक्ति में ले जाता है"}, {"en": "Selects text", "hi": "टेक्स्ट चुनता है"}], "correct": 1},
+    {"textEn": "In MS Word, pressing Delete key:", "textHi": "MS Word में Delete की दबाने पर:", "options": [{"en": "Deletes the character before the cursor", "hi": "कर्सर से पहले का अक्षर मिटाता है"}, {"en": "Deletes the character after the cursor", "hi": "कर्सर के बाद का अक्षर मिटाता है"}, {"en": "Deletes the entire line", "hi": "पूरी पंक्ति मिटाता है"}, {"en": "Clears the clipboard", "hi": "क्लिपबोर्ड साफ करता है"}], "correct": 1},
+    {"textEn": "The shortcut key 'Ctrl + K' in MS Word is used to:", "textHi": "MS Word में 'Ctrl + K' शॉर्टकट की का उपयोग किया जाता है:", "options": [{"en": "Change font color", "hi": "फ़ॉन्ट रंग बदलना"}, {"en": "Insert a hyperlink", "hi": "हाइपरलिंक डालना"}, {"en": "Open the Format dialog", "hi": "फॉर्मेट डायलॉग खोलना"}, {"en": "Create a table", "hi": "टेबल बनाना"}], "correct": 1},
+    {"textEn": "The 'Ruler' in MS Word is mainly used to:", "textHi": "MS Word में 'Ruler' का मुख्य उपयोग है:", "options": [{"en": "Measure the file size", "hi": "फ़ाइल का आकार मापना"}, {"en": "Set margins, indents and tab stops", "hi": "मार्जिन, इंडेंट और टैब स्टॉप सेट करना"}, {"en": "Count words in the document", "hi": "दस्तावेज़ में शब्द गिनना"}, {"en": "Check grammar", "hi": "व्याकरण जाँचना"}], "correct": 1},
+    {"textEn": "In MS Word, the option 'Save As' is used to:", "textHi": "MS Word में 'Save As' विकल्प का उपयोग किया जाता है:", "options": [{"en": "Save the document with the same name", "hi": "दस्तावेज़ को उसी नाम से सेव करना"}, {"en": "Save the document with a new name or in a different location/format", "hi": "दस्तावेज़ को नए नाम से या किसी भिन्न स्थान/प्रारूप में सेव करना"}, {"en": "Automatically save the document", "hi": "दस्तावेज़ को स्वचालित रूप से सेव करना"}, {"en": "Close the document after saving", "hi": "सेव करने के बाद दस्तावेज़ बंद करना"}], "correct": 1}
+  ]
+};
+
+// =====================================================================
+//  QUIZ ENGINE
+// =====================================================================
+const SCORE_KEY = 'sankalp_mcq_scores';
+function getScores(){ return JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); }
+function saveScores(s){ localStorage.setItem(SCORE_KEY, JSON.stringify(s)); }
+
+let currentStudent = '';
+let currentQIndex = 0;
+let userAnswers = [];
+let questionOrder = [];
+let quizResultData = null; // Store result data for PDF
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goStart(){ showScreen('screenStart'); }
+
+function startQuiz(){
+  currentStudent = document.getElementById('studentName').value.trim();
+  if (!currentStudent){
+    document.getElementById('studentName').focus();
+    document.getElementById('studentName').style.borderColor = 'var(--danger)';
+    document.getElementById('studentName').placeholder = 'Please enter your name first!';
+    return;
+  }
+  document.getElementById('studentName').style.borderColor = '';
+
+  questionOrder = CHAPTER.questions.map((_, i) => i);
+  for (let i = questionOrder.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i+1));
+    [questionOrder[i], questionOrder[j]] = [questionOrder[j], questionOrder[i]];
+  }
+  userAnswers = new Array(questionOrder.length).fill(null);
+  currentQIndex = 0;
+
+  document.getElementById('quizChapterTitle').textContent = CHAPTER.chapter;
+  document.getElementById('quizCourseName').textContent = CHAPTER.course + (CHAPTER.chapterHi ? ' — ' + CHAPTER.chapterHi : '');
+
+  showScreen('screenQuiz');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const total = questionOrder.length;
+  const qi = questionOrder[currentQIndex];
+  const q = CHAPTER.questions[qi];
+
+  document.getElementById('qNumber').textContent = `Q.${currentQIndex + 1}`;
+  document.getElementById('qText').textContent = q.textEn;
+  document.getElementById('qTextHi').textContent = q.textHi || '';
+  document.getElementById('progressLabel').textContent = `Question ${currentQIndex+1} of ${total}`;
+  document.getElementById('progressFill').style.width = `${((currentQIndex+1)/total)*100}%`;
+  document.getElementById('qCounter').textContent = `${currentQIndex+1} / ${total}`;
+
+  const labels = ['A','B','C','D'];
+  document.getElementById('optionsList').innerHTML = q.options.map((opt, i) => `
+    <button class="option-btn ${userAnswers[currentQIndex]===i ? 'selected':''}"
+      onclick="selectOption(${i})" id="opt_${i}">
+      <span class="option-label">${labels[i]}.</span>${opt.en}${opt.hi ? '<br><span style="font-size:.85em;color:var(--ink-soft);">' + opt.hi + '</span>' : ''}
+    </button>
+  `).join('');
+
+  const isLast = currentQIndex === total - 1;
+  document.getElementById('nextBtn').style.display = isLast ? 'none' : '';
+  document.getElementById('submitBtn').style.display = isLast ? '' : 'none';
+}
+
+function selectOption(idx){
+  userAnswers[currentQIndex] = idx;
+  document.querySelectorAll('.option-btn').forEach((b, i) => {
+    b.classList.toggle('selected', i === idx);
+  });
+}
+
+function nextQuestion(){
+  if (userAnswers[currentQIndex] === null){
+    document.querySelectorAll('.option-btn').forEach(b => {
+      b.style.outline = '2px dashed var(--gold)';
+      setTimeout(() => b.style.outline = '', 900);
+    });
+    return;
+  }
+  currentQIndex++;
+  renderQuestion();
+}
+
+function submitQuiz(){
+  if (userAnswers[currentQIndex] === null){
+    document.querySelectorAll('.option-btn').forEach(b => {
+      b.style.outline = '2px dashed var(--gold)';
+      setTimeout(() => b.style.outline = '', 900);
+    });
+    return;
+  }
+  showResults();
+}
+
+function showResults(){
+  let correct = 0;
+  const total = questionOrder.length;
+  questionOrder.forEach((qi, idx) => {
+    const q = CHAPTER.questions[qi];
+    if (userAnswers[idx] === q.correct) correct++;
+  });
+  const pct = Math.round(correct / total * 100);
+
+  const circle = document.getElementById('scoreCircle');
+  circle.textContent = pct + '%';
+  circle.className = 'score-circle ' + (pct>=80?'great': pct>=60?'good': pct>=40?'low':'poor');
+
+  const heading = pct>=80 ? '🎉 Excellent! / शानदार!' :
+                  pct>=60 ? '👍 Good job! / अच्छा किया!' :
+                  pct>=40 ? '📚 Keep practicing! / और अभ्यास करें!' :
+                           '💪 Don\'t give up! / हार मत मानो!';
+  document.getElementById('resultHeading').textContent = heading;
+  document.getElementById('resultSubtext').textContent =
+    `You scored ${correct} out of ${total} questions correctly.`;
+
+  document.getElementById('rCorrect').textContent = correct;
+  document.getElementById('rWrong').textContent = total - correct;
+  document.getElementById('rTotal').textContent = total;
+  document.getElementById('rPercent').textContent = pct + '%';
+
+  const labels = ['A','B','C','D'];
+  document.getElementById('reviewList').innerHTML = questionOrder.map((qi, idx) => {
+    const q = CHAPTER.questions[qi];
+    const ua = userAnswers[idx];
+    const isCorrect = ua === q.correct;
+    const correctOpt = q.options[q.correct];
+    const userOpt = ua !== null ? q.options[ua] : null;
+    return `
+    <div class="review-item">
+      <div class="review-q">Q.${idx+1} ${q.textEn}</div>
+      ${q.textHi ? `<div class="review-q-hi">${q.textHi}</div>` : ''}
+      <div class="review-ans ${isCorrect?'ans-correct':'ans-wrong'}">
+        <span class="label">Your answer:</span>
+        ${ua!==null ? labels[ua]+'. '+userOpt.en : '— (skipped)'}
+        ${isCorrect ? '✓' : '✗'}
+      </div>
+      ${!isCorrect ? `<div class="review-ans ans-correct"><span class="label">Correct:</span> ${labels[q.correct]}. ${correctOpt.en}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Store result data for PDF generation
+  quizResultData = { correct, total, pct, heading };
+
+  const entry = {
+    name: currentStudent,
+    correct,
+    total,
+    pct,
+    date: new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})
+  };
+  const scores = getScores();
+  if (!scores[CHAPTER.id]) scores[CHAPTER.id] = [];
+  scores[CHAPTER.id].push(entry);
+  saveScores(scores);
+
+  showScreen('screenResult');
+
+  document.getElementById('lbBody').innerHTML =
+    '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);">Loading leaderboard…</td></tr>';
+  loadLeaderboard(CHAPTER.id, entry, scores[CHAPTER.id]);
+}
+
+async function loadLeaderboard(chapterId, myEntry, localEntries){
+  let entries = localEntries;
+  if (window.saveScoreToCloud) await window.saveScoreToCloud(chapterId, myEntry);
+  if (window.getCloudLeaderboard){
+    const cloud = await window.getCloudLeaderboard(chapterId);
+    if (cloud && cloud.length) entries = cloud;
+  }
+  renderLeaderboard(entries, myEntry);
+}
+
+function renderLeaderboard(entries, myEntry){
+  document.getElementById('lbChapterLabel').textContent = CHAPTER.chapter;
+  const sorted = [...entries].sort((a,b) => b.pct - a.pct || b.correct - a.correct);
+  const top = sorted.slice(0, 15);
+  const myIdx = myEntry ? sorted.findIndex(e =>
+    e.name===myEntry.name && e.pct===myEntry.pct && e.correct===myEntry.correct && e.date===myEntry.date
+  ) : -1;
+
+  const rankClass = i => i===0?'gold': i===1?'silver': i===2?'bronze':'';
+  document.getElementById('lbBody').innerHTML = top.map((e, i) => `
+    <tr class="${i===myIdx?'me':''}">
+      <td><span class="rank-badge ${rankClass(i)}">${i+1}</span></td>
+      <td>${e.name} ${i===myIdx?'← You':''}</td>
+      <td>${e.pct}%</td>
+      <td>${e.correct}/${e.total}</td>
+      <td>${e.date}</td>
+    </tr>
+  `).join('');
+}
+
+function toggleReview(){
+  const list = document.getElementById('reviewList');
+  const btn = document.querySelector('.toggle-review');
+  const open = list.classList.toggle('open');
+  btn.textContent = open ? 'Hide answers ▲' : 'Show answers ▼';
+}
+
+function retryQuiz(){
+  startQuiz();
+}
+
+// =====================================================================
+//  PDF DOWNLOAD FEATURE
+// =====================================================================
+function downloadPDF(){
+  if (!quizResultData) return;
+
+  const { correct, total, pct } = quizResultData;
+  const labels = ['A','B','C','D'];
+  const date = new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+
+  // Build review rows HTML for PDF
+  let reviewRows = questionOrder.map((qi, idx) => {
+    const q = CHAPTER.questions[qi];
+    const ua = userAnswers[idx];
+    const isCorrect = ua === q.correct;
+    const correctOpt = q.options[q.correct];
+    const userOpt = ua !== null ? q.options[ua] : null;
+    const rowBg = isCorrect ? '#eaf7f0' : '#fbeae6';
+    const statusColor = isCorrect ? '#1c7c4d' : '#b3432f';
+    const statusText = isCorrect ? '✓ सही' : '✗ गलत';
+    return `
+      <tr style="background:${rowBg}; page-break-inside:avoid;">
+        <td style="padding:8px 10px; border:1px solid #ddd; font-weight:600; color:#132038; font-size:12px; vertical-align:top; width:32px; text-align:center;">${idx+1}</td>
+        <td style="padding:8px 10px; border:1px solid #ddd; font-size:12px; vertical-align:top;">
+          <div style="font-weight:600; margin-bottom:2px; color:#132038;">${q.textEn}</div>
+          ${q.textHi ? `<div style="color:#5a6a8a; font-size:11px;">${q.textHi}</div>` : ''}
+        </td>
+        <td style="padding:8px 10px; border:1px solid #ddd; font-size:12px; vertical-align:top; color:${statusColor};">
+          <div><b>${ua !== null ? labels[ua]+'. '+userOpt.en : '— (skipped)'}</b></div>
+          ${!isCorrect ? `<div style="color:#1c7c4d; margin-top:4px; font-size:11px;">✓ ${labels[q.correct]}. ${correctOpt.en}</div>` : ''}
+        </td>
+        <td style="padding:8px 10px; border:1px solid #ddd; font-size:13px; font-weight:700; color:${statusColor}; text-align:center; vertical-align:middle; white-space:nowrap;">${statusText}</td>
+      </tr>`;
+  }).join('');
+
+  const circleColor = pct>=80 ? '#1c7c4d' : pct>=60 ? '#0f6f6c' : pct>=40 ? '#d99a1f' : '#b3432f';
+
+  const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quiz Result - ${currentStudent}</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #fff; color: #132038; margin: 0; padding: 20px; }
+  @media print {
+    @page { size: A4; margin: 15mm; }
+    body { padding: 0; }
+    .no-print { display: none !important; }
+    table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+  <div style="text-align:center; border-bottom:3px solid #0f6f6c; padding-bottom:16px; margin-bottom:20px;">
+    <h1 style="color:#132038; font-size:22px; margin:0 0 4px;">🎓 Sankalp Computer Classes</h1>
+    <div style="color:#0f6f6c; font-size:13px; font-weight:600;">Bidhuna, Auraiya, Uttar Pradesh</div>
+    <h2 style="font-size:16px; color:#2b3a58; margin:10px 0 4px;">CCC Quiz Result — ${CHAPTER.chapter}</h2>
+    <div style="color:#5a6a8a; font-size:12px;">${CHAPTER.chapterHi}</div>
+  </div>
+
+  <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+    <tr>
+      <td style="padding:8px 14px; background:#f6f4ee; border:1px solid #e1ddd0; font-size:13px;"><b>Student Name / छात्र का नाम:</b> ${currentStudent}</td>
+      <td style="padding:8px 14px; background:#f6f4ee; border:1px solid #e1ddd0; font-size:13px;"><b>Date / दिनांक:</b> ${date}</td>
+    </tr>
+    <tr>
+      <td colspan="2" style="padding:0;">
+        <table style="width:100%; border-collapse:collapse; border:1px solid #e1ddd0;">
+          <tr>
+            <td style="padding:16px; text-align:center; background:#eaf7f0; border-right:1px solid #e1ddd0;">
+              <div style="font-size:36px; font-weight:700; color:${circleColor};">${pct}%</div>
+              <div style="font-size:11px; color:#5a6a8a;">Overall Score</div>
+            </td>
+            <td style="padding:16px; text-align:center; background:#eaf7f0; border-right:1px solid #e1ddd0;">
+              <div style="font-size:28px; font-weight:700; color:#1c7c4d;">${correct}</div>
+              <div style="font-size:11px; color:#5a6a8a;">Correct ✓</div>
+            </td>
+            <td style="padding:16px; text-align:center; background:#fbeae6; border-right:1px solid #e1ddd0;">
+              <div style="font-size:28px; font-weight:700; color:#b3432f;">${total - correct}</div>
+              <div style="font-size:11px; color:#5a6a8a;">Wrong ✗</div>
+            </td>
+            <td style="padding:16px; text-align:center; background:#f6f4ee;">
+              <div style="font-size:28px; font-weight:700; color:#132038;">${total}</div>
+              <div style="font-size:11px; color:#5a6a8a;">Total Questions</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <h3 style="font-size:14px; color:#132038; margin:0 0 10px; border-bottom:2px solid #0f6f6c; padding-bottom:6px;">
+    📋 Detailed Answer Review / विस्तृत उत्तर समीक्षा
+  </h3>
+  <table style="width:100%; border-collapse:collapse; font-size:12px;">
+    <thead>
+      <tr style="background:#132038; color:#fff;">
+        <th style="padding:9px 10px; border:1px solid #0a1a2e; text-align:center; width:32px;">#</th>
+        <th style="padding:9px 10px; border:1px solid #0a1a2e; text-align:left;">Question / प्रश्न</th>
+        <th style="padding:9px 10px; border:1px solid #0a1a2e; text-align:left;">Your Answer / आपका उत्तर</th>
+        <th style="padding:9px 10px; border:1px solid #0a1a2e; text-align:center; white-space:nowrap;">Result</th>
+      </tr>
+    </thead>
+    <tbody>${reviewRows}</tbody>
+  </table>
+
+  <div style="margin-top:20px; text-align:center; color:#5a6a8a; font-size:11px; border-top:1px solid #e1ddd0; padding-top:10px;">
+    Sankalp Computer Classes — sankalpcomputerclasses.in | Generated on ${date}
+  </div>
+
+  <div class="no-print" style="text-align:center; margin:20px 0;">
+    <button onclick="window.print()" style="background:#0f6f6c; color:#fff; border:none; padding:12px 28px; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer;">🖨️ Print / Save as PDF</button>
+    <button onclick="window.close()" style="background:#eee; color:#333; border:none; padding:12px 28px; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; margin-left:10px;">✕ Close</button>
+  </div>
+</body>
+</html>`;
+
+  const blob = new Blob([htmlContent], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if (win) {
+    win.onload = function() {
+      setTimeout(() => {
+        win.print();
+        URL.revokeObjectURL(url);
+      }, 500);
+    };
+  }
+}
+</script>
+
+</body>
+</html>
