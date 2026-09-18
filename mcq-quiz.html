@@ -17,6 +17,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- List of standalone chapter-quiz pages. To add a new chapter, edit ONLY chapters-index.js — never this file. -->
+<script src="chapters-index.js"></script>
 <style>
   :root{
     --ink:#132038; --ink-soft:#2b3a58; --paper:#f6f4ee; --paper-alt:#eeebe2;
@@ -390,10 +392,12 @@ const SCORE_KEY   = 'sankalp_mcq_scores'; // { chapterId: [ {name, correct, tota
 // question-by-question, own scoring) rather than in localStorage. Clicking
 // "Start Quiz" on these takes the student straight to that page.
 // Leaderboard entries are shared via SCORE_KEY using the same chapter id.
-const STATIC_CHAPTERS = [
-  { id:'ccc-ch1', course:'CCC', chapter:'Chapter 1: Introduction to Computer', chapterHi:'अध्याय 1: कंप्यूटर का परिचय', questionCount:50, url:'ccc-chapter1-mcq.html' },
-  { id:'ccc-ch2', course:'CCC', chapter:'Chapter 2: Introduction to Operating System', chapterHi:'अध्याय 2: ऑपरेटिंग सिस्टम का परिचय', questionCount:50, url:'ccc-chapter2-mcq.html' }
-];
+//
+// The actual list lives in chapters-index.js (loaded via <script> tag in
+// <head>), so a new chapter can be added there without ever touching this
+// file. window.STATIC_CHAPTERS is a safety fallback in case that file is
+// ever missing, so the page still loads instead of breaking.
+const STATIC_CHAPTERS = window.STATIC_CHAPTERS || [];
 
 function getMCQData(){ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
 function getScores(){ return JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); }
