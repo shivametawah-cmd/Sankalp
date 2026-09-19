@@ -2,18 +2,10 @@
 <!--
   SANKALP COMPUTER CLASSES — Student Login
   =====================================================================
-  STATUS: UI/UX design complete. Login check is currently MOCKED with a
-  demo account so the whole flow (login → greeting → notes → quiz
-  history) can be tested end-to-end right now.
-
-  WHEN READY TO CONNECT THE REAL BACKEND, replace only the function
-  verifyLogin() function near the bottom of the script block with a real call to your
-  Google Apps Script Web App (the same one shivam.html already uses),
-  which should check the entered ID+Password against the Students sheet
-  and return that row's data (Name, Course, Status, Admission date,
-  Adm. fee status, etc.). Everything else on this page and on
-  dashboard.html already expects exactly the object shape shown in
-  DEMO_STUDENT below, so no other code needs to change.
+  STATUS: Connected to the real Google Sheet via Apps Script
+  (action=login). Enter a real Student ID + Password from the "id"
+  sheet tab to log in — dashboard.html then reads the returned student
+  object from sessionStorage.
   =====================================================================
 -->
 <html lang="en">
@@ -140,11 +132,6 @@
       <button type="submit" class="login-btn" id="loginBtn">Login →</button>
     </form>
 
-    <div class="demo-hint">
-      🧪 Demo mode — try ID <b>demo</b> / password <b>1234</b><br>
-      (Asli Google Sheet se login baad me connect hoga)
-    </div>
-
     <a class="back-link" href="mcq-quiz.html">← Back to MCQ practice</a>
   </div>
 </main>
@@ -203,35 +190,17 @@ async function handleLogin(e){
 }
 
 // =====================================================================
-// MOCK LOGIN — replace this whole function with a real Apps Script call
-// when the backend is ready. It must keep returning either:
-//   - null / false  → login failed
-//   - a student object shaped like DEMO_STUDENT below → login succeeded
+// REAL LOGIN — checks the entered ID+Password against your Google Sheet
+// via the Apps Script web app (same one shivam.html reads from).
 // =====================================================================
-const DEMO_STUDENT = {
-  studentId:   'demo',
-  name:        'Rohit Kumar',
-  course:      'CCC',
-  batch:       'Morning 9–10 AM',
-  status:      'Active',
-  admissionDate: '12 Jun 2026',
-  feeStatus:   'Paid'
-};
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxf7m3cgFy3KKi0L6H3JT0Y5s7Dk4PtOkMMnhzIy5y3CP2pbVWuIj9jn01P7dV_ZQ/exec';
 
 async function verifyLogin(id, password){
-  // ---- CURRENT: mock check against one demo account ----
-  await new Promise(r => setTimeout(r, 500)); // fake network delay
-  if (id.toLowerCase() === 'demo' && password === '1234'){
-    return DEMO_STUDENT;
-  }
-  return null;
-
-  // ---- LATER: real Google Sheet check via Apps Script, e.g. ----
-  // const res = await fetch(WEB_APP_URL + '?action=login'
-  //   + '&id=' + encodeURIComponent(id)
-  //   + '&password=' + encodeURIComponent(password));
-  // const data = await res.json();
-  // return data.success ? data.student : null;
+  const res = await fetch(WEB_APP_URL + '?action=login'
+    + '&id=' + encodeURIComponent(id)
+    + '&password=' + encodeURIComponent(password));
+  const data = await res.json();
+  return data.success ? data.student : null;
 }
 
 // If already logged in, skip straight to dashboard

@@ -244,13 +244,25 @@ function renderGreeting(){
     badges.map(b => `<span class="badge">${b}</span>`).join('');
 }
 
+function formatDate(val){
+  if (!val) return '—';
+  const d = new Date(val);
+  if (isNaN(d)) return val; // not a parseable date, show as-is
+  return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function titleCase(s){
+  if (!s) return '—';
+  return String(s).replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+}
+
 function renderInfoCards(){
   const feeOk = (student.feeStatus || '').toLowerCase() === 'paid';
   const cards = [
     { lbl:'Course', val: student.course || '—' },
-    { lbl:'Status', val: student.status || '—', cls: (student.status||'').toLowerCase()==='active' ? 'ok' : '' },
-    { lbl:'Admission Date', val: student.admissionDate || '—' },
-    { lbl:'Fee Status', val: student.feeStatus || '—', cls: feeOk ? 'ok' : 'warn' }
+    { lbl:'Status', val: titleCase(student.status), cls: (student.status||'').toLowerCase()==='active' ? 'ok' : '' },
+    { lbl:'Admission Date', val: formatDate(student.admissionDate) },
+    { lbl:'Fee Status', val: titleCase(student.feeStatus), cls: feeOk ? 'ok' : 'warn' }
   ];
   document.getElementById('infoGrid').innerHTML = cards.map(c => `
     <div class="info-card">
