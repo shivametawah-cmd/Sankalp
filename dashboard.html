@@ -31,6 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="chapters-index-3.js"></script>
 <style>
   :root{
     --ink:#132038; --ink-soft:#2b3a58; --paper:#f6f4ee; --paper-alt:#eeebe2;
@@ -176,6 +177,10 @@
   </div>
 </div>
 
+<div class="wrap" id="feeBannerWrap" style="margin-top:20px; display:none;">
+  <div id="feeBanner" style="border-radius:12px; padding:14px 18px; font-size:.9rem; font-weight:600; display:flex; align-items:center; gap:10px;"></div>
+</div>
+
 <main>
   <div class="wrap">
 
@@ -188,6 +193,16 @@
       </div>
       <div class="notes-list" id="notesList">
         <div class="empty-note">Loading notes…</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>🧠 MCQ Practice</h2>
+        <span class="sub">Chapters available for your course</span>
+      </div>
+      <div class="notes-list" id="mcqList">
+        <div class="empty-note">Loading chapters…</div>
       </div>
     </section>
 
@@ -223,10 +238,29 @@ if (!raw){
   window.location.href = 'login.html';
 }
 const student = JSON.parse(raw || '{}');
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxf7m3cgFy3KKi0L6H3JT0Y5s7Dk4PtOkMMnhzIy5y3CP2pbVWuIj9jn01P7dV_ZQ/exec';
 
 function logout(){
   sessionStorage.removeItem('sankalp_student');
   window.location.href = 'login.html';
+}
+
+function renderFeeBanner(){
+  const wrap = document.getElementById('feeBannerWrap');
+  const box = document.getElementById('feeBanner');
+  const isPaid = (student.monthlyFeeStatus || '').toLowerCase() === 'paid';
+  const month = student.currentMonth || '';
+
+  wrap.style.display = 'block';
+  if (isPaid){
+    box.style.background = 'var(--ok-bg)';
+    box.style.color = 'var(--ok)';
+    box.innerHTML = `✅ Your fee for <b>${month}</b> has been received. Thank you!`;
+  } else {
+    box.style.background = 'var(--warn-bg)';
+    box.style.color = 'var(--warn)';
+    box.innerHTML = `⚠️ Your fee for <b>${month}</b> is still pending. Please pay at the earliest, or contact us if you've already paid.`;
+  }
 }
 
 // =====================================================================
@@ -262,7 +296,7 @@ function renderInfoCards(){
     { lbl:'Course', val: student.course || '—' },
     { lbl:'Status', val: titleCase(student.status), cls: (student.status||'').toLowerCase()==='active' ? 'ok' : '' },
     { lbl:'Admission Date', val: formatDate(student.admissionDate) },
-    { lbl:'Fee Status', val: titleCase(student.feeStatus), cls: feeOk ? 'ok' : 'warn' }
+    { lbl:'Admission Fee', val: titleCase(student.feeStatus), cls: feeOk ? 'ok' : 'warn' }
   ];
   document.getElementById('infoGrid').innerHTML = cards.map(c => `
     <div class="info-card">
@@ -277,37 +311,57 @@ function renderInfoCards(){
 //    query later: notes where course == student.course, ordered by
 //    addedAt desc.
 // =====================================================================
-const MOCK_NOTES = [
-  { chapter:'Chapter 1', title:'Introduction to Computer — Full Notes', course:'CCC', url:'#' },
-  { chapter:'Chapter 2', title:'Operating System — Full Notes', course:'CCC', url:'#' },
-  { chapter:'Chapter 3', title:'MS Word — Shortcuts & Practice Sheet', course:'CCC', url:'#' }
-];
-
 async function loadNotes(){
-  // ---- CURRENT: mock data ----
-  await new Promise(r => setTimeout(r, 400));
-  return MOCK_NOTES;
-
-  // ---- LATER: real Firestore query, e.g. ----
-  // const snap = await db.collection('notes')
-  //   .where('course', '==', student.course)
-  //   .orderBy('addedAt', 'desc').get();
-  // return snap.docs.map(d => d.data());
+  try{
+    const res = await fetch(WEB_APP_URL + '?action=materials');
+    const data = await res.json();
+    const all = data.materials || [];
+    return all.filter(m => (m.course || '').trim().toLowerCase() === (student.course || '').trim().toLowerCase());
+  } catch(err){
+    console.error(err);
+    return [];
+  }
 }
 
 function renderNotes(notes){
   const el = document.getElementById('notesList');
   if (!notes.length){
-    el.innerHTML = `<div class="empty-note">Abhi is course ke liye koi notes upload nahi hue hain.</div>`;
+    el.innerHTML = `<div class="empty-note">📌 Coming soon! Notes for <b>${student.course || 'your course'}</b> will appear here as soon as they're uploaded.</div>`;
     return;
   }
   el.innerHTML = notes.map(n => `
     <div class="note-card">
       <div class="note-info">
         <h3>${n.title}</h3>
-        <div class="meta"><span class="tag">${n.chapter}</span>${n.course}</div>
+        <div class="meta"><span class="tag">${n.type}</span>${n.course}</div>
       </div>
-      <a class="download-btn" href="${n.url}" target="_blank" rel="noopener">⬇ Download</a>
+      <a class="download-btn" href="${n.file}" target="_blank" rel="noopener">⬇ Download</a>
+    </div>
+  `).join('');
+}
+
+// =====================================================================
+// 3.5) MCQ Practice list — filtered to the student's own course, using
+//    the shared chapters-index-3.js file (window.STATIC_CHAPTERS).
+// =====================================================================
+function loadMCQList(){
+  const all = window.STATIC_CHAPTERS || [];
+  return all.filter(c => (c.course || '').trim().toLowerCase() === (student.course || '').trim().toLowerCase());
+}
+
+function renderMCQList(chapters){
+  const el = document.getElementById('mcqList');
+  if (!chapters.length){
+    el.innerHTML = `<div class="empty-note">📌 No MCQ chapters found yet for <b>${student.course || 'your course'}</b>. Check back soon.</div>`;
+    return;
+  }
+  el.innerHTML = chapters.map(c => `
+    <div class="note-card">
+      <div class="note-info">
+        <h3>${c.chapter}</h3>
+        <div class="meta"><span class="tag">${c.course}</span>${c.questionCount || 0} questions</div>
+      </div>
+      <a class="download-btn" href="${c.url}" target="_blank" rel="noopener">Start Quiz →</a>
     </div>
   `).join('');
 }
@@ -363,7 +417,9 @@ function renderQuizHistory(rows){
 // =====================================================================
 renderGreeting();
 renderInfoCards();
+renderFeeBanner();
 loadNotes().then(renderNotes);
+renderMCQList(loadMCQList());
 loadQuizHistory().then(renderQuizHistory);
 </script>
 
