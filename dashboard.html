@@ -242,7 +242,10 @@
         <span>Student Dashboard</span>
       </div>
     </a>
-    <button class="logout-btn" onclick="logout()">Logout →</button>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a class="logout-btn" href="index.html" style="text-decoration:none; display:inline-flex; align-items:center;">🏠 Home</a>
+      <button class="logout-btn" onclick="logout()">Logout →</button>
+    </div>
   </div>
 </header>
 
@@ -297,9 +300,6 @@
             <tr><td colspan="5" style="text-align:center; color:var(--ink-soft); padding:24px;">Loading quiz history…</td></tr>
           </tbody>
         </table>
-      </div>
-      <div class="cta-row">
-        <a class="btn-outline-teal" href="mcq-quiz.html">Take another quiz →</a>
       </div>
     </section>
 
