@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<!--
+  SANKALP COMPUTER CLASSES — Student Dashboard
+  =====================================================================
+  STATUS: UI/UX design complete. Runs entirely on data set by login.html
+  (currently the DEMO_STUDENT) plus two mocked data sources below so the
+  whole page can be reviewed and tested right now:
+
+    - loadNotes()       → currently returns MOCK_NOTES
+    - loadQuizHistory()  → currently returns MOCK_QUIZ_HISTORY
+
+  WHEN READY TO CONNECT THE REAL BACKEND:
+    1) Swap loadNotes() to fetch that student's course notes from
+       Firestore ("notes" collection, filtered by course).
+    2) Swap loadQuizHistory() to fetch that student's attempts from
+       Firestore (the same "scores" collection ccc-chapter4-mcq.html
+       already writes to — query where studentId == student.studentId,
+       or where uid == the logged-in Firebase user, once quiz pages are
+       updated to tag their saves with the student's ID).
+  Every other part of this page (greeting, info cards, layout) already
+  works against the real student object once login.html is connected to
+  the Google Sheet, so nothing else needs to change.
+  =====================================================================
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Dashboard | Sankalp Computer Classes</title>
+<link rel="icon" href="logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#132038; --ink-soft:#2b3a58; --paper:#f6f4ee; --paper-alt:#eeebe2;
+    --card:#ffffff; --gold:#d99a1f; --gold-dark:#b87f14;
+    --teal:#0f6f6c; --teal-dark:#0b524f;
+    --line:#e1ddd0; --radius:14px; --shadow:0 10px 30px -18px rgba(19,32,56,0.35);
+    --ok:#1c7c4d; --ok-bg:#eaf7f0; --warn:#b3432f; --warn-bg:#fbeae6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"Source Sans 3", system-ui, sans-serif; line-height:1.6;
+  }
+  h1,h2,h3{font-family:"Space Grotesk", system-ui, sans-serif;}
+  .wrap{max-width:1000px; margin:0 auto; padding:0 20px;}
+
+  header.topbar{background:var(--ink); padding:18px 0;}
+  header.topbar .wrap{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
+  .brand img{width:38px; height:38px; border-radius:8px; background:#fff;}
+  .brand strong{font-family:"Space Grotesk"; color:#fff; font-size:.95rem; display:block;}
+  .brand span{font-size:.72rem; color:#c9cdd8;}
+  .logout-btn{
+    background:none; border:1px solid #3a4560; color:#dfe2ea; padding:8px 16px;
+    border-radius:8px; font-size:.85rem; cursor:pointer; font-family:inherit; font-weight:600;
+  }
+  .logout-btn:hover{border-color:#dfe2ea; color:#fff;}
+
+  /* ---- Greeting hero ---- */
+  .hero{
+    background:linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%);
+    color:#fff; padding:32px 0 40px; margin-bottom:-24px;
+  }
+  .hero h1{font-size:1.6rem; margin-bottom:4px;}
+  .hero .hi-greet{font-size:.95rem; opacity:.9; margin-bottom:16px;}
+  .hero .badges{display:flex; gap:10px; flex-wrap:wrap;}
+  .hero .badge{
+    background:rgba(255,255,255,0.15); padding:6px 14px; border-radius:999px;
+    font-size:.82rem; font-weight:600; backdrop-filter:blur(4px);
+  }
+
+  main{padding:44px 0 60px;}
+
+  .info-grid{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:34px;
+  }
+  .info-card{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:16px 18px; box-shadow:var(--shadow);
+  }
+  .info-card .lbl{font-size:.75rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; margin-bottom:4px;}
+  .info-card .val{font-family:"Space Grotesk"; font-size:1.05rem; font-weight:700;}
+  .info-card .val.ok{color:var(--ok);}
+  .info-card .val.warn{color:var(--warn);}
+
+  section{margin-bottom:38px;}
+  .section-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; flex-wrap:wrap;}
+  .section-head h2{font-size:1.15rem;}
+  .section-head .sub{font-size:.85rem; color:var(--ink-soft);}
+
+  /* ---- Notes ---- */
+  .notes-list{display:grid; gap:12px;}
+  .note-card{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:16px 18px; box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  }
+  .note-info h3{font-size:.98rem; margin-bottom:3px;}
+  .note-info .meta{font-size:.8rem; color:var(--ink-soft);}
+  .note-info .meta .tag{
+    display:inline-block; background:rgba(15,111,108,0.1); color:var(--teal-dark);
+    padding:2px 9px; border-radius:999px; font-weight:600; margin-right:6px;
+  }
+  .download-btn{
+    background:var(--gold); color:#241a02; border:none; padding:9px 18px;
+    border-radius:8px; font-weight:700; font-size:.85rem; cursor:pointer;
+    font-family:inherit; text-decoration:none; white-space:nowrap;
+  }
+  .download-btn:hover{background:var(--gold-dark);}
+
+  .empty-note{
+    text-align:center; padding:30px 20px; color:var(--ink-soft); font-size:.9rem;
+    background:var(--card); border:1px dashed var(--line); border-radius:12px;
+  }
+
+  /* ---- Quiz history ---- */
+  .quiz-table-wrap{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow);
+  }
+  table{width:100%; border-collapse:collapse; font-size:.9rem;}
+  th{
+    text-align:left; padding:12px 18px; color:var(--ink-soft); font-size:.75rem;
+    text-transform:uppercase; letter-spacing:.03em; border-bottom:1px solid var(--line);
+    background:var(--paper-alt);
+  }
+  td{padding:12px 18px; border-bottom:1px solid var(--line);}
+  tr:last-child td{border-bottom:none;}
+  .pct-badge{
+    display:inline-block; padding:3px 10px; border-radius:999px; font-weight:700; font-size:.82rem;
+  }
+  .pct-great{background:var(--ok-bg); color:var(--ok);}
+  .pct-good{background:rgba(15,111,108,0.12); color:var(--teal-dark);}
+  .pct-low{background:var(--warn-bg); color:var(--warn);}
+  .retry-link{color:var(--teal-dark); font-size:.85rem; font-weight:600; text-decoration:none;}
+  .retry-link:hover{text-decoration:underline;}
+
+  .cta-row{text-align:center; margin-top:18px;}
+  .btn-outline-teal{
+    display:inline-block; border:1px solid var(--teal); color:var(--teal-dark);
+    padding:10px 22px; border-radius:9px; font-weight:700; font-size:.9rem;
+    text-decoration:none;
+  }
+  .btn-outline-teal:hover{background:rgba(15,111,108,0.08);}
+
+  @media (max-width:720px){
+    .info-grid{grid-template-columns:repeat(2, 1fr);}
+    table{font-size:.82rem;}
+    th, td{padding:10px 12px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <img src="logo.png" alt="" onerror="this.style.background='var(--teal)'; this.src='';">
+      <div>
+        <strong>Sankalp Computer Classes</strong>
+        <span>Student Dashboard</span>
+      </div>
+    </a>
+    <button class="logout-btn" onclick="logout()">Logout →</button>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <h1 id="greetName">Namaste! 👋</h1>
+    <div class="hi-greet" id="greetHi">आपके डैशबोर्ड में आपका स्वागत है</div>
+    <div class="badges" id="heroBadges"></div>
+  </div>
+</div>
+
+<main>
+  <div class="wrap">
+
+    <div class="info-grid" id="infoGrid"></div>
+
+    <section>
+      <div class="section-head">
+        <h2>📄 My Notes</h2>
+        <span class="sub">Chapter-wise notes for your course</span>
+      </div>
+      <div class="notes-list" id="notesList">
+        <div class="empty-note">Loading notes…</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>📊 My Quiz History</h2>
+        <span class="sub">Your best score in each chapter</span>
+      </div>
+      <div class="quiz-table-wrap">
+        <table>
+          <thead>
+            <tr><th>Chapter</th><th>Best Score</th><th>Attempts</th><th>Last Attempt</th><th></th></tr>
+          </thead>
+          <tbody id="quizBody">
+            <tr><td colspan="5" style="text-align:center; color:var(--ink-soft); padding:24px;">Loading quiz history…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="cta-row">
+        <a class="btn-outline-teal" href="mcq-quiz.html">Take another quiz →</a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+// =====================================================================
+// 1) Get the logged-in student (set by login.html)
+// =====================================================================
+const raw = sessionStorage.getItem('sankalp_student');
+if (!raw){
+  window.location.href = 'login.html';
+}
+const student = JSON.parse(raw || '{}');
+
+function logout(){
+  sessionStorage.removeItem('sankalp_student');
+  window.location.href = 'login.html';
+}
+
+// =====================================================================
+// 2) Greeting + info cards — uses whatever fields exist on `student`,
+//    so this already works with real Google Sheet data once login.html
+//    is connected (same field names: name, course, batch, status,
+//    admissionDate, feeStatus).
+// =====================================================================
+function renderGreeting(){
+  document.getElementById('greetName').textContent = `Namaste, ${student.name || 'Student'}! 👋`;
+  document.getElementById('greetHi').textContent = `आपके डैशबोर्ड में आपका स्वागत है`;
+
+  const badges = [student.course, student.batch].filter(Boolean);
+  document.getElementById('heroBadges').innerHTML =
+    badges.map(b => `<span class="badge">${b}</span>`).join('');
+}
+
+function renderInfoCards(){
+  const feeOk = (student.feeStatus || '').toLowerCase() === 'paid';
+  const cards = [
+    { lbl:'Course', val: student.course || '—' },
+    { lbl:'Status', val: student.status || '—', cls: (student.status||'').toLowerCase()==='active' ? 'ok' : '' },
+    { lbl:'Admission Date', val: student.admissionDate || '—' },
+    { lbl:'Fee Status', val: student.feeStatus || '—', cls: feeOk ? 'ok' : 'warn' }
+  ];
+  document.getElementById('infoGrid').innerHTML = cards.map(c => `
+    <div class="info-card">
+      <div class="lbl">${c.lbl}</div>
+      <div class="val ${c.cls||''}">${c.val}</div>
+    </div>
+  `).join('');
+}
+
+// =====================================================================
+// 3) Notes — MOCKED for now. Replace loadNotes() with a real Firestore
+//    query later: notes where course == student.course, ordered by
+//    addedAt desc.
+// =====================================================================
+const MOCK_NOTES = [
+  { chapter:'Chapter 1', title:'Introduction to Computer — Full Notes', course:'CCC', url:'#' },
+  { chapter:'Chapter 2', title:'Operating System — Full Notes', course:'CCC', url:'#' },
+  { chapter:'Chapter 3', title:'MS Word — Shortcuts & Practice Sheet', course:'CCC', url:'#' }
+];
+
+async function loadNotes(){
+  // ---- CURRENT: mock data ----
+  await new Promise(r => setTimeout(r, 400));
+  return MOCK_NOTES;
+
+  // ---- LATER: real Firestore query, e.g. ----
+  // const snap = await db.collection('notes')
+  //   .where('course', '==', student.course)
+  //   .orderBy('addedAt', 'desc').get();
+  // return snap.docs.map(d => d.data());
+}
+
+function renderNotes(notes){
+  const el = document.getElementById('notesList');
+  if (!notes.length){
+    el.innerHTML = `<div class="empty-note">Abhi is course ke liye koi notes upload nahi hue hain.</div>`;
+    return;
+  }
+  el.innerHTML = notes.map(n => `
+    <div class="note-card">
+      <div class="note-info">
+        <h3>${n.title}</h3>
+        <div class="meta"><span class="tag">${n.chapter}</span>${n.course}</div>
+      </div>
+      <a class="download-btn" href="${n.url}" target="_blank" rel="noopener">⬇ Download</a>
+    </div>
+  `).join('');
+}
+
+// =====================================================================
+// 4) Quiz history — MOCKED for now. Replace loadQuizHistory() with a
+//    real Firestore query later: the "scores" collection, filtered to
+//    this student's attempts (e.g. where studentId == student.studentId),
+//    grouped by chapterId to find the best % and attempt count.
+// =====================================================================
+const MOCK_QUIZ_HISTORY = [
+  { chapter:'Chapter 1: Introduction to Computer', bestPct:88, attempts:2, lastDate:'14 Sep 2026', retryUrl:'ccc-chapter1-mcq.html' },
+  { chapter:'Chapter 2: Introduction to Operating System', bestPct:64, attempts:1, lastDate:'15 Sep 2026', retryUrl:'ccc-chapter2-mcq.html' },
+  { chapter:'MS Word', bestPct:40, attempts:1, lastDate:'17 Sep 2026', retryUrl:'msword-mcq.html' }
+];
+
+async function loadQuizHistory(){
+  // ---- CURRENT: mock data ----
+  await new Promise(r => setTimeout(r, 500));
+  return MOCK_QUIZ_HISTORY;
+
+  // ---- LATER: real Firestore query, e.g. ----
+  // const snap = await db.collection('scores')
+  //   .where('studentId', '==', student.studentId).get();
+  // ...group by chapterId, compute best pct + attempt count per chapter...
+}
+
+function pctClass(pct){
+  if (pct >= 80) return 'pct-great';
+  if (pct >= 60) return 'pct-good';
+  return 'pct-low';
+}
+
+function renderQuizHistory(rows){
+  const body = document.getElementById('quizBody');
+  if (!rows.length){
+    body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--ink-soft); padding:24px;">Aapne abhi tak koi quiz nahi diya hai.</td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.chapter}</td>
+      <td><span class="pct-badge ${pctClass(r.bestPct)}">${r.bestPct}%</span></td>
+      <td>${r.attempts}</td>
+      <td>${r.lastDate}</td>
+      <td><a class="retry-link" href="${r.retryUrl}">Retry →</a></td>
+    </tr>
+  `).join('');
+}
+
+// =====================================================================
+// Boot
+// =====================================================================
+renderGreeting();
+renderInfoCards();
+loadNotes().then(renderNotes);
+loadQuizHistory().then(renderQuizHistory);
+</script>
+
+</body>
+</html>

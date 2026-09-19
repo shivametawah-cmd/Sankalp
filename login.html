@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<!--
+  SANKALP COMPUTER CLASSES — Student Login
+  =====================================================================
+  STATUS: UI/UX design complete. Login check is currently MOCKED with a
+  demo account so the whole flow (login → greeting → notes → quiz
+  history) can be tested end-to-end right now.
+
+  WHEN READY TO CONNECT THE REAL BACKEND, replace only the function
+  verifyLogin() function near the bottom of the script block with a real call to your
+  Google Apps Script Web App (the same one shivam.html already uses),
+  which should check the entered ID+Password against the Students sheet
+  and return that row's data (Name, Course, Status, Admission date,
+  Adm. fee status, etc.). Everything else on this page and on
+  dashboard.html already expects exactly the object shape shown in
+  DEMO_STUDENT below, so no other code needs to change.
+  =====================================================================
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Login | Sankalp Computer Classes</title>
+<link rel="icon" href="logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#132038; --ink-soft:#2b3a58; --paper:#f6f4ee; --paper-alt:#eeebe2;
+    --card:#ffffff; --gold:#d99a1f; --gold-dark:#b87f14;
+    --teal:#0f6f6c; --teal-dark:#0b524f;
+    --line:#e1ddd0; --radius:14px; --shadow:0 10px 30px -18px rgba(19,32,56,0.35);
+    --danger:#b3432f; --danger-bg:#fbeae6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"Source Sans 3", system-ui, sans-serif; line-height:1.6;
+    min-height:100vh; display:flex; flex-direction:column;
+  }
+  h1,h2,h3{font-family:"Space Grotesk", system-ui, sans-serif;}
+
+  header.topbar{background:var(--ink); padding:20px 0;}
+  header.topbar .wrap{max-width:1000px; margin:0 auto; padding:0 20px; display:flex; align-items:center; gap:12px;}
+  .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
+  .brand img{width:40px; height:40px; border-radius:8px; background:#fff;}
+  .brand strong{font-family:"Space Grotesk"; color:#fff; font-size:1rem; display:block;}
+  .brand span{font-size:.75rem; color:#c9cdd8;}
+
+  main{flex:1; display:flex; align-items:center; justify-content:center; padding:40px 20px;}
+
+  .login-card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); width:100%; max-width:420px; padding:34px 30px;
+  }
+  .login-card .eyebrow{
+    display:inline-block; font-family:"Space Grotesk"; font-size:.72rem; font-weight:700;
+    letter-spacing:.04em; color:var(--teal-dark); background:rgba(15,111,108,0.1);
+    padding:5px 11px; border-radius:999px; margin-bottom:14px;
+  }
+  .login-card h1{font-size:1.5rem; margin-bottom:6px;}
+  .login-card .hi{color:var(--ink-soft); font-size:.95rem; margin-bottom:26px;}
+
+  label{display:block; font-weight:600; font-size:.9rem; margin-bottom:6px;}
+  .field{margin-bottom:18px;}
+  input[type=text], input[type=password]{
+    width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:9px;
+    font-size:1rem; font-family:inherit; background:var(--paper-alt);
+  }
+  input:focus{outline:none; border-color:var(--teal); background:#fff;}
+
+  .pw-wrap{position:relative;}
+  .pw-toggle{
+    position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer; font-size:.8rem;
+    color:var(--ink-soft); font-family:inherit; font-weight:600;
+  }
+
+  .login-btn{
+    width:100%; background:var(--teal); color:#fff; border:none;
+    padding:13px; border-radius:9px; font-weight:700; font-size:1rem;
+    cursor:pointer; font-family:inherit; margin-top:4px;
+  }
+  .login-btn:hover{background:var(--teal-dark);}
+  .login-btn:disabled{opacity:.6; cursor:wait;}
+
+  .error-box{
+    background:var(--danger-bg); color:var(--danger); padding:11px 14px;
+    border-radius:9px; font-size:.87rem; margin-bottom:16px; display:none;
+  }
+  .error-box.show{display:block;}
+
+  .demo-hint{
+    margin-top:22px; padding:12px 14px; background:var(--paper-alt);
+    border-radius:9px; font-size:.8rem; color:var(--ink-soft); text-align:center;
+  }
+  .demo-hint b{color:var(--ink);}
+
+  .back-link{display:block; text-align:center; margin-top:18px; font-size:.85rem; color:var(--ink-soft); text-decoration:none;}
+  .back-link:hover{color:var(--ink);}
+
+  footer{padding:20px; text-align:center; font-size:.8rem; color:var(--ink-soft);}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <img src="logo.png" alt="" onerror="this.style.background='var(--ink)'; this.src='';">
+      <div>
+        <strong>Sankalp Computer Classes</strong>
+        <span>Student Portal</span>
+      </div>
+    </a>
+  </div>
+</header>
+
+<main>
+  <div class="login-card">
+    <span class="eyebrow">STUDENT LOGIN</span>
+    <h1>Welcome back</h1>
+    <div class="hi">अपने ID और Password से लॉगिन करें</div>
+
+    <div class="error-box" id="errorBox"></div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="field">
+        <label for="studentId">Student ID / यूज़रनेम</label>
+        <input type="text" id="studentId" placeholder="e.g. sankalp101" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" required>
+          <button type="button" class="pw-toggle" onclick="togglePassword()" id="pwToggleBtn">Show</button>
+        </div>
+      </div>
+      <button type="submit" class="login-btn" id="loginBtn">Login →</button>
+    </form>
+
+    <div class="demo-hint">
+      🧪 Demo mode — try ID <b>demo</b> / password <b>1234</b><br>
+      (Asli Google Sheet se login baad me connect hoga)
+    </div>
+
+    <a class="back-link" href="mcq-quiz.html">← Back to MCQ practice</a>
+  </div>
+</main>
+
+<footer>&copy; 2026 Sankalp Computer Classes, Bidhuna, Auraiya, UP</footer>
+
+<script>
+function togglePassword(){
+  const pw = document.getElementById('password');
+  const btn = document.getElementById('pwToggleBtn');
+  const isHidden = pw.type === 'password';
+  pw.type = isHidden ? 'text' : 'password';
+  btn.textContent = isHidden ? 'Hide' : 'Show';
+}
+
+function showError(msg){
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.classList.add('show');
+}
+function hideError(){
+  document.getElementById('errorBox').classList.remove('show');
+}
+
+async function handleLogin(e){
+  e.preventDefault();
+  hideError();
+
+  const id = document.getElementById('studentId').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('loginBtn');
+
+  btn.disabled = true;
+  btn.textContent = 'Checking…';
+
+  try{
+    const student = await verifyLogin(id, password);
+    if (!student){
+      showError('ID ya password galat hai. Dobara try karein.');
+      btn.disabled = false;
+      btn.textContent = 'Login →';
+      return;
+    }
+    // Save the logged-in student's data for dashboard.html to read.
+    // sessionStorage clears when the browser tab closes; switch to
+    // localStorage instead if students should stay logged in across
+    // visits/tabs on their own device.
+    sessionStorage.setItem('sankalp_student', JSON.stringify(student));
+    window.location.href = 'dashboard.html';
+  } catch(err){
+    console.error(err);
+    showError('Kuch गड़बड़ हुई। दोबारा कोशिश करें।');
+    btn.disabled = false;
+    btn.textContent = 'Login →';
+  }
+}
+
+// =====================================================================
+// MOCK LOGIN — replace this whole function with a real Apps Script call
+// when the backend is ready. It must keep returning either:
+//   - null / false  → login failed
+//   - a student object shaped like DEMO_STUDENT below → login succeeded
+// =====================================================================
+const DEMO_STUDENT = {
+  studentId:   'demo',
+  name:        'Rohit Kumar',
+  course:      'CCC',
+  batch:       'Morning 9–10 AM',
+  status:      'Active',
+  admissionDate: '12 Jun 2026',
+  feeStatus:   'Paid'
+};
+
+async function verifyLogin(id, password){
+  // ---- CURRENT: mock check against one demo account ----
+  await new Promise(r => setTimeout(r, 500)); // fake network delay
+  if (id.toLowerCase() === 'demo' && password === '1234'){
+    return DEMO_STUDENT;
+  }
+  return null;
+
+  // ---- LATER: real Google Sheet check via Apps Script, e.g. ----
+  // const res = await fetch(WEB_APP_URL + '?action=login'
+  //   + '&id=' + encodeURIComponent(id)
+  //   + '&password=' + encodeURIComponent(password));
+  // const data = await res.json();
+  // return data.success ? data.student : null;
+}
+
+// If already logged in, skip straight to dashboard
+if (sessionStorage.getItem('sankalp_student')){
+  window.location.href = 'dashboard.html';
+}
+</script>
+
+</body>
+</html>
