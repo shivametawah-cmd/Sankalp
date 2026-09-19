@@ -3,9 +3,11 @@
   SANKALP COMPUTER CLASSES — Student Dashboard
   =====================================================================
   STATUS: Fully connected to real data.
-    - Notes           → fetched from the Google Sheet ("StudyMaterial"
-                        tab) via Apps Script, filtered to the student's
-                        course. Shows "Coming soon" if none yet.
+    - Notes           → from notes-index.js (window.STATIC_NOTES), same
+                        static-file pattern as chapters-index.js, filtered
+                        to the student's course. Opens in an in-page
+                        viewer (pdf.js canvas, watermarked) — no download
+                        link. Shows "Coming soon" if none yet for a course.
     - Fee status       → the banner at the top and the "Admission Fee"
                         info card both come from the same Apps Script
                         (login response), reading the "Fees" and
@@ -27,6 +29,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="chapters-index.js"></script>
+<script src="notes-index.js"></script>
+<!-- pdf.js: renders notes as in-page canvas images (no native PDF viewer, no download button) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <!-- Firebase: read this student's own quiz scores by their unique Student ID -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
@@ -143,6 +148,52 @@
     background:var(--card); border:1px dashed var(--line); border-radius:12px;
   }
 
+  .read-btn{
+    background:var(--teal); color:#fff; border:none; padding:9px 18px;
+    border-radius:8px; font-weight:700; font-size:.85rem; cursor:pointer;
+    font-family:inherit; white-space:nowrap;
+  }
+  .read-btn:hover{background:var(--teal-dark);}
+
+  /* ---- In-page Note Viewer (no download, canvas-rendered) ---- */
+  .note-viewer-overlay{
+    display:none; position:fixed; inset:0; background:rgba(19,32,56,0.82);
+    z-index:999; align-items:center; justify-content:center; padding:16px;
+  }
+  .note-viewer-overlay.open{display:flex;}
+  .note-viewer-box{
+    background:var(--paper); border-radius:14px; width:100%; max-width:820px;
+    height:92vh; display:flex; flex-direction:column; overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,0.4);
+  }
+  .note-viewer-head{
+    background:var(--ink); color:#fff; padding:12px 18px; display:flex;
+    align-items:center; justify-content:space-between; gap:10px;
+  }
+  .note-viewer-head h3{font-size:.95rem; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .note-viewer-close{
+    background:none; border:1px solid #3a4560; color:#dfe2ea; width:32px; height:32px;
+    border-radius:8px; cursor:pointer; font-size:1rem; flex:0 0 auto;
+  }
+  .note-viewer-close:hover{border-color:#fff; color:#fff;}
+  .note-viewer-body{
+    flex:1; overflow:auto; display:flex; align-items:flex-start; justify-content:center;
+    padding:18px; user-select:none; -webkit-user-select:none; background:var(--paper-alt);
+    position:relative;
+  }
+  .note-viewer-body canvas{max-width:100%; height:auto; box-shadow:var(--shadow); background:#fff;}
+  .note-viewer-loading{color:var(--ink-soft); font-size:.9rem; padding:40px 0;}
+  .note-viewer-controls{
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    padding:10px 18px; border-top:1px solid var(--line); background:var(--card);
+  }
+  .note-viewer-controls button{
+    background:var(--paper-alt); border:1px solid var(--line); padding:8px 16px;
+    border-radius:8px; font-weight:700; font-size:.85rem; cursor:pointer; font-family:inherit;
+  }
+  .note-viewer-controls button:disabled{opacity:.4; cursor:not-allowed;}
+  .note-viewer-controls span{font-size:.85rem; color:var(--ink-soft); font-weight:600;}
+
   /* ---- Quiz history ---- */
   .quiz-table-wrap{
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
@@ -255,6 +306,22 @@
   </div>
 </main>
 
+<!-- In-page Note Viewer overlay (no download link/button anywhere in here) -->
+<div class="note-viewer-overlay" id="noteViewerOverlay">
+  <div class="note-viewer-box">
+    <div class="note-viewer-head">
+      <h3 id="noteViewerTitle">Notes</h3>
+      <button class="note-viewer-close" onclick="closeNoteViewer()">✕</button>
+    </div>
+    <div class="note-viewer-body" id="noteViewerBody" oncontextmenu="return false;"></div>
+    <div class="note-viewer-controls" id="noteViewerControls" style="display:none;">
+      <button id="noteViewerPrev" onclick="noteViewerPrev()">← Prev</button>
+      <span id="noteViewerPageLabel">Page 1</span>
+      <button id="noteViewerNext" onclick="noteViewerNext()">Next →</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // =====================================================================
 // 1) Get the logged-in student (set by login.html)
@@ -333,20 +400,14 @@ function renderInfoCards(){
 }
 
 // =====================================================================
-// 3) Notes — MOCKED for now. Replace loadNotes() with a real Firestore
-//    query later: notes where course == student.course, ordered by
-//    addedAt desc.
+// 3) Notes — from notes-index.js (window.STATIC_NOTES), same pattern as
+//    chapters-index.js for MCQs. To add a note: upload its PDF into the
+//    "notes" folder in the repo, then add one entry in notes-index.js.
+//    Filtered to just this student's own course.
 // =====================================================================
-async function loadNotes(){
-  try{
-    const res = await fetch(WEB_APP_URL + '?action=materials');
-    const data = await res.json();
-    const all = data.materials || [];
-    return all.filter(m => (m.course || '').trim().toLowerCase() === (student.course || '').trim().toLowerCase());
-  } catch(err){
-    console.error(err);
-    return [];
-  }
+function loadNotes(){
+  const all = window.STATIC_NOTES || [];
+  return all.filter(n => (n.course || '').trim().toLowerCase() === (student.course || '').trim().toLowerCase());
 }
 
 function renderNotes(notes){
@@ -359,11 +420,111 @@ function renderNotes(notes){
     <div class="note-card">
       <div class="note-info">
         <h3>${n.title}</h3>
-        <div class="meta"><span class="tag">${n.type}</span>${n.course}</div>
+        <div class="meta"><span class="tag">${n.type || 'PDF'}</span>${n.course}</div>
       </div>
-      <a class="download-btn" href="${n.file}" target="_blank" rel="noopener">⬇ Download</a>
+      <button class="read-btn" data-file="${n.file}" data-title="${(n.title || 'Notes').replace(/"/g,'&quot;')}">📖 Read Notes</button>
     </div>
   `).join('');
+}
+
+// Open notes in the in-page viewer instead of a direct link — no separate
+// PDF file is ever linked/downloadable, students can only read it here.
+document.getElementById('notesList').addEventListener('click', (e) => {
+  const btn = e.target.closest('.read-btn');
+  if (!btn) return;
+  openNoteViewer(btn.dataset.file, btn.dataset.title);
+});
+
+// =====================================================================
+// 3.4) In-page Note Viewer — renders each PDF page onto a <canvas> using
+//    pdf.js (image, not a real PDF), so there is no native browser PDF
+//    toolbar/download button and no file is ever linked directly. A
+//    faint watermark with the student's name + ID is stamped on every
+//    page as a deterrent. Right-click / text-selection is disabled.
+//    NOTE: this is a deterrent, not real DRM — a screenshot is always
+//    possible. It stops casual downloading/reselling, not everything.
+// =====================================================================
+if (window.pdfjsLib){
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+let currentPdfDoc = null;
+let currentPageNum = 1;
+
+function openNoteViewer(fileUrl, title){
+  document.getElementById('noteViewerTitle').textContent = title || 'Notes';
+  document.getElementById('noteViewerOverlay').classList.add('open');
+  const body = document.getElementById('noteViewerBody');
+  body.innerHTML = '<div class="note-viewer-loading">Loading notes…</div>';
+  document.getElementById('noteViewerControls').style.display = 'none';
+
+  if (!window.pdfjsLib){
+    body.innerHTML = '<div class="note-viewer-loading">Could not load the viewer. Please try again.</div>';
+    return;
+  }
+
+  pdfjsLib.getDocument(fileUrl).promise.then(pdf => {
+    currentPdfDoc = pdf;
+    currentPageNum = 1;
+    document.getElementById('noteViewerControls').style.display = 'flex';
+    renderNotePage(currentPageNum);
+  }).catch(err => {
+    console.error('Note load failed:', err);
+    body.innerHTML = '<div class="note-viewer-loading">Sorry, these notes could not be opened.</div>';
+  });
+}
+
+function renderNotePage(num){
+  const body = document.getElementById('noteViewerBody');
+  currentPdfDoc.getPage(num).then(page => {
+    const containerWidth = body.clientWidth - 36;
+    const baseViewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(2, (containerWidth / baseViewport.width) || 1);
+    const viewport = page.getViewport({ scale });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    canvas.oncontextmenu = () => false; // block "save image as"
+    const ctx = canvas.getContext('2d');
+
+    page.render({ canvasContext: ctx, viewport }).promise.then(() => {
+      // Watermark: student's name + ID, tiled diagonally, very light.
+      const label = `${student.name || ''} • ${student.studentId || ''}`;
+      ctx.save();
+      ctx.globalAlpha = 0.10;
+      ctx.fillStyle = '#132038';
+      ctx.font = `${Math.max(14, viewport.width * 0.028)}px sans-serif`;
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(-Math.PI / 6);
+      for (let y = -canvas.height; y < canvas.height; y += 90){
+        for (let x = -canvas.width; x < canvas.width; x += 260){
+          ctx.fillText(label, x, y);
+        }
+      }
+      ctx.restore();
+
+      body.innerHTML = '';
+      body.appendChild(canvas);
+    });
+
+    document.getElementById('noteViewerPageLabel').textContent = `Page ${num} of ${currentPdfDoc.numPages}`;
+    document.getElementById('noteViewerPrev').disabled = num <= 1;
+    document.getElementById('noteViewerNext').disabled = num >= currentPdfDoc.numPages;
+  });
+}
+
+function noteViewerPrev(){
+  if (currentPageNum > 1){ currentPageNum--; renderNotePage(currentPageNum); }
+}
+function noteViewerNext(){
+  if (currentPdfDoc && currentPageNum < currentPdfDoc.numPages){ currentPageNum++; renderNotePage(currentPageNum); }
+}
+function closeNoteViewer(){
+  document.getElementById('noteViewerOverlay').classList.remove('open');
+  document.getElementById('noteViewerBody').innerHTML = '';
+  if (currentPdfDoc){ currentPdfDoc.destroy(); currentPdfDoc = null; }
 }
 
 // =====================================================================
@@ -466,7 +627,7 @@ function renderQuizHistory(rows){
 renderGreeting();
 renderInfoCards();
 renderFeeBanner();
-loadNotes().then(renderNotes);
+renderNotes(loadNotes());
 renderMCQList(loadMCQList());
 loadQuizHistory().then(renderQuizHistory);
 </script>
