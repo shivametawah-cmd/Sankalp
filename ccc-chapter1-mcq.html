@@ -409,7 +409,34 @@ function saveScores(s){ localStorage.setItem(SCORE_KEY, JSON.stringify(s)); }
 let quizResultData = null; // Store result data for PDF
 
 let currentStudent = '';
+let currentStudentId = '';
 let currentQIndex = 0;
+
+// If the student is logged in via the student portal (login.html), auto-fill
+// their name and tag this quiz attempt with their unique Student ID — so
+// scores are matched by ID, not name (avoids mix-ups between students who
+// share the same name), and show up correctly on their own dashboard.
+(function(){
+  try{
+    const raw = sessionStorage.getItem('sankalp_student');
+    if (raw){
+      const s = JSON.parse(raw);
+      if (s && s.name){
+        currentStudentId = s.studentId || '';
+        window.addEventListener('DOMContentLoaded', () => {
+          const nameInput = document.getElementById('studentName');
+          if (nameInput){
+            nameInput.value = s.name;
+            nameInput.readOnly = true;
+            nameInput.style.background = '#eef2f6';
+            const hint = nameInput.parentElement.querySelector('div');
+            if (hint) hint.textContent = `Logged in as ${s.name} (ID: ${s.studentId || '—'}) — this score will be saved to your dashboard.`;
+          }
+        });
+      }
+    }
+  } catch(err){ console.error('Could not read logged-in student', err); }
+})();
 let userAnswers = [];
 let questionOrder = [];
 
@@ -554,6 +581,7 @@ function showResults(){
 
   const entry = {
     name: currentStudent,
+    studentId: currentStudentId || null,
     correct,
     total,
     pct,

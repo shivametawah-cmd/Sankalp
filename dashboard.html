@@ -2,24 +2,19 @@
 <!--
   SANKALP COMPUTER CLASSES — Student Dashboard
   =====================================================================
-  STATUS: UI/UX design complete. Runs entirely on data set by login.html
-  (currently the DEMO_STUDENT) plus two mocked data sources below so the
-  whole page can be reviewed and tested right now:
-
-    - loadNotes()       → currently returns MOCK_NOTES
-    - loadQuizHistory()  → currently returns MOCK_QUIZ_HISTORY
-
-  WHEN READY TO CONNECT THE REAL BACKEND:
-    1) Swap loadNotes() to fetch that student's course notes from
-       Firestore ("notes" collection, filtered by course).
-    2) Swap loadQuizHistory() to fetch that student's attempts from
-       Firestore (the same "scores" collection ccc-chapter4-mcq.html
-       already writes to — query where studentId == student.studentId,
-       or where uid == the logged-in Firebase user, once quiz pages are
-       updated to tag their saves with the student's ID).
-  Every other part of this page (greeting, info cards, layout) already
-  works against the real student object once login.html is connected to
-  the Google Sheet, so nothing else needs to change.
+  STATUS: Fully connected to real data.
+    - Notes           → fetched from the Google Sheet ("StudyMaterial"
+                        tab) via Apps Script, filtered to the student's
+                        course. Shows "Coming soon" if none yet.
+    - Fee status       → the banner at the top and the "Admission Fee"
+                        info card both come from the same Apps Script
+                        (login response), reading the "Fees" and
+                        "Form Responses 1" sheets.
+    - MCQ Practice      → chapters filtered from chapters-index.js by
+                        the student's own course.
+    - Quiz History     → fetched from Firestore's "scores" collection,
+                        filtered by this student's unique studentId
+                        (not name), grouped by chapterId.
   =====================================================================
 -->
 <html lang="en">
@@ -31,7 +26,38 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="chapters-index-3.js"></script>
+<script src="chapters-index.js"></script>
+<!-- Firebase: read this student's own quiz scores by their unique Student ID -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getFirestore, collection, query, where, getDocs
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyARCHtO6xh7xbXP3UOIqoErxwwbvVSBxb4",
+    authDomain: "sankalp-quiz-5b907.firebaseapp.com",
+    projectId: "sankalp-quiz-5b907",
+    storageBucket: "sankalp-quiz-5b907.firebasestorage.app",
+    messagingSenderId: "919711308932",
+    appId: "1:919711308932:web:61c7b1a82b80f6b9b4b6d1"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Fetch every quiz attempt belonging to one student, by their unique ID.
+  window.getStudentScores = async function (studentId) {
+    try {
+      const q = query(collection(db, "scores"), where("studentId", "==", studentId));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => d.data());
+    } catch (err) {
+      console.error('Firebase fetch failed:', err);
+      return [];
+    }
+  };
+</script>
 <style>
   :root{
     --ink:#132038; --ink-soft:#2b3a58; --paper:#f6f4ee; --paper-alt:#eeebe2;
@@ -367,26 +393,48 @@ function renderMCQList(chapters){
 }
 
 // =====================================================================
-// 4) Quiz history — MOCKED for now. Replace loadQuizHistory() with a
-//    real Firestore query later: the "scores" collection, filtered to
-//    this student's attempts (e.g. where studentId == student.studentId),
-//    grouped by chapterId to find the best % and attempt count.
+// 4) Quiz history — REAL data now, from Firestore's "scores" collection,
+//    filtered by this student's unique studentId (not name, so students
+//    who share a name never see each other's scores), grouped by
+//    chapterId to compute best %, attempt count and last attempt date.
 // =====================================================================
-const MOCK_QUIZ_HISTORY = [
-  { chapter:'Chapter 1: Introduction to Computer', bestPct:88, attempts:2, lastDate:'14 Sep 2026', retryUrl:'ccc-chapter1-mcq.html' },
-  { chapter:'Chapter 2: Introduction to Operating System', bestPct:64, attempts:1, lastDate:'15 Sep 2026', retryUrl:'ccc-chapter2-mcq.html' },
-  { chapter:'MS Word', bestPct:40, attempts:1, lastDate:'17 Sep 2026', retryUrl:'msword-mcq.html' }
-];
-
 async function loadQuizHistory(){
-  // ---- CURRENT: mock data ----
-  await new Promise(r => setTimeout(r, 500));
-  return MOCK_QUIZ_HISTORY;
+  if (!student.studentId || !window.getStudentScores) return [];
 
-  // ---- LATER: real Firestore query, e.g. ----
-  // const snap = await db.collection('scores')
-  //   .where('studentId', '==', student.studentId).get();
-  // ...group by chapterId, compute best pct + attempt count per chapter...
+  const allAttempts = await window.getStudentScores(student.studentId);
+  if (!allAttempts.length) return [];
+
+  // Group attempts by chapterId
+  const byChapter = {};
+  allAttempts.forEach(a => {
+    const cid = a.chapterId || 'unknown';
+    if (!byChapter[cid]) byChapter[cid] = [];
+    byChapter[cid].push(a);
+  });
+
+  const chaptersMeta = window.STATIC_CHAPTERS || [];
+
+  return Object.keys(byChapter).map(cid => {
+    const attempts = byChapter[cid];
+    const best = attempts.reduce((max, a) => (a.pct > max.pct ? a : max), attempts[0]);
+    // "Last attempt" = most recently created; fall back to array order if
+    // createdAt (Firestore server timestamp) isn't available on some entries.
+    const sorted = attempts.slice().sort((a, b) => {
+      const ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+      const tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+      return tb - ta;
+    });
+    const last = sorted[0];
+    const meta = chaptersMeta.find(c => c.id === cid);
+
+    return {
+      chapter: meta ? meta.chapter : cid,
+      bestPct: best.pct,
+      attempts: attempts.length,
+      lastDate: last.date || '—',
+      retryUrl: meta ? meta.url : '#'
+    };
+  });
 }
 
 function pctClass(pct){
