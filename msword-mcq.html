@@ -409,6 +409,33 @@ function saveScores(s){ localStorage.setItem(SCORE_KEY, JSON.stringify(s)); }
 let quizResultData = null; // Store result data for PDF
 
 let currentStudent = '';
+let currentStudentId = '';
+
+// ---------------------------------------------------------------------
+// Auto-fill name + capture unique Student ID when opened via dashboard
+// login (dashboard.html stores the logged-in student in sessionStorage
+// under 'sankalp_student'). If not present, page still works standalone
+// with manual name entry (no studentId saved).
+// ---------------------------------------------------------------------
+(function(){
+  try {
+    const raw = sessionStorage.getItem('sankalp_student');
+    if (raw){
+      const loggedInStudent = JSON.parse(raw);
+      if (loggedInStudent && loggedInStudent.name && loggedInStudent.studentId){
+        currentStudent = loggedInStudent.name;
+        currentStudentId = loggedInStudent.studentId;
+        const nameInput = document.getElementById('studentName');
+        if (nameInput){
+          nameInput.value = loggedInStudent.name;
+          nameInput.disabled = true;
+          nameInput.style.background = '#f3f2ec';
+          nameInput.style.cursor = 'not-allowed';
+        }
+      }
+    }
+  } catch(e){ /* sessionStorage unavailable or bad data — keep manual entry */ }
+})();
 let currentQIndex = 0;
 let userAnswers = [];
 let questionOrder = [];
@@ -554,6 +581,7 @@ function showResults(){
 
   const entry = {
     name: currentStudent,
+    studentId: currentStudentId || null,
     correct,
     total,
     pct,
