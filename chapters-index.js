@@ -104,6 +104,14 @@ window.STATIC_CHAPTERS = [
     questionCount: 20,
     url: 'adca-chapter1-hard-mcq.html'
   },
+     {
+    id: 'ccc-ch5',
+    course: 'CCC',
+    chapter: 'Chapter 5: Introduction to Presentation',
+    chapterHi: 'अध्याय 5: प्रेजेंटेशन का परिचय',
+    questionCount: 50,
+    url: 'ccc-chapter5-mcq.html'
+  },
   // 👇 Naya chapter yahan neeche add karo, upar wale jaisa hi ek block
   // copy-paste karke. Pichle block ke baad comma (,) lagana mat bhoolna.
   //
