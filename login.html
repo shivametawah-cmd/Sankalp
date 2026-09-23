@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <!--
-  SANKALP COMPUTER CLASSES — Student Login
-  =====================================================================
-  STATUS: Connected to the real Google Sheet via Apps Script
-  (action=login). Enter a real Student ID + Password from the "id"
-  sheet tab to log in — dashboard.html then reads the returned student
-  object from sessionStorage.
-  =====================================================================
+  SANKALP COMPUTER CLASSES — Student Login (Firebase Auth)
+  =========================================================
+  Login system completely moved to Firebase Authentication.
+  Google Apps Script sirf student data (fees, info) ke liye
+  use hota hai — login ke liye nahi.
+
+  First-login par mandatory password change screen aati hai.
+  Admin shivam.html se student create karta hai + temp password set karta hai.
+  =========================================================
 -->
 <html lang="en">
 <head>
@@ -39,24 +41,33 @@
   .brand img{width:40px; height:40px; border-radius:8px; background:#fff;}
   .brand strong{font-family:"Space Grotesk"; color:#fff; font-size:1rem; display:block;}
   .brand span{font-size:.75rem; color:#c9cdd8;}
+  .home-btn{
+    background:none; border:1px solid #3a4560; color:#dfe2ea; padding:8px 16px;
+    border-radius:8px; font-size:.85rem; text-decoration:none; font-weight:600;
+    margin-left:auto;
+  }
+  .home-btn:hover{border-color:#dfe2ea; color:#fff;}
 
   main{flex:1; display:flex; align-items:center; justify-content:center; padding:40px 20px;}
 
-  .login-card{
+  /* --- Card shared by login + password-change screens --- */
+  .auth-card{
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
     box-shadow:var(--shadow); width:100%; max-width:420px; padding:34px 30px;
+    display:none;
   }
-  .login-card .eyebrow{
+  .auth-card.active{display:block;}
+  .auth-card .eyebrow{
     display:inline-block; font-family:"Space Grotesk"; font-size:.72rem; font-weight:700;
     letter-spacing:.04em; color:var(--teal-dark); background:rgba(15,111,108,0.1);
     padding:5px 11px; border-radius:999px; margin-bottom:14px;
   }
-  .login-card h1{font-size:1.5rem; margin-bottom:6px;}
-  .login-card .hi{color:var(--ink-soft); font-size:.95rem; margin-bottom:26px;}
+  .auth-card h1{font-size:1.5rem; margin-bottom:6px;}
+  .auth-card .subtitle{color:var(--ink-soft); font-size:.93rem; margin-bottom:24px; line-height:1.5;}
 
   label{display:block; font-weight:600; font-size:.9rem; margin-bottom:6px;}
   .field{margin-bottom:18px;}
-  input[type=text], input[type=password]{
+  input[type=text], input[type=password], input[type=email]{
     width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:9px;
     font-size:1rem; font-family:inherit; background:var(--paper-alt);
   }
@@ -69,13 +80,13 @@
     color:var(--ink-soft); font-family:inherit; font-weight:600;
   }
 
-  .login-btn{
+  .primary-btn{
     width:100%; background:var(--teal); color:#fff; border:none;
     padding:13px; border-radius:9px; font-weight:700; font-size:1rem;
     cursor:pointer; font-family:inherit; margin-top:4px;
   }
-  .login-btn:hover{background:var(--teal-dark);}
-  .login-btn:disabled{opacity:.6; cursor:wait;}
+  .primary-btn:hover{background:var(--teal-dark);}
+  .primary-btn:disabled{opacity:.6; cursor:wait;}
 
   .error-box{
     background:var(--danger-bg); color:var(--danger); padding:11px 14px;
@@ -83,21 +94,17 @@
   }
   .error-box.show{display:block;}
 
-  .demo-hint{
-    margin-top:22px; padding:12px 14px; background:var(--paper-alt);
-    border-radius:9px; font-size:.8rem; color:var(--ink-soft); text-align:center;
+  /* Password strength meter */
+  .pw-rules{
+    background:var(--paper-alt); border-radius:9px; padding:12px 14px;
+    font-size:.82rem; margin-top:8px; display:none;
   }
-  .demo-hint b{color:var(--ink);}
-
-  .back-link{display:block; text-align:center; margin-top:18px; font-size:.85rem; color:var(--ink-soft); text-decoration:none;}
-  .back-link:hover{color:var(--ink);}
-
-  .home-btn{
-    background:none; border:1px solid #3a4560; color:#dfe2ea; padding:8px 16px;
-    border-radius:8px; font-size:.85rem; text-decoration:none; font-weight:600;
-    margin-left:auto;
-  }
-  .home-btn:hover{border-color:#dfe2ea; color:#fff;}
+  .pw-rules.show{display:block;}
+  .rule{display:flex; align-items:center; gap:8px; margin-bottom:4px; color:var(--ink-soft);}
+  .rule:last-child{margin-bottom:0;}
+  .rule.ok{color:var(--teal-dark);}
+  .rule .dot{width:8px; height:8px; border-radius:50%; background:var(--line); flex-shrink:0;}
+  .rule.ok .dot{background:var(--teal);}
 
   footer{padding:20px; text-align:center; font-size:.8rem; color:var(--ink-soft);}
 </style>
@@ -118,101 +125,237 @@
 </header>
 
 <main>
-  <div class="login-card">
+
+  <!-- ===== SCREEN 1: Login ===== -->
+  <div class="auth-card active" id="screenLogin">
     <span class="eyebrow">STUDENT LOGIN</span>
     <h1>Welcome back</h1>
-    <div class="hi">अपने ID और Password से लॉगिन करें</div>
+    <div class="subtitle">अपने Student ID और Password से लॉगिन करें</div>
 
-    <div class="error-box" id="errorBox"></div>
+    <div class="error-box" id="loginError"></div>
 
-    <form id="loginForm" onsubmit="handleLogin(event)">
-      <div class="field">
-        <label for="studentId">Student ID / यूज़रनेम</label>
-        <input type="text" id="studentId" placeholder="e.g. sankalp101" autocomplete="username" required>
+    <div class="field">
+      <label for="loginEmail">Student ID</label>
+      <input type="text" id="loginEmail" placeholder="e.g. sankalp101" autocomplete="username" required>
+    </div>
+    <div class="field">
+      <label for="loginPassword">Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" required>
+        <button type="button" class="pw-toggle" onclick="togglePw('loginPassword', this)">Show</button>
       </div>
-      <div class="field">
-        <label for="password">Password</label>
-        <div class="pw-wrap">
-          <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" required>
-          <button type="button" class="pw-toggle" onclick="togglePassword()" id="pwToggleBtn">Show</button>
-        </div>
-      </div>
-      <button type="submit" class="login-btn" id="loginBtn">Login →</button>
-    </form>
+    </div>
+    <button class="primary-btn" id="loginBtn" onclick="handleLogin()">Login →</button>
   </div>
+
+  <!-- ===== SCREEN 2: Mandatory Password Change (first login) ===== -->
+  <div class="auth-card" id="screenChangePw">
+    <span class="eyebrow">PEHLI BAAR LOGIN</span>
+    <h1>Naya Password Set Karein</h1>
+    <div class="subtitle">
+      Suraksha ke liye aapko apna temporary password abhi badalna hoga.<br>
+      <b>Iske baad hi dashboard khulega।</b>
+    </div>
+
+    <div class="error-box" id="changePwError"></div>
+
+    <div class="field">
+      <label for="newPassword">Naya Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="newPassword" placeholder="New password (min 8 characters)" autocomplete="new-password" oninput="checkRules()">
+        <button type="button" class="pw-toggle" onclick="togglePw('newPassword', this)">Show</button>
+      </div>
+      <div class="pw-rules" id="pwRules">
+        <div class="rule" id="rule-len"><span class="dot"></span> Minimum 8 characters</div>
+        <div class="rule" id="rule-upper"><span class="dot"></span> Ek bada letter (A-Z)</div>
+        <div class="rule" id="rule-num"><span class="dot"></span> Ek number (0-9)</div>
+      </div>
+    </div>
+    <div class="field">
+      <label for="confirmPassword">Password Confirm Karein</label>
+      <div class="pw-wrap">
+        <input type="password" id="confirmPassword" placeholder="Repeat new password" autocomplete="new-password">
+        <button type="button" class="pw-toggle" onclick="togglePw('confirmPassword', this)">Show</button>
+      </div>
+    </div>
+    <button class="primary-btn" id="changePwBtn" onclick="handleChangePassword()">Password Save Karein →</button>
+  </div>
+
 </main>
 
 <footer>&copy; 2026 Sankalp Computer Classes, Bidhuna, Auraiya, UP</footer>
 
-<script>
-function togglePassword(){
-  const pw = document.getElementById('password');
-  const btn = document.getElementById('pwToggleBtn');
-  const isHidden = pw.type === 'password';
-  pw.type = isHidden ? 'text' : 'password';
-  btn.textContent = isHidden ? 'Hide' : 'Show';
-}
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, updateDoc }
+                                     from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, updatePassword }
+                                     from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
-function showError(msg){
-  const box = document.getElementById('errorBox');
-  box.textContent = msg;
-  box.classList.add('show');
-}
-function hideError(){
-  document.getElementById('errorBox').classList.remove('show');
-}
+  // ── Firebase config (same project as quiz) ──────────────────────────
+  const firebaseConfig = {
+    apiKey: "AIzaSyARCHtO6xh7xbXP3UOIqoErxwwbvVSBxb4",
+    authDomain: "sankalp-quiz-5b907.firebaseapp.com",
+    projectId: "sankalp-quiz-5b907",
+    storageBucket: "sankalp-quiz-5b907.firebasestorage.app",
+    messagingSenderId: "919711308932",
+    appId: "1:919711308932:web:61c7b1a82b80f6b9b4b6d1"
+  };
 
-async function handleLogin(e){
-  e.preventDefault();
-  hideError();
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
 
-  const id = document.getElementById('studentId').value.trim();
-  const password = document.getElementById('password').value;
-  const btn = document.getElementById('loginBtn');
+  // ── Helpers ──────────────────────────────────────────────────────────
+  function showScreen(id){
+    document.querySelectorAll('.auth-card').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+  function showError(boxId, msg){
+    const el = document.getElementById(boxId);
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function hideError(boxId){
+    document.getElementById(boxId).classList.remove('show');
+  }
+  function setLoading(btnId, loading, text){
+    const btn = document.getElementById(btnId);
+    btn.disabled = loading;
+    btn.textContent = loading ? 'Please wait…' : text;
+  }
 
-  btn.disabled = true;
-  btn.textContent = 'Checking…';
+  // ── Login handler ─────────────────────────────────────────────────────
+  window.handleLogin = async function(){
+    hideError('loginError');
+    const rawId   = document.getElementById('loginEmail').value.trim().toLowerCase();
+    const password = document.getElementById('loginPassword').value;
 
-  try{
-    const student = await verifyLogin(id, password);
-    if (!student){
-      showError('ID ya password galat hai. Dobara try karein.');
-      btn.disabled = false;
-      btn.textContent = 'Login →';
+    if (!rawId || !password){
+      showError('loginError', 'Student ID aur Password dono bharo।');
       return;
     }
-    // Save the logged-in student's data for dashboard.html to read.
-    // sessionStorage clears when the browser tab closes; switch to
-    // localStorage instead if students should stay logged in across
-    // visits/tabs on their own device.
-    sessionStorage.setItem('sankalp_student', JSON.stringify(student));
+
+    // Firebase Auth email = studentId@sankalp.local
+    const email = rawId + '@sankalp.local';
+
+    setLoading('loginBtn', true, 'Login →');
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const uid  = cred.user.uid;
+
+      // Fetch student profile from Firestore
+      const snap = await getDoc(doc(db, 'students', uid));
+      if (!snap.exists()){
+        showError('loginError', 'Student profile nahi mila। Admin se contact karein।');
+        setLoading('loginBtn', false, 'Login →');
+        return;
+      }
+      const profile = snap.data();
+
+      // First login? → mandatory password change
+      if (profile.mustChangePassword){
+        // Keep the Firebase user object accessible for the change-pw screen
+        window._fbUser    = cred.user;
+        window._studentUid = uid;
+        window._studentProfile = profile;
+        showScreen('screenChangePw');
+        setLoading('loginBtn', false, 'Login →');
+        return;
+      }
+
+      // Normal login — save to sessionStorage, go to dashboard
+      sessionStorage.setItem('sankalp_student', JSON.stringify(profile));
+      localStorage.setItem('sankalp_student', JSON.stringify(profile));
+      window.location.href = 'dashboard.html';
+
+    } catch(err){
+      console.error(err);
+      const msg = err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found'
+        ? 'Student ID ya password galat hai। Dobara try karein।'
+        : 'Login fail hua। Internet check karein ya admin se contact karein।';
+      showError('loginError', msg);
+      setLoading('loginBtn', false, 'Login →');
+    }
+  };
+
+  // ── Password change handler (first login) ────────────────────────────
+  window.handleChangePassword = async function(){
+    hideError('changePwError');
+    const newPw  = document.getElementById('newPassword').value;
+    const confPw = document.getElementById('confirmPassword').value;
+
+    // Validate rules
+    if (newPw.length < 8 || !/[A-Z]/.test(newPw) || !/[0-9]/.test(newPw)){
+      showError('changePwError', 'Password rules poori nahi hain। Neeche check karein।');
+      return;
+    }
+    if (newPw !== confPw){
+      showError('changePwError', 'Dono passwords match nahi kar rahe।');
+      return;
+    }
+
+    setLoading('changePwBtn', true, 'Password Save Karein →');
+    try {
+      // 1. Update Firebase Auth password
+      await updatePassword(window._fbUser, newPw);
+
+      // 2. Clear the first-login flag in Firestore
+      await updateDoc(doc(db, 'students', window._studentUid), {
+        mustChangePassword: false
+      });
+
+      // 3. Update local profile copy and go to dashboard
+      window._studentProfile.mustChangePassword = false;
+      sessionStorage.setItem('sankalp_student', JSON.stringify(window._studentProfile));
+      localStorage.setItem('sankalp_student', JSON.stringify(window._studentProfile));
+      window.location.href = 'dashboard.html';
+
+    } catch(err){
+      console.error(err);
+      showError('changePwError', 'Password save nahi hua। Dobara try karein।');
+      setLoading('changePwBtn', false, 'Password Save Karein →');
+    }
+  };
+
+  // ── Enter key support ─────────────────────────────────────────────────
+  document.getElementById('loginPassword').addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.handleLogin();
+  });
+  document.getElementById('confirmPassword').addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.handleChangePassword();
+  });
+
+  // ── If already logged in, skip to dashboard ───────────────────────────
+  if (sessionStorage.getItem('sankalp_student')){
     window.location.href = 'dashboard.html';
-  } catch(err){
-    console.error(err);
-    showError('Kuch गड़बड़ हुई। दोबारा कोशिश करें।');
-    btn.disabled = false;
-    btn.textContent = 'Login →';
   }
-}
+</script>
 
-// =====================================================================
-// REAL LOGIN — checks the entered ID+Password against your Google Sheet
-// via the Apps Script web app (same one shivam.html reads from).
-// =====================================================================
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxf7m3cgFy3KKi0L6H3JT0Y5s7Dk4PtOkMMnhzIy5y3CP2pbVWuIj9jn01P7dV_ZQ/exec';
+<script>
+  // Non-module helpers (no Firebase needed)
 
-async function verifyLogin(id, password){
-  const res = await fetch(WEB_APP_URL + '?action=login'
-    + '&id=' + encodeURIComponent(id)
-    + '&password=' + encodeURIComponent(password));
-  const data = await res.json();
-  return data.success ? data.student : null;
-}
+  function togglePw(inputId, btn){
+    const input = document.getElementById(inputId);
+    const hidden = input.type === 'password';
+    input.type = hidden ? 'text' : 'password';
+    btn.textContent = hidden ? 'Hide' : 'Show';
+  }
 
-// If already logged in, skip straight to dashboard
-if (sessionStorage.getItem('sankalp_student')){
-  window.location.href = 'dashboard.html';
-}
+  function checkRules(){
+    const val = document.getElementById('newPassword').value;
+    const rules = document.getElementById('pwRules');
+    rules.classList.add('show');
+
+    function set(id, ok){
+      const el = document.getElementById(id);
+      if (ok) el.classList.add('ok'); else el.classList.remove('ok');
+    }
+    set('rule-len',   val.length >= 8);
+    set('rule-upper', /[A-Z]/.test(val));
+    set('rule-num',   /[0-9]/.test(val));
+  }
 </script>
 
 </body>

@@ -419,7 +419,7 @@ let currentStudentId = '';
 // ---------------------------------------------------------------------
 (function(){
   try {
-    const raw = sessionStorage.getItem('sankalp_student');
+    const raw = sessionStorage.getItem('sankalp_student') || localStorage.getItem('sankalp_student');
     if (raw){
       const loggedInStudent = JSON.parse(raw);
       if (loggedInStudent && loggedInStudent.name && loggedInStudent.studentId){

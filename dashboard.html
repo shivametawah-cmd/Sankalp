@@ -2,21 +2,12 @@
 <!--
   SANKALP COMPUTER CLASSES — Student Dashboard
   =====================================================================
-  STATUS: Fully connected to real data.
-    - Notes           → from notes-index.js (window.STATIC_NOTES), same
-                        static-file pattern as chapters-index.js, filtered
-                        to the student's course. Opens in an in-page
-                        viewer (pdf.js canvas, watermarked) — no download
-                        link. Shows "Coming soon" if none yet for a course.
-    - Fee status       → the banner at the top and the "Admission Fee"
-                        info card both come from the same Apps Script
-                        (login response), reading the "Fees" and
-                        "Form Responses 1" sheets.
-    - MCQ Practice      → chapters filtered from chapters-index.js by
-                        the student's own course.
-    - Quiz History     → fetched from Firestore's "scores" collection,
-                        filtered by this student's unique studentId
-                        (not name), grouped by chapterId.
+  Login: Firebase Authentication (login.html sets sessionStorage)
+  Student profile: Firestore → students/{uid}
+  Fee data: Apps Script (same as before — sirf data ke liye)
+  Quiz history: Firestore → scores collection (by studentId)
+  Notes: notes-index.js (window.STATIC_NOTES)
+  MCQ: chapters-index.js (window.STATIC_CHAPTERS)
   =====================================================================
 -->
 <html lang="en">
@@ -30,14 +21,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="chapters-index.js"></script>
 <script src="notes-index.js"></script>
-<!-- pdf.js: renders notes as in-page canvas images (no native PDF viewer, no download button) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<!-- Firebase: read this student's own quiz scores by their unique Student ID -->
+
+<!-- Firebase: quiz scores -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-  import {
-    getFirestore, collection, query, where, getDocs
-  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, collection, query, where, getDocs }
+                                     from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyARCHtO6xh7xbXP3UOIqoErxwwbvVSBxb4",
@@ -49,20 +39,20 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  const db  = getFirestore(app);
 
-  // Fetch every quiz attempt belonging to one student, by their unique ID.
-  window.getStudentScores = async function (studentId) {
+  window.getStudentScores = async function(studentId){
     try {
-      const q = query(collection(db, "scores"), where("studentId", "==", studentId));
+      const q    = query(collection(db, 'scores'), where('studentId', '==', studentId));
       const snap = await getDocs(q);
       return snap.docs.map(d => d.data());
-    } catch (err) {
+    } catch(err){
       console.error('Firebase fetch failed:', err);
       return [];
     }
   };
 </script>
+
 <style>
   :root{
     --ink:#132038; --ink-soft:#2b3a58; --paper:#f6f4ee; --paper-alt:#eeebe2;
@@ -91,7 +81,6 @@
   }
   .logout-btn:hover{border-color:#dfe2ea; color:#fff;}
 
-  /* ---- Greeting hero ---- */
   .hero{
     background:linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%);
     color:#fff; padding:32px 0 40px; margin-bottom:-24px;
@@ -106,9 +95,7 @@
 
   main{padding:44px 0 60px;}
 
-  .info-grid{
-    display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:34px;
-  }
+  .info-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:34px;}
   .info-card{
     background:var(--card); border:1px solid var(--line); border-radius:12px;
     padding:16px 18px; box-shadow:var(--shadow);
@@ -123,7 +110,6 @@
   .section-head h2{font-size:1.15rem;}
   .section-head .sub{font-size:.85rem; color:var(--ink-soft);}
 
-  /* ---- Notes ---- */
   .notes-list{display:grid; gap:12px;}
   .note-card{
     background:var(--card); border:1px solid var(--line); border-radius:12px;
@@ -142,12 +128,10 @@
     font-family:inherit; text-decoration:none; white-space:nowrap;
   }
   .download-btn:hover{background:var(--gold-dark);}
-
   .empty-note{
     text-align:center; padding:30px 20px; color:var(--ink-soft); font-size:.9rem;
     background:var(--card); border:1px dashed var(--line); border-radius:12px;
   }
-
   .read-btn{
     background:var(--teal); color:#fff; border:none; padding:9px 18px;
     border-radius:8px; font-weight:700; font-size:.85rem; cursor:pointer;
@@ -155,7 +139,7 @@
   }
   .read-btn:hover{background:var(--teal-dark);}
 
-  /* ---- In-page Note Viewer (no download, canvas-rendered) ---- */
+  /* Note viewer */
   .note-viewer-overlay{
     display:none; position:fixed; inset:0; background:rgba(19,32,56,0.82);
     z-index:999; align-items:center; justify-content:center; padding:16px;
@@ -175,11 +159,9 @@
     background:none; border:1px solid #3a4560; color:#dfe2ea; width:32px; height:32px;
     border-radius:8px; cursor:pointer; font-size:1rem; flex:0 0 auto;
   }
-  .note-viewer-close:hover{border-color:#fff; color:#fff;}
   .note-viewer-body{
     flex:1; overflow:auto; display:flex; align-items:flex-start; justify-content:center;
     padding:18px; user-select:none; -webkit-user-select:none; background:var(--paper-alt);
-    position:relative;
   }
   .note-viewer-body canvas{max-width:100%; height:auto; box-shadow:var(--shadow); background:#fff;}
   .note-viewer-loading{color:var(--ink-soft); font-size:.9rem; padding:40px 0;}
@@ -194,7 +176,7 @@
   .note-viewer-controls button:disabled{opacity:.4; cursor:not-allowed;}
   .note-viewer-controls span{font-size:.85rem; color:var(--ink-soft); font-weight:600;}
 
-  /* ---- Quiz history ---- */
+  /* Quiz table */
   .quiz-table-wrap{
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
     overflow:hidden; box-shadow:var(--shadow);
@@ -207,27 +189,23 @@
   }
   td{padding:12px 18px; border-bottom:1px solid var(--line);}
   tr:last-child td{border-bottom:none;}
-  .pct-badge{
-    display:inline-block; padding:3px 10px; border-radius:999px; font-weight:700; font-size:.82rem;
-  }
+  .pct-badge{display:inline-block; padding:3px 10px; border-radius:999px; font-weight:700; font-size:.82rem;}
   .pct-great{background:var(--ok-bg); color:var(--ok);}
   .pct-good{background:rgba(15,111,108,0.12); color:var(--teal-dark);}
   .pct-low{background:var(--warn-bg); color:var(--warn);}
   .retry-link{color:var(--teal-dark); font-size:.85rem; font-weight:600; text-decoration:none;}
   .retry-link:hover{text-decoration:underline;}
-
   .cta-row{text-align:center; margin-top:18px;}
   .btn-outline-teal{
     display:inline-block; border:1px solid var(--teal); color:var(--teal-dark);
-    padding:10px 22px; border-radius:9px; font-weight:700; font-size:.9rem;
-    text-decoration:none;
+    padding:10px 22px; border-radius:9px; font-weight:700; font-size:.9rem; text-decoration:none;
   }
   .btn-outline-teal:hover{background:rgba(15,111,108,0.08);}
 
-  @media (max-width:720px){
-    .info-grid{grid-template-columns:repeat(2, 1fr);}
+  @media(max-width:720px){
+    .info-grid{grid-template-columns:repeat(2,1fr);}
     table{font-size:.82rem;}
-    th, td{padding:10px 12px;}
+    th,td{padding:10px 12px;}
   }
 </style>
 </head>
@@ -260,7 +238,6 @@
 
 <main>
   <div class="wrap">
-
     <div class="info-grid" id="infoGrid"></div>
 
     <section>
@@ -268,9 +245,7 @@
         <h2>📄 My Notes</h2>
         <span class="sub">Chapter-wise notes for your course</span>
       </div>
-      <div class="notes-list" id="notesList">
-        <div class="empty-note">Loading notes…</div>
-      </div>
+      <div class="notes-list" id="notesList"><div class="empty-note">Loading notes…</div></div>
     </section>
 
     <section>
@@ -278,9 +253,7 @@
         <h2>🧠 MCQ Practice</h2>
         <span class="sub">Chapters available for your course</span>
       </div>
-      <div class="notes-list" id="mcqList">
-        <div class="empty-note">Loading chapters…</div>
-      </div>
+      <div class="notes-list" id="mcqList"><div class="empty-note">Loading chapters…</div></div>
     </section>
 
     <section>
@@ -290,23 +263,18 @@
       </div>
       <div class="quiz-table-wrap">
         <table>
-          <thead>
-            <tr><th>Chapter</th><th>Best Score</th><th>Attempts</th><th>Last Attempt</th><th></th></tr>
-          </thead>
+          <thead><tr><th>Chapter</th><th>Best Score</th><th>Attempts</th><th>Last Attempt</th><th></th></tr></thead>
           <tbody id="quizBody">
-            <tr><td colspan="5" style="text-align:center; color:var(--ink-soft); padding:24px;">Loading quiz history…</td></tr>
+            <tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:24px;">Loading quiz history…</td></tr>
           </tbody>
         </table>
       </div>
-      <div class="cta-row">
-        <a class="btn-outline-teal" href="mcq-quiz.html">Take another quiz →</a>
-      </div>
+      <div class="cta-row"><a class="btn-outline-teal" href="mcq-quiz.html">Take another quiz →</a></div>
     </section>
-
   </div>
 </main>
 
-<!-- In-page Note Viewer overlay (no download link/button anywhere in here) -->
+<!-- Note viewer overlay -->
 <div class="note-viewer-overlay" id="noteViewerOverlay">
   <div class="note-viewer-box">
     <div class="note-viewer-head">
@@ -323,49 +291,26 @@
 </div>
 
 <script>
-// =====================================================================
-// 1) Get the logged-in student (set by login.html)
-// =====================================================================
+// ── 1) Auth check — if no session, redirect to login ──────────────────
 const raw = sessionStorage.getItem('sankalp_student');
-if (!raw){
-  window.location.href = 'login.html';
-}
+if (!raw){ window.location.href = 'login.html'; }
 const student = JSON.parse(raw || '{}');
+
+// Extra safety: if somehow a user with mustChangePassword=true lands here, redirect
+if (student.mustChangePassword){ window.location.href = 'login.html'; }
+
+// Apps Script URL — only for fee/student data (NOT login)
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxf7m3cgFy3KKi0L6H3JT0Y5s7Dk4PtOkMMnhzIy5y3CP2pbVWuIj9jn01P7dV_ZQ/exec';
 
 function logout(){
   sessionStorage.removeItem('sankalp_student');
+  localStorage.removeItem('sankalp_student');
   window.location.href = 'login.html';
 }
 
-function renderFeeBanner(){
-  const wrap = document.getElementById('feeBannerWrap');
-  const box = document.getElementById('feeBanner');
-  const isPaid = (student.monthlyFeeStatus || '').toLowerCase() === 'paid';
-  const month = student.currentMonth || '';
-
-  wrap.style.display = 'block';
-  if (isPaid){
-    box.style.background = 'var(--ok-bg)';
-    box.style.color = 'var(--ok)';
-    box.innerHTML = `✅ Your fee for <b>${month}</b> has been received. Thank you!`;
-  } else {
-    box.style.background = 'var(--warn-bg)';
-    box.style.color = 'var(--warn)';
-    box.innerHTML = `⚠️ Your fee for <b>${month}</b> is still pending. Please pay at the earliest, or contact us if you've already paid.`;
-  }
-}
-
-// =====================================================================
-// 2) Greeting + info cards — uses whatever fields exist on `student`,
-//    so this already works with real Google Sheet data once login.html
-//    is connected (same field names: name, course, batch, status,
-//    admissionDate, feeStatus).
-// =====================================================================
+// ── 2) Greeting ───────────────────────────────────────────────────────
 function renderGreeting(){
   document.getElementById('greetName').textContent = `Namaste, ${student.name || 'Student'}! 👋`;
-  document.getElementById('greetHi').textContent = `आपके डैशबोर्ड में आपका स्वागत है`;
-
   const badges = [student.course, student.batch].filter(Boolean);
   document.getElementById('heroBadges').innerHTML =
     badges.map(b => `<span class="badge">${b}</span>`).join('');
@@ -374,83 +319,100 @@ function renderGreeting(){
 function formatDate(val){
   if (!val) return '—';
   const d = new Date(val);
-  if (isNaN(d)) return val; // not a parseable date, show as-is
+  if (isNaN(d)) return String(val);
   return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
 }
-
 function titleCase(s){
   if (!s) return '—';
   return String(s).replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
 }
 
+// ── 3) Info cards ─────────────────────────────────────────────────────
 function renderInfoCards(){
   const feeOk = (student.feeStatus || '').toLowerCase() === 'paid';
   const cards = [
-    { lbl:'Course', val: student.course || '—' },
-    { lbl:'Status', val: titleCase(student.status), cls: (student.status||'').toLowerCase()==='active' ? 'ok' : '' },
+    { lbl:'Course',         val: student.course || '—' },
+    { lbl:'Status',         val: titleCase(student.status), cls: (student.status||'').toLowerCase()==='active'?'ok':'' },
     { lbl:'Admission Date', val: formatDate(student.admissionDate) },
-    { lbl:'Admission Fee', val: titleCase(student.feeStatus), cls: feeOk ? 'ok' : 'warn' }
+    { lbl:'Admission Fee',  val: titleCase(student.feeStatus), cls: feeOk?'ok':'warn' }
   ];
   document.getElementById('infoGrid').innerHTML = cards.map(c => `
     <div class="info-card">
       <div class="lbl">${c.lbl}</div>
       <div class="val ${c.cls||''}">${c.val}</div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-// =====================================================================
-// 3) Notes — from notes-index.js (window.STATIC_NOTES), same pattern as
-//    chapters-index.js for MCQs. To add a note: upload its PDF into the
-//    "notes" folder in the repo, then add one entry in notes-index.js.
-//    Filtered to just this student's own course.
-// =====================================================================
+// ── 4) Fee banner (monthly) ───────────────────────────────────────────
+function renderFeeBanner(){
+  const wrap  = document.getElementById('feeBannerWrap');
+  const box   = document.getElementById('feeBanner');
+  const isPaid = (student.monthlyFeeStatus || '').toLowerCase() === 'paid';
+  const month  = student.currentMonth || '';
+  wrap.style.display = 'block';
+  if (isPaid){
+    box.style.background = 'var(--ok-bg)';
+    box.style.color = 'var(--ok)';
+    box.innerHTML = `✅ Your fee for <b>${month}</b> has been received. Thank you!`;
+  } else {
+    box.style.background = 'var(--warn-bg)';
+    box.style.color = 'var(--warn)';
+    box.innerHTML = `⚠️ Your fee for <b>${month}</b> is still pending. Please pay at the earliest.`;
+  }
+}
+
+// ── 5) Notes ──────────────────────────────────────────────────────────
 function loadNotes(){
   const all = window.STATIC_NOTES || [];
-  return all.filter(n => (n.course || '').trim().toLowerCase() === (student.course || '').trim().toLowerCase());
+  return all.filter(n => (n.course||'').trim().toLowerCase() === (student.course||'').trim().toLowerCase());
 }
-
 function renderNotes(notes){
   const el = document.getElementById('notesList');
   if (!notes.length){
-    el.innerHTML = `<div class="empty-note">📌 Coming soon! Notes for <b>${student.course || 'your course'}</b> will appear here as soon as they're uploaded.</div>`;
+    el.innerHTML = `<div class="empty-note">📌 Coming soon! Notes for <b>${student.course||'your course'}</b> will appear here soon.</div>`;
     return;
   }
   el.innerHTML = notes.map(n => `
     <div class="note-card">
       <div class="note-info">
         <h3>${n.title}</h3>
-        <div class="meta"><span class="tag">${n.type || 'PDF'}</span>${n.course}</div>
+        <div class="meta"><span class="tag">${n.type||'PDF'}</span>${n.course}</div>
       </div>
-      <button class="read-btn" data-file="${n.file}" data-title="${(n.title || 'Notes').replace(/"/g,'&quot;')}">📖 Read Notes</button>
-    </div>
-  `).join('');
+      <button class="read-btn" data-file="${n.file}" data-title="${(n.title||'Notes').replace(/"/g,'&quot;')}">📖 Read Notes</button>
+    </div>`).join('');
 }
-
-// Open notes in the in-page viewer instead of a direct link — no separate
-// PDF file is ever linked/downloadable, students can only read it here.
-document.getElementById('notesList').addEventListener('click', (e) => {
+document.getElementById('notesList').addEventListener('click', e => {
   const btn = e.target.closest('.read-btn');
-  if (!btn) return;
-  openNoteViewer(btn.dataset.file, btn.dataset.title);
+  if (btn) openNoteViewer(btn.dataset.file, btn.dataset.title);
 });
 
-// =====================================================================
-// 3.4) In-page Note Viewer — renders each PDF page onto a <canvas> using
-//    pdf.js (image, not a real PDF), so there is no native browser PDF
-//    toolbar/download button and no file is ever linked directly. A
-//    faint watermark with the student's name + ID is stamped on every
-//    page as a deterrent. Right-click / text-selection is disabled.
-//    NOTE: this is a deterrent, not real DRM — a screenshot is always
-//    possible. It stops casual downloading/reselling, not everything.
-// =====================================================================
+// ── 6) MCQ list ───────────────────────────────────────────────────────
+function loadMCQList(){
+  const all = window.STATIC_CHAPTERS || [];
+  return all.filter(c => (c.course||'').trim().toLowerCase() === (student.course||'').trim().toLowerCase());
+}
+function renderMCQList(chapters){
+  const el = document.getElementById('mcqList');
+  if (!chapters.length){
+    el.innerHTML = `<div class="empty-note">📌 No MCQ chapters found yet for <b>${student.course||'your course'}</b>. Check back soon.</div>`;
+    return;
+  }
+  el.innerHTML = chapters.map(c => `
+    <div class="note-card">
+      <div class="note-info">
+        <h3>${c.chapter}</h3>
+        <div class="meta"><span class="tag">${c.course}</span>${c.questionCount||0} questions</div>
+      </div>
+      <a class="download-btn" href="${c.url}" target="_blank" rel="noopener">Start Quiz →</a>
+    </div>`).join('');
+}
+
+// ── 7) Note viewer (pdf.js) ───────────────────────────────────────────
 if (window.pdfjsLib){
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
-
-let currentPdfDoc = null;
-let currentPageNum = 1;
+let currentPdfDoc = null, currentPageNum = 1;
 
 function openNoteViewer(fileUrl, title){
   document.getElementById('noteViewerTitle').textContent = title || 'Notes';
@@ -458,156 +420,79 @@ function openNoteViewer(fileUrl, title){
   const body = document.getElementById('noteViewerBody');
   body.innerHTML = '<div class="note-viewer-loading">Loading notes…</div>';
   document.getElementById('noteViewerControls').style.display = 'none';
-
-  if (!window.pdfjsLib){
-    body.innerHTML = '<div class="note-viewer-loading">Could not load the viewer. Please try again.</div>';
-    return;
-  }
-
+  if (!window.pdfjsLib){ body.innerHTML = '<div class="note-viewer-loading">Viewer load nahi hua। Dobara try karein।</div>'; return; }
   pdfjsLib.getDocument(fileUrl).promise.then(pdf => {
-    currentPdfDoc = pdf;
-    currentPageNum = 1;
+    currentPdfDoc = pdf; currentPageNum = 1;
     document.getElementById('noteViewerControls').style.display = 'flex';
-    renderNotePage(currentPageNum);
-  }).catch(err => {
-    console.error('Note load failed:', err);
-    body.innerHTML = '<div class="note-viewer-loading">Sorry, these notes could not be opened.</div>';
+    renderNotePage(1);
+  }).catch(() => {
+    body.innerHTML = '<div class="note-viewer-loading">Notes nahi khule। Dobara try karein।</div>';
   });
 }
-
 function renderNotePage(num){
   const body = document.getElementById('noteViewerBody');
   currentPdfDoc.getPage(num).then(page => {
-    const containerWidth = body.clientWidth - 36;
-    const baseViewport = page.getViewport({ scale: 1 });
-    const scale = Math.min(2, (containerWidth / baseViewport.width) || 1);
-    const viewport = page.getViewport({ scale });
-
+    const w = body.clientWidth - 36;
+    const base = page.getViewport({ scale:1 });
+    const scale = Math.min(2, w / base.width || 1);
+    const vp = page.getViewport({ scale });
     const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    canvas.oncontextmenu = () => false; // block "save image as"
+    canvas.width = vp.width; canvas.height = vp.height;
+    canvas.oncontextmenu = () => false;
     const ctx = canvas.getContext('2d');
-
-    page.render({ canvasContext: ctx, viewport }).promise.then(() => {
-      // Watermark: student's name + ID, tiled diagonally, very light.
-      const label = `${student.name || ''} • ${student.studentId || ''}`;
-      ctx.save();
-      ctx.globalAlpha = 0.10;
-      ctx.fillStyle = '#132038';
-      ctx.font = `${Math.max(14, viewport.width * 0.028)}px sans-serif`;
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(-Math.PI / 6);
-      for (let y = -canvas.height; y < canvas.height; y += 90){
-        for (let x = -canvas.width; x < canvas.width; x += 260){
+    page.render({ canvasContext:ctx, viewport:vp }).promise.then(() => {
+      const label = `${student.name||''} • ${student.studentId||''}`;
+      ctx.save(); ctx.globalAlpha = 0.10; ctx.fillStyle = '#132038';
+      ctx.font = `${Math.max(14, vp.width * 0.028)}px sans-serif`;
+      ctx.translate(canvas.width/2, canvas.height/2); ctx.rotate(-Math.PI/6);
+      for (let y = -canvas.height; y < canvas.height; y += 90)
+        for (let x = -canvas.width; x < canvas.width; x += 260)
           ctx.fillText(label, x, y);
-        }
-      }
       ctx.restore();
-
-      body.innerHTML = '';
-      body.appendChild(canvas);
+      body.innerHTML = ''; body.appendChild(canvas);
     });
-
     document.getElementById('noteViewerPageLabel').textContent = `Page ${num} of ${currentPdfDoc.numPages}`;
     document.getElementById('noteViewerPrev').disabled = num <= 1;
     document.getElementById('noteViewerNext').disabled = num >= currentPdfDoc.numPages;
   });
 }
-
-function noteViewerPrev(){
-  if (currentPageNum > 1){ currentPageNum--; renderNotePage(currentPageNum); }
-}
-function noteViewerNext(){
-  if (currentPdfDoc && currentPageNum < currentPdfDoc.numPages){ currentPageNum++; renderNotePage(currentPageNum); }
-}
+function noteViewerPrev(){ if (currentPageNum > 1){ currentPageNum--; renderNotePage(currentPageNum); } }
+function noteViewerNext(){ if (currentPdfDoc && currentPageNum < currentPdfDoc.numPages){ currentPageNum++; renderNotePage(currentPageNum); } }
 function closeNoteViewer(){
   document.getElementById('noteViewerOverlay').classList.remove('open');
   document.getElementById('noteViewerBody').innerHTML = '';
   if (currentPdfDoc){ currentPdfDoc.destroy(); currentPdfDoc = null; }
 }
 
-// =====================================================================
-// 3.5) MCQ Practice list — filtered to the student's own course, using
-//    the shared chapters-index-3.js file (window.STATIC_CHAPTERS).
-// =====================================================================
-function loadMCQList(){
-  const all = window.STATIC_CHAPTERS || [];
-  return all.filter(c => (c.course || '').trim().toLowerCase() === (student.course || '').trim().toLowerCase());
-}
-
-function renderMCQList(chapters){
-  const el = document.getElementById('mcqList');
-  if (!chapters.length){
-    el.innerHTML = `<div class="empty-note">📌 No MCQ chapters found yet for <b>${student.course || 'your course'}</b>. Check back soon.</div>`;
-    return;
-  }
-  el.innerHTML = chapters.map(c => `
-    <div class="note-card">
-      <div class="note-info">
-        <h3>${c.chapter}</h3>
-        <div class="meta"><span class="tag">${c.course}</span>${c.questionCount || 0} questions</div>
-      </div>
-      <a class="download-btn" href="${c.url}" target="_blank" rel="noopener">Start Quiz →</a>
-    </div>
-  `).join('');
-}
-
-// =====================================================================
-// 4) Quiz history — REAL data now, from Firestore's "scores" collection,
-//    filtered by this student's unique studentId (not name, so students
-//    who share a name never see each other's scores), grouped by
-//    chapterId to compute best %, attempt count and last attempt date.
-// =====================================================================
+// ── 8) Quiz history ───────────────────────────────────────────────────
 async function loadQuizHistory(){
   if (!student.studentId || !window.getStudentScores) return [];
-
-  const allAttempts = await window.getStudentScores(student.studentId);
-  if (!allAttempts.length) return [];
-
-  // Group attempts by chapterId
+  const all = await window.getStudentScores(student.studentId);
+  if (!all.length) return [];
   const byChapter = {};
-  allAttempts.forEach(a => {
+  all.forEach(a => {
     const cid = a.chapterId || 'unknown';
     if (!byChapter[cid]) byChapter[cid] = [];
     byChapter[cid].push(a);
   });
-
-  const chaptersMeta = window.STATIC_CHAPTERS || [];
-
+  const meta = window.STATIC_CHAPTERS || [];
   return Object.keys(byChapter).map(cid => {
     const attempts = byChapter[cid];
-    const best = attempts.reduce((max, a) => (a.pct > max.pct ? a : max), attempts[0]);
-    // "Last attempt" = most recently created; fall back to array order if
-    // createdAt (Firestore server timestamp) isn't available on some entries.
-    const sorted = attempts.slice().sort((a, b) => {
-      const ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
-      const tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+    const best = attempts.reduce((m,a) => a.pct > m.pct ? a : m, attempts[0]);
+    const sorted = attempts.slice().sort((a,b) => {
+      const ta = a.createdAt?.seconds||0, tb = b.createdAt?.seconds||0;
       return tb - ta;
     });
     const last = sorted[0];
-    const meta = chaptersMeta.find(c => c.id === cid);
-
-    return {
-      chapter: meta ? meta.chapter : cid,
-      bestPct: best.pct,
-      attempts: attempts.length,
-      lastDate: last.date || '—',
-      retryUrl: meta ? meta.url : '#'
-    };
+    const m = meta.find(c => c.id === cid);
+    return { chapter: m?m.chapter:cid, bestPct:best.pct, attempts:attempts.length, lastDate:last.date||'—', retryUrl:m?m.url:'#' };
   });
 }
-
-function pctClass(pct){
-  if (pct >= 80) return 'pct-great';
-  if (pct >= 60) return 'pct-good';
-  return 'pct-low';
-}
-
+function pctClass(p){ return p>=80?'pct-great':p>=60?'pct-good':'pct-low'; }
 function renderQuizHistory(rows){
   const body = document.getElementById('quizBody');
   if (!rows.length){
-    body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--ink-soft); padding:24px;">Aapne abhi tak koi quiz nahi diya hai.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:24px;">Aapne abhi tak koi quiz nahi diya hai।</td></tr>`;
     return;
   }
   body.innerHTML = rows.map(r => `
@@ -617,20 +502,25 @@ function renderQuizHistory(rows){
       <td>${r.attempts}</td>
       <td>${r.lastDate}</td>
       <td><a class="retry-link" href="${r.retryUrl}">Retry →</a></td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
 }
 
-// =====================================================================
-// Boot
-// =====================================================================
+// ── Boot ──────────────────────────────────────────────────────────────
 renderGreeting();
 renderInfoCards();
 renderFeeBanner();
 renderNotes(loadNotes());
 renderMCQList(loadMCQList());
-loadQuizHistory().then(renderQuizHistory);
+// Firebase module (type="module") async load hota hai — poll karke wait karo
+function waitForFirebase(cb, tries){
+  tries = tries || 0;
+  if (window.getStudentScores){ cb(); return; }
+  if (tries > 40){ renderQuizHistory([]); return; }
+  setTimeout(function(){ waitForFirebase(cb, tries + 1); }, 100);
+}
+waitForFirebase(function(){
+  loadQuizHistory().then(renderQuizHistory);
+});
 </script>
-
 </body>
 </html>

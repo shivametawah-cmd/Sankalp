@@ -31,8 +31,12 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, getDocs, query, orderBy
+    getFirestore, collection, getDocs, query, orderBy,
+    doc, setDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import {
+    getAuth, createUserWithEmailAndPassword
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
   // Same Firebase project the quiz pages (mcq-quiz.html, ccc-chapter*-mcq.html, msword-mcq.html) use.
   const quizFirebaseConfig = {
@@ -45,7 +49,31 @@
   };
 
   const quizApp = initializeApp(quizFirebaseConfig);
-  const quizDb = getFirestore(quizApp);
+  const quizDb  = getFirestore(quizApp);
+  const quizAuth = getAuth(quizApp);
+
+  // Called by the Create Student form
+  window.createStudentInFirebase = async function(studentId, name, course, batch, tempPassword){
+    const email = studentId.trim().toLowerCase() + '@sankalp.local';
+    // 1. Create Firebase Auth user
+    const cred = await createUserWithEmailAndPassword(quizAuth, email, tempPassword);
+    const uid  = cred.user.uid;
+    // 2. Save profile in Firestore
+    await setDoc(doc(quizDb, 'students', uid), {
+      studentId:          studentId.trim().toLowerCase(),
+      name:               name.trim(),
+      course:             course.trim(),
+      batch:              batch.trim(),
+      status:             'Active',
+      admissionDate:      new Date().toISOString().split('T')[0],
+      feeStatus:          'Pending',
+      monthlyFeeStatus:   'pending',
+      currentMonth:       new Date().toLocaleString('en-US', { month:'long', year:'numeric' }),
+      mustChangePassword: true,
+      createdAt:          new Date().toISOString()
+    });
+    return uid;
+  };
 
   // Fetch every quiz attempt (all chapters) from the shared cloud "scores" collection.
   window.fetchAllQuizScores = async function () {
@@ -178,6 +206,46 @@
     .summary-grid-5{grid-template-columns:1fr 1fr;}
     .chart-grid{grid-template-columns:1fr;}
   }
+
+  /* ---------- Create Student modal ---------- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(19,32,56,0.72);
+    z-index:200; align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-box{
+    background:var(--card); border-radius:var(--radius); padding:32px 28px;
+    width:100%; max-width:460px; box-shadow:0 20px 50px rgba(0,0,0,0.35);
+    max-height:90vh; overflow-y:auto;
+  }
+  .modal-box h3{font-size:1.2rem; margin-bottom:6px;}
+  .modal-box .modal-sub{color:var(--ink-soft); font-size:.88rem; margin-bottom:22px;}
+  .form-field{margin-bottom:16px;}
+  .form-field label{display:block; font-weight:600; font-size:.88rem; margin-bottom:5px;}
+  .form-field input, .form-field select{
+    width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:9px;
+    font-size:.95rem; font-family:inherit; background:var(--paper-alt);
+  }
+  .form-field input:focus,.form-field select:focus{outline:none; border-color:var(--teal); background:#fff;}
+  .modal-actions{display:flex; gap:10px; margin-top:6px;}
+  .btn-teal{background:var(--teal); color:#fff; border:none; padding:11px 20px; border-radius:9px; font-weight:700; font-size:.95rem; flex:1;}
+  .btn-teal:hover{background:var(--teal-dark);}
+  .btn-teal:disabled{opacity:.6; cursor:wait;}
+  .btn-cancel{background:none; border:1px solid var(--line); color:var(--ink-soft); padding:11px 20px; border-radius:9px; font-weight:600; font-size:.95rem;}
+  .btn-cancel:hover{border-color:var(--ink); color:var(--ink);}
+  .modal-alert{padding:11px 14px; border-radius:9px; font-size:.87rem; margin-bottom:14px; display:none;}
+  .modal-alert.show{display:block;}
+  .modal-alert.ok{background:#eaf7f0; color:var(--ok);}
+  .modal-alert.err{background:#fbeae6; color:var(--danger);}
+  .created-box{
+    background:var(--paper-alt); border:1px solid var(--line); border-radius:9px;
+    padding:14px; font-size:.85rem; margin-top:14px; display:none;
+  }
+  .created-box.show{display:block;}
+  .created-box b{font-family:"Space Grotesk"; display:block; font-size:1rem; margin-bottom:8px;}
+  .cred-row{display:flex; justify-content:space-between; margin-bottom:4px;}
+  .cred-row span:first-child{color:var(--ink-soft);}
+  .cred-row span:last-child{font-weight:700; font-family:monospace; font-size:.95rem;}
 </style>
 </head>
 <body>
@@ -208,8 +276,9 @@
       <div class="topbar-actions">
         <a class="btn btn-outline" href="#monthlyFeeStatusPanel">Fee status</a>
         <a class="btn btn-outline" href="#quizScoresPanel">Quiz scores</a>
+        <button class="btn btn-gold" onclick="openCreateStudent()">+ New Student Login</button>
         <button class="btn btn-outline" onclick="refreshAll()">Refresh data</button>
-        <button class="btn btn-gold" onclick="logout()">Logout</button>
+        <button class="btn btn-outline" onclick="logout()">Logout</button>
       </div>
     </div>
   </header>
@@ -338,6 +407,68 @@
 
     </div>
   </main>
+</div>
+
+<!-- ================= CREATE STUDENT MODAL ================= -->
+<div class="modal-overlay" id="createStudentModal">
+  <div class="modal-box">
+    <h3>➕ Naya Student Login Banao</h3>
+    <p class="modal-sub">Firebase mein student ka account ban jayega। Pehli baar login par password change mandatory hoga।</p>
+
+    <div class="modal-alert" id="createAlert"></div>
+
+    <div class="form-field">
+      <label>Student ID <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="cs_studentId" placeholder="e.g. sankalp101" autocomplete="off">
+    </div>
+    <div class="form-field">
+      <label>Naam (poora naam) <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="cs_name" placeholder="e.g. Rahul Sharma" autocomplete="off">
+    </div>
+    <div class="form-field">
+      <label>Course <span style="color:var(--danger)">*</span></label>
+      <select id="cs_course">
+        <option value="">-- Course chunein --</option>
+        <option>CCC</option>
+        <option>DCA</option>
+        <option>ADCA</option>
+        <option>Tally</option>
+        <option>MS Office</option>
+        <option>O Level</option>
+        <option>Typing</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Batch</label>
+      <select id="cs_batch">
+        <option value="">-- Batch chunein --</option>
+        <option>Morning</option>
+        <option>Evening</option>
+        <option>Afternoon</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Temporary Password <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="cs_password" placeholder="e.g. Sankalp@123" autocomplete="off">
+      <div style="font-size:.78rem; color:var(--ink-soft); margin-top:4px;">Min 6 characters। Student ko yahi batana hoga — login ke baad change karna padega।</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeCreateStudent()">Cancel</button>
+      <button class="btn-teal" id="createBtn" onclick="handleCreateStudent()">Account Banao →</button>
+    </div>
+
+    <!-- Shown after successful creation -->
+    <div class="created-box" id="createdBox">
+      <b>✅ Student login ban gaya!</b>
+      <div class="cred-row"><span>Student ID:</span><span id="cb_id">—</span></div>
+      <div class="cred-row"><span>Password:</span><span id="cb_pw">—</span></div>
+      <div class="cred-row"><span>Email (internal):</span><span id="cb_email">—</span></div>
+      <div style="margin-top:10px; font-size:.8rem; color:var(--ink-soft);">
+        Yeh credentials student ko de do। Pehli baar login par password mandatory change hoga।
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -697,6 +828,83 @@
         <td>${s.pct != null ? s.pct + '%' : '—'}</td>
         <td>${s.date || '—'}</td>
       </tr>`).join('');
+  }
+
+  // ============ CREATE STUDENT FUNCTIONS ============
+  function openCreateStudent(){
+    document.getElementById('createStudentModal').classList.add('open');
+    document.getElementById('createAlert').classList.remove('show','ok','err');
+    document.getElementById('createdBox').classList.remove('show');
+    document.getElementById('cs_studentId').value = '';
+    document.getElementById('cs_name').value = '';
+    document.getElementById('cs_course').value = '';
+    document.getElementById('cs_batch').value = '';
+    document.getElementById('cs_password').value = '';
+    document.getElementById('createBtn').disabled = false;
+    document.getElementById('createBtn').textContent = 'Account Banao →';
+  }
+  function closeCreateStudent(){
+    document.getElementById('createStudentModal').classList.remove('open');
+  }
+  // Close modal on overlay click
+  document.getElementById('createStudentModal').addEventListener('click', function(e){
+    if (e.target === this) closeCreateStudent();
+  });
+
+  function showCreateAlert(msg, type){
+    const el = document.getElementById('createAlert');
+    el.textContent = msg;
+    el.className = 'modal-alert show ' + type;
+  }
+
+  async function handleCreateStudent(){
+    const studentId  = document.getElementById('cs_studentId').value.trim().toLowerCase();
+    const name       = document.getElementById('cs_name').value.trim();
+    const course     = document.getElementById('cs_course').value.trim();
+    const batch      = document.getElementById('cs_batch').value.trim();
+    const tempPw     = document.getElementById('cs_password').value;
+
+    if (!studentId || !name || !course || !tempPw){
+      showCreateAlert('Student ID, Naam, Course aur Password zaroori hain।', 'err');
+      return;
+    }
+    if (tempPw.length < 6){
+      showCreateAlert('Password kam se kam 6 characters ka hona chahiye।', 'err');
+      return;
+    }
+
+    const btn = document.getElementById('createBtn');
+    btn.disabled = true;
+    btn.textContent = 'Bana raha hoon…';
+    document.getElementById('createAlert').classList.remove('show');
+    document.getElementById('createdBox').classList.remove('show');
+
+    try{
+      if (!window.createStudentInFirebase){
+        showCreateAlert('Firebase service load nahi hua। Page refresh karein।', 'err');
+        btn.disabled = false; btn.textContent = 'Account Banao →';
+        return;
+      }
+      await window.createStudentInFirebase(studentId, name, course, batch, tempPw);
+
+      // Show credentials
+      document.getElementById('cb_id').textContent    = studentId;
+      document.getElementById('cb_pw').textContent    = tempPw;
+      document.getElementById('cb_email').textContent = studentId + '@sankalp.local';
+      document.getElementById('createdBox').classList.add('show');
+      showCreateAlert('✅ ' + name + ' ka account successfully ban gaya!', 'ok');
+      btn.textContent = '+ Aur banao';
+      btn.disabled = false;
+
+    } catch(err){
+      console.error(err);
+      let msg = 'Account nahi bana। Dobara try karein।';
+      if (err.code === 'auth/email-already-in-use') msg = 'Yeh Student ID pehle se exist karta hai। Alag ID chunein।';
+      if (err.code === 'auth/weak-password')        msg = 'Password bahut weak hai। Thoda strong rakho।';
+      showCreateAlert(msg, 'err');
+      btn.disabled = false;
+      btn.textContent = 'Account Banao →';
+    }
   }
 </script>
 
