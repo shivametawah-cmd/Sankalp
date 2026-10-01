@@ -27,6 +27,8 @@
 window.STATIC_NOTES = [
   { title: "Chapter 1: Introduction to Computer — Notes", course: "CCC", type: "PDF", file: "notes/chapter-1.pdf" },
   { title: "Chapter 1: Introduction to Computer — Notes", course: "ADCA", type: "PDF", file: "notes/chapter-1.pdf" },
+  { title: "Chapter 2: Operating System— Notes", course: "CCC", type: "PDF", file: "notes/chapter-2.pdf" },
+  { title: "Chapter 2: Operating System — Notes", course: "ADCA", type: "PDF", file: "notes/chapter-2.pdf" },
   // ---- Example (isko copy karke apni asli notes ke hisaab se badal do) ----
   // { title: "Chapter 1: Introduction to Computer — Notes", course: "CCC", type: "PDF", file: "notes/ccc-chapter1-notes.pdf" },
   // { title: "Chapter 2: Computer Hardware — Notes",        course: "CCC", type: "PDF", file: "notes/ccc-chapter2-notes.pdf" },
