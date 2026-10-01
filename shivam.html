@@ -27,12 +27,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<!-- Same index files the student dashboard uses (lists of all notes / MCQ chapters) -->
+<script src="chapters-index.js"></script>
+<script src="notes-index.js"></script>
 <!-- Firebase: reads the shared quiz-score leaderboard written by the MCQ quiz pages -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
     getFirestore, collection, getDocs, query, orderBy,
-    doc, setDoc
+    doc, setDoc, getDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, createUserWithEmailAndPassword
@@ -73,6 +76,27 @@
       createdAt:          new Date().toISOString()
     });
     return uid;
+  };
+
+  // ---- Batch-wise Notes/MCQ access (Firestore: batchAccess/{batch}) ----
+  window.fetchBatchAccess = async function (batch) {
+    const snap = await getDoc(doc(quizDb, 'batchAccess', batch.trim().toLowerCase()));
+    if (!snap.exists()) return { hiddenNotes: [], hiddenChapters: [] };
+    const d = snap.data();
+    return { hiddenNotes: d.hiddenNotes || [], hiddenChapters: d.hiddenChapters || [] };
+  };
+  window.fetchSavedBatches = async function () {
+    try {
+      const snap = await getDocs(collection(quizDb, 'batchAccess'));
+      return snap.docs.map(d => d.data().batch || d.id);
+    } catch (e) { return []; }
+  };
+  window.saveBatchAccess = async function (batch, hiddenNotes, hiddenChapters) {
+    await setDoc(doc(quizDb, 'batchAccess', batch.trim().toLowerCase()), {
+      batch: batch.trim(),
+      hiddenNotes, hiddenChapters,
+      updatedAt: new Date().toISOString()
+    });
   };
 
   // Fetch every quiz attempt (all chapters) from the shared cloud "scores" collection.
@@ -246,6 +270,30 @@
   .cred-row{display:flex; justify-content:space-between; margin-bottom:4px;}
   .cred-row span:first-child{color:var(--ink-soft);}
   .cred-row span:last-child{font-weight:700; font-family:monospace; font-size:.95rem;}
+
+  /* ---------- Batch access panel ---------- */
+  .ba-body{padding:18px 20px;}
+  .ba-controls{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:6px;}
+  .ba-controls label{display:block; font-size:.78rem; font-weight:700; color:var(--ink-soft); margin-bottom:4px;}
+  .ba-controls select{padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-size:.9rem; min-width:150px; background:#fff;}
+  .ba-hint{font-size:.82rem; color:var(--ink-soft); margin:8px 0 18px;}
+  .ba-cols{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  .ba-col h4{font-family:"Space Grotesk"; font-size:.98rem; margin:0 0 8px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;}
+  .ba-mini{background:none; border:1px solid var(--line); color:var(--ink-soft); padding:3px 10px; border-radius:6px; font-size:.75rem; font-weight:600; margin-left:4px;}
+  .ba-mini:hover{border-color:var(--ink); color:var(--ink);}
+  .ba-item{display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:9px; margin-bottom:8px; cursor:pointer; background:#fff;}
+  .ba-item:hover{background:var(--paper-alt);}
+  .ba-item input{margin-top:3px; width:17px; height:17px; accent-color:var(--teal); flex-shrink:0;}
+  .ba-item .t{font-weight:600; font-size:.9rem; line-height:1.35;}
+  .ba-item .m{font-size:.76rem; color:var(--ink-soft);}
+  .ba-item.off{background:#fbf3f1; border-color:#efcfc7;}
+  .ba-item.off .t{text-decoration:line-through; color:var(--ink-soft);}
+  .ba-empty{color:var(--ink-soft); font-size:.86rem; padding:10px 0;}
+  .ba-foot{display:flex; align-items:center; gap:14px; margin-top:16px; flex-wrap:wrap;}
+  .ba-foot .btn-teal{flex:none;}
+  .ba-msg{font-size:.86rem; font-weight:600;}
+  .ba-msg.ok{color:var(--ok);} .ba-msg.err{color:var(--danger);}
+  @media (max-width:900px){ .ba-cols{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
@@ -276,6 +324,7 @@
       <div class="topbar-actions">
         <a class="btn btn-outline" href="#monthlyFeeStatusPanel">Fee status</a>
         <a class="btn btn-outline" href="#quizScoresPanel">Quiz scores</a>
+        <a class="btn btn-outline" href="#batchAccessPanel">Batch access</a>
         <button class="btn btn-gold" onclick="openCreateStudent()">+ New Student Login</button>
         <button class="btn btn-outline" onclick="refreshAll()">Refresh data</button>
         <button class="btn btn-outline" onclick="logout()">Logout</button>
@@ -382,6 +431,41 @@
         </div>
       </div>
 
+      <div class="panel" id="batchAccessPanel">
+        <div class="panel-head">
+          <h3>🔒 Batch-wise Notes &amp; MCQ access</h3>
+        </div>
+        <div class="ba-body">
+          <div class="ba-controls">
+            <div><label for="baBatch">Batch Number</label>
+              <input type="text" id="baBatch" list="baBatchList" inputmode="numeric" placeholder="e.g. 1" autocomplete="off"
+                     style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-size:.9rem; width:150px;"
+                     onkeydown="if(event.key==='Enter') baLoad()">
+              <datalist id="baBatchList"></datalist></div>
+            <div><button class="btn-teal" style="flex:none; padding:9px 18px;" onclick="baLoad()">Load →</button></div>
+            <div><label for="baCourse">Course</label>
+              <select id="baCourse" onchange="baRender()"></select></div>
+          </div>
+          <div class="ba-hint">✔ tick = is batch ko dikhega &nbsp;|&nbsp; ☐ untick = is batch se chhup jayega. Naya notes/MCQ add karne par woh sab batches ko apne aap dikhega jab tak aap untick na karein. Changes <b>Save</b> dabane par hi lagte hain.</div>
+          <div class="ba-cols">
+            <div class="ba-col">
+              <h4><span>📄 Notes</span>
+                <span><button class="ba-mini" onclick="baSetAll('notes', true)">Sab select</button><button class="ba-mini" onclick="baSetAll('notes', false)">Sab hatao</button></span></h4>
+              <div id="baNotes"></div>
+            </div>
+            <div class="ba-col">
+              <h4><span>🧠 MCQ chapters</span>
+                <span><button class="ba-mini" onclick="baSetAll('mcq', true)">Sab select</button><button class="ba-mini" onclick="baSetAll('mcq', false)">Sab hatao</button></span></h4>
+              <div id="baMcq"></div>
+            </div>
+          </div>
+          <div class="ba-foot">
+            <button class="btn-teal" id="baSaveBtn" onclick="baSave()">💾 Save for this batch</button>
+            <span class="ba-msg" id="baMsg"></span>
+          </div>
+        </div>
+      </div>
+
       <div class="panel" id="quizScoresPanel">
         <div class="panel-head">
           <h3>Quiz scores (<span id="quizScoreCount">0</span>)</h3>
@@ -439,13 +523,9 @@
       </select>
     </div>
     <div class="form-field">
-      <label>Batch</label>
-      <select id="cs_batch">
-        <option value="">-- Batch chunein --</option>
-        <option>Morning</option>
-        <option>Evening</option>
-        <option>Afternoon</option>
-      </select>
+      <label>Batch Number</label>
+      <input type="number" id="cs_batch" min="1" step="1" placeholder="e.g. 1, 2, 3…" autocomplete="off">
+      <div style="font-size:.78rem; color:var(--ink-soft); margin-top:4px;">Jis batch mein student hai uska number likhein। Notes/MCQ isi number ke hisaab se dikhenge।</div>
     </div>
     <div class="form-field">
       <label>Temporary Password <span style="color:var(--danger)">*</span></label>
@@ -829,6 +909,138 @@
         <td>${s.date || '—'}</td>
       </tr>`).join('');
   }
+
+  // ============ BATCH-WISE NOTES / MCQ ACCESS ============
+  // Batch = number typed by admin (same number as entered in "Create Student" → Batch Number).
+  function baBatchValue(){ return document.getElementById('baBatch').value.trim(); }
+  let baHiddenNotes = new Set();     // note.file values hidden for the selected batch
+  let baHiddenMcq   = new Set();     // chapter.id (or url) values hidden for the selected batch
+  let baReady = false;
+
+  function esc(v){
+    return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function baNoteKey(n){ return n.file; }
+  function baMcqKey(c){ return c.id || c.url; }
+
+  function baInit(){
+    // Suggest batches already saved earlier + batches found in student list
+    window.fetchSavedBatches().then(list => {
+      const set = new Set(list.map(String));
+      (typeof allStudents !== 'undefined' ? allStudents : []).forEach(st => { if (st.batch) set.add(String(st.batch)); });
+      document.getElementById('baBatchList').innerHTML =
+        Array.from(set).sort((a,b) => a.localeCompare(b, undefined, {numeric:true})).map(b => `<option value="${esc(b)}">`).join('');
+    });
+    const notes = window.STATIC_NOTES || [], chaps = window.STATIC_CHAPTERS || [];
+    const courses = new Set(['CCC','DCA','ADCA','Tally','MS Office','O Level','Typing']);
+    notes.concat(chaps).forEach(x => { if (x.course) courses.add(String(x.course).trim()); });
+    const courseSel = document.getElementById('baCourse');
+    const prev = courseSel.value;
+    const arr = Array.from(courses);
+    courseSel.innerHTML = arr.map(c => `<option>${esc(c)}</option>`).join('');
+    if (arr.includes(prev)) courseSel.value = prev;
+    baRender();
+  }
+
+  async function baLoad(){
+    const batch = baBatchValue();
+    baReady = false;
+    if (!batch){ setBaMsg('Pehle batch number likhein.', 'err'); baRender(); return; }
+    setBaMsg('Loading…', '');
+    try{
+      const acc = await window.fetchBatchAccess(batch);
+      baHiddenNotes = new Set(acc.hiddenNotes);
+      baHiddenMcq   = new Set(acc.hiddenChapters);
+      baReady = true;
+      setBaMsg('', '');
+    } catch(err){
+      console.error(err);
+      setBaMsg('Load nahi hua — internet / Firestore rules check karein.', 'err');
+      baHiddenNotes = new Set(); baHiddenMcq = new Set();
+    }
+    baRender();
+  }
+
+  function baCurrent(){
+    const course = document.getElementById('baCourse').value.trim().toLowerCase();
+    const same = x => String(x.course || '').trim().toLowerCase() === course;
+    return {
+      notes: (window.STATIC_NOTES || []).filter(same),
+      mcq:   (window.STATIC_CHAPTERS || []).filter(same)
+    };
+  }
+
+  function baRender(){
+    const cur = baCurrent();
+    if (!baBatchValue()){
+      document.getElementById('baNotes').innerHTML = '<div class="ba-empty">Upar batch number likh kar "Load" dabayein।</div>';
+      document.getElementById('baMcq').innerHTML = '';
+      return;
+    }
+    const nEl = document.getElementById('baNotes'), mEl = document.getElementById('baMcq');
+    nEl.innerHTML = cur.notes.length ? cur.notes.map((n, i) => {
+      const off = baHiddenNotes.has(baNoteKey(n));
+      return `<label class="ba-item ${off ? 'off' : ''}">
+        <input type="checkbox" data-kind="notes" data-i="${i}" ${off ? '' : 'checked'} onchange="baToggle(this)">
+        <span><div class="t">${esc(n.title)}</div><div class="m">${esc(n.type || 'PDF')}</div></span></label>`;
+    }).join('') : '<div class="ba-empty">Is course ke koi notes nahi hain.</div>';
+    mEl.innerHTML = cur.mcq.length ? cur.mcq.map((c, i) => {
+      const off = baHiddenMcq.has(baMcqKey(c));
+      return `<label class="ba-item ${off ? 'off' : ''}">
+        <input type="checkbox" data-kind="mcq" data-i="${i}" ${off ? '' : 'checked'} onchange="baToggle(this)">
+        <span><div class="t">${esc(c.chapter)}</div><div class="m">${c.questionCount || 0} questions</div></span></label>`;
+    }).join('') : '<div class="ba-empty">Is course ke koi MCQ chapters nahi hain.</div>';
+  }
+
+  function baToggle(cb){
+    const cur = baCurrent();
+    const isNotes = cb.dataset.kind === 'notes';
+    const item = (isNotes ? cur.notes : cur.mcq)[+cb.dataset.i];
+    const key = isNotes ? baNoteKey(item) : baMcqKey(item);
+    const set = isNotes ? baHiddenNotes : baHiddenMcq;
+    if (cb.checked) set.delete(key); else set.add(key);
+    cb.closest('.ba-item').classList.toggle('off', !cb.checked);
+  }
+
+  function baSetAll(kind, visible){
+    const cur = baCurrent();
+    const list = kind === 'notes' ? cur.notes : cur.mcq;
+    const set  = kind === 'notes' ? baHiddenNotes : baHiddenMcq;
+    list.forEach(x => {
+      const key = kind === 'notes' ? baNoteKey(x) : baMcqKey(x);
+      if (visible) set.delete(key); else set.add(key);
+    });
+    baRender();
+  }
+
+  function setBaMsg(t, cls){
+    const el = document.getElementById('baMsg');
+    el.textContent = t; el.className = 'ba-msg ' + (cls || '');
+  }
+
+  async function baSave(){
+    const batch = baBatchValue();
+    if (!batch){ setBaMsg('Pehle batch number likhein.', 'err'); return; }
+    if (!baReady){ setBaMsg('Pehle "Load" dabayein, phir save karein.', 'err'); return; }
+    const btn = document.getElementById('baSaveBtn');
+    btn.disabled = true; setBaMsg('Saving…', '');
+    try{
+      await window.saveBatchAccess(batch, Array.from(baHiddenNotes), Array.from(baHiddenMcq));
+      setBaMsg('✅ Batch ' + batch + ' ke liye save ho gaya.', 'ok');
+    } catch(err){
+      console.error(err);
+      setBaMsg('Save nahi hua — Firestore rules mein batchAccess ka write allow karein.', 'err');
+    }
+    btn.disabled = false;
+  }
+  window.addEventListener('DOMContentLoaded', () => {
+    // Firebase module loads async; wait until its helpers exist
+    (function wait(t){
+      if (window.fetchBatchAccess) return baInit();
+      if (t > 50) return setBaMsg('Firebase load nahi hua. Page refresh karein.', 'err');
+      setTimeout(() => wait(t + 1), 100);
+    })(0);
+  });
 
   // ============ CREATE STUDENT FUNCTIONS ============
   function openCreateStudent(){

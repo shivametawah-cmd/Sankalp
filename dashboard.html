@@ -26,7 +26,7 @@
 <!-- Firebase: quiz scores -->
 <script type="module">
   import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-  import { getFirestore, collection, query, where, getDocs }
+  import { getFirestore, collection, query, where, getDocs, doc, getDoc }
                                      from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -49,6 +49,22 @@
     } catch(err){
       console.error('Firebase fetch failed:', err);
       return [];
+    }
+  };
+
+  // Batch-wise visibility rules set by admin (shivam.html) → Firestore: batchAccess/{batch}
+  // Returns { hiddenNotes:[...], hiddenChapters:[...] }  |  null if fetch failed
+  window.getBatchAccess = async function(batch){
+    const key = String(batch || '').trim().toLowerCase();
+    if (!key) return { hiddenNotes: [], hiddenChapters: [] };
+    try {
+      const snap = await getDoc(doc(db, 'batchAccess', key));
+      if (!snap.exists()) return { hiddenNotes: [], hiddenChapters: [] };
+      const d = snap.data();
+      return { hiddenNotes: d.hiddenNotes || [], hiddenChapters: d.hiddenChapters || [] };
+    } catch(err){
+      console.error('Batch access fetch failed:', err);
+      return null;
     }
   };
 </script>
@@ -311,7 +327,8 @@ function logout(){
 // ── 2) Greeting ───────────────────────────────────────────────────────
 function renderGreeting(){
   document.getElementById('greetName').textContent = `Namaste, ${student.name || 'Student'}! 👋`;
-  const badges = [student.course, student.batch].filter(Boolean);
+  const batchLabel = /^\d+$/.test(String(student.batch||'').trim()) ? 'Batch ' + String(student.batch).trim() : student.batch;
+  const badges = [student.course, batchLabel].filter(Boolean);
   document.getElementById('heroBadges').innerHTML =
     badges.map(b => `<span class="badge">${b}</span>`).join('');
 }
@@ -362,9 +379,15 @@ function renderFeeBanner(){
 }
 
 // ── 5) Notes ──────────────────────────────────────────────────────────
+// Batch access rules (filled at boot from Firestore). Empty = nothing hidden.
+let batchAccess = { hiddenNotes: [], hiddenChapters: [] };
+
 function loadNotes(){
   const all = window.STATIC_NOTES || [];
-  return all.filter(n => (n.course||'').trim().toLowerCase() === (student.course||'').trim().toLowerCase());
+  const hidden = new Set(batchAccess.hiddenNotes);
+  return all.filter(n =>
+    (n.course||'').trim().toLowerCase() === (student.course||'').trim().toLowerCase() &&
+    !hidden.has(n.file));
 }
 function renderNotes(notes){
   const el = document.getElementById('notesList');
@@ -389,7 +412,10 @@ document.getElementById('notesList').addEventListener('click', e => {
 // ── 6) MCQ list ───────────────────────────────────────────────────────
 function loadMCQList(){
   const all = window.STATIC_CHAPTERS || [];
-  return all.filter(c => (c.course||'').trim().toLowerCase() === (student.course||'').trim().toLowerCase());
+  const hidden = new Set(batchAccess.hiddenChapters);
+  return all.filter(c =>
+    (c.course||'').trim().toLowerCase() === (student.course||'').trim().toLowerCase() &&
+    !hidden.has(c.id || c.url));
 }
 function renderMCQList(chapters){
   const el = document.getElementById('mcqList');
@@ -509,17 +535,25 @@ function renderQuizHistory(rows){
 renderGreeting();
 renderInfoCards();
 renderFeeBanner();
-renderNotes(loadNotes());
-renderMCQList(loadMCQList());
 // Firebase module (type="module") async load hota hai — poll karke wait karo
-function waitForFirebase(cb, tries){
+function waitForFirebase(cb, onTimeout, tries){
   tries = tries || 0;
-  if (window.getStudentScores){ cb(); return; }
-  if (tries > 40){ renderQuizHistory([]); return; }
-  setTimeout(function(){ waitForFirebase(cb, tries + 1); }, 100);
+  if (window.getStudentScores && window.getBatchAccess){ cb(); return; }
+  if (tries > 40){ onTimeout(); return; }
+  setTimeout(function(){ waitForFirebase(cb, onTimeout, tries + 1); }, 100);
 }
-waitForFirebase(function(){
+waitForFirebase(async function(){
+  // 1) Batch rules pehle lao, phir notes/MCQ filter karke dikhao
+  const access = await window.getBatchAccess(student.batch);
+  if (access) batchAccess = access;       // fetch fail ho to sab dikhega (fail-open)
+  renderNotes(loadNotes());
+  renderMCQList(loadMCQList());
+  // 2) Quiz history
   loadQuizHistory().then(renderQuizHistory);
+}, function(){
+  renderNotes(loadNotes());
+  renderMCQList(loadMCQList());
+  renderQuizHistory([]);
 });
 </script>
 </body>
