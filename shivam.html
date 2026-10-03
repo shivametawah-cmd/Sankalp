@@ -29,6 +29,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <!-- Same index files the student dashboard uses (lists of all notes / MCQ chapters) -->
 <script src="chapters-index.js"></script>
+<script src="mocks-index.js"></script>
 <script src="notes-index.js"></script>
 <!-- Firebase: reads the shared quiz-score leaderboard written by the MCQ quiz pages -->
 <script type="module">
@@ -78,12 +79,12 @@
     return uid;
   };
 
-  // ---- Batch-wise Notes/MCQ access (Firestore: batchAccess/{batch}) ----
+  // ---- Batch-wise Notes/MCQ/Mock access (Firestore: batchAccess/{batch}) ----
   window.fetchBatchAccess = async function (batch) {
     const snap = await getDoc(doc(quizDb, 'batchAccess', batch.trim().toLowerCase()));
-    if (!snap.exists()) return { hiddenNotes: [], hiddenChapters: [] };
+    if (!snap.exists()) return { hiddenNotes: [], hiddenChapters: [], hiddenMocks: [] };
     const d = snap.data();
-    return { hiddenNotes: d.hiddenNotes || [], hiddenChapters: d.hiddenChapters || [] };
+    return { hiddenNotes: d.hiddenNotes || [], hiddenChapters: d.hiddenChapters || [], hiddenMocks: d.hiddenMocks || [] };
   };
   window.fetchSavedBatches = async function () {
     try {
@@ -91,10 +92,10 @@
       return snap.docs.map(d => d.data().batch || d.id);
     } catch (e) { return []; }
   };
-  window.saveBatchAccess = async function (batch, hiddenNotes, hiddenChapters) {
+  window.saveBatchAccess = async function (batch, hiddenNotes, hiddenChapters, hiddenMocks) {
     await setDoc(doc(quizDb, 'batchAccess', batch.trim().toLowerCase()), {
       batch: batch.trim(),
-      hiddenNotes, hiddenChapters,
+      hiddenNotes, hiddenChapters, hiddenMocks: hiddenMocks || [],
       updatedAt: new Date().toISOString()
     });
   };
@@ -277,7 +278,7 @@
   .ba-controls label{display:block; font-size:.78rem; font-weight:700; color:var(--ink-soft); margin-bottom:4px;}
   .ba-controls select{padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-size:.9rem; min-width:150px; background:#fff;}
   .ba-hint{font-size:.82rem; color:var(--ink-soft); margin:8px 0 18px;}
-  .ba-cols{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  .ba-cols{display:grid; grid-template-columns:repeat(3, 1fr); gap:22px;}
   .ba-col h4{font-family:"Space Grotesk"; font-size:.98rem; margin:0 0 8px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;}
   .ba-mini{background:none; border:1px solid var(--line); color:var(--ink-soft); padding:3px 10px; border-radius:6px; font-size:.75rem; font-weight:600; margin-left:4px;}
   .ba-mini:hover{border-color:var(--ink); color:var(--ink);}
@@ -293,7 +294,8 @@
   .ba-foot .btn-teal{flex:none;}
   .ba-msg{font-size:.86rem; font-weight:600;}
   .ba-msg.ok{color:var(--ok);} .ba-msg.err{color:var(--danger);}
-  @media (max-width:900px){ .ba-cols{grid-template-columns:1fr;} }
+  @media (max-width:1100px){ .ba-cols{grid-template-columns:1fr 1fr;} }
+  @media (max-width:760px){ .ba-cols{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
@@ -433,7 +435,7 @@
 
       <div class="panel" id="batchAccessPanel">
         <div class="panel-head">
-          <h3>🔒 Batch-wise Notes &amp; MCQ access</h3>
+          <h3>🔒 Batch-wise Notes, MCQ &amp; Mock Test access</h3>
         </div>
         <div class="ba-body">
           <div class="ba-controls">
@@ -446,7 +448,7 @@
             <div><label for="baCourse">Course</label>
               <select id="baCourse" onchange="baRender()"></select></div>
           </div>
-          <div class="ba-hint">✔ tick = is batch ko dikhega &nbsp;|&nbsp; ☐ untick = is batch se chhup jayega. Naya notes/MCQ add karne par woh sab batches ko apne aap dikhega jab tak aap untick na karein. Changes <b>Save</b> dabane par hi lagte hain.</div>
+          <div class="ba-hint">✔ tick = is batch ko dikhega &nbsp;|&nbsp; ☐ untick = is batch se chhup jayega. Naya notes/MCQ/mock add karne par woh sab batches ko apne aap dikhega jab tak aap untick na karein. Changes <b>Save</b> dabane par hi lagte hain.</div>
           <div class="ba-cols">
             <div class="ba-col">
               <h4><span>📄 Notes</span>
@@ -457,6 +459,11 @@
               <h4><span>🧠 MCQ chapters</span>
                 <span><button class="ba-mini" onclick="baSetAll('mcq', true)">Sab select</button><button class="ba-mini" onclick="baSetAll('mcq', false)">Sab hatao</button></span></h4>
               <div id="baMcq"></div>
+            </div>
+            <div class="ba-col">
+              <h4><span>📝 Mock tests</span>
+                <span><button class="ba-mini" onclick="baSetAll('mock', true)">Sab select</button><button class="ba-mini" onclick="baSetAll('mock', false)">Sab hatao</button></span></h4>
+              <div id="baMock"></div>
             </div>
           </div>
           <div class="ba-foot">
@@ -568,6 +575,10 @@
     'ccc-ch1': 'CCC – Ch.1: Introduction to Computer',
     'ccc-ch2': 'CCC – Ch.2: Operating System',
     'ccc-ch3': 'CCC – Ch.3: Word Processing',
+    'ccc-ch4': 'CCC – Ch.4: Spreadsheet',
+    'ccc-ch5': 'CCC – Ch.5: Presentation',
+    'ccc-mock1': 'CCC – Mock Test 1 (Full Length)',
+    'ccc-mock2': 'CCC – Mock Test 2 (Full Length)',
     'mso-word': 'Microsoft Office – MS Word'
   };
   function chapterLabel(id){
@@ -915,6 +926,7 @@
   function baBatchValue(){ return document.getElementById('baBatch').value.trim(); }
   let baHiddenNotes = new Set();     // note.file values hidden for the selected batch
   let baHiddenMcq   = new Set();     // chapter.id (or url) values hidden for the selected batch
+  let baHiddenMock  = new Set();     // mock.id (or url) values hidden for the selected batch
   let baReady = false;
 
   function esc(v){
@@ -922,6 +934,7 @@
   }
   function baNoteKey(n){ return n.file; }
   function baMcqKey(c){ return c.id || c.url; }
+  function baMockKey(c){ return c.id || c.url; }
 
   function baInit(){
     // Suggest batches already saved earlier + batches found in student list
@@ -931,7 +944,7 @@
       document.getElementById('baBatchList').innerHTML =
         Array.from(set).sort((a,b) => a.localeCompare(b, undefined, {numeric:true})).map(b => `<option value="${esc(b)}">`).join('');
     });
-    const notes = window.STATIC_NOTES || [], chaps = window.STATIC_CHAPTERS || [];
+    const notes = window.STATIC_NOTES || [], chaps = (window.STATIC_CHAPTERS || []).concat(window.STATIC_MOCKS || []);
     const courses = new Set(['CCC','DCA','ADCA','Tally','MS Office','O Level','Typing']);
     notes.concat(chaps).forEach(x => { if (x.course) courses.add(String(x.course).trim()); });
     const courseSel = document.getElementById('baCourse');
@@ -951,12 +964,13 @@
       const acc = await window.fetchBatchAccess(batch);
       baHiddenNotes = new Set(acc.hiddenNotes);
       baHiddenMcq   = new Set(acc.hiddenChapters);
+      baHiddenMock  = new Set(acc.hiddenMocks);
       baReady = true;
       setBaMsg('', '');
     } catch(err){
       console.error(err);
       setBaMsg('Load nahi hua — internet / Firestore rules check karein.', 'err');
-      baHiddenNotes = new Set(); baHiddenMcq = new Set();
+      baHiddenNotes = new Set(); baHiddenMcq = new Set(); baHiddenMock = new Set();
     }
     baRender();
   }
@@ -966,7 +980,8 @@
     const same = x => String(x.course || '').trim().toLowerCase() === course;
     return {
       notes: (window.STATIC_NOTES || []).filter(same),
-      mcq:   (window.STATIC_CHAPTERS || []).filter(same)
+      mcq:   (window.STATIC_CHAPTERS || []).filter(same),
+      mock:  (window.STATIC_MOCKS || []).filter(same)
     };
   }
 
@@ -975,9 +990,10 @@
     if (!baBatchValue()){
       document.getElementById('baNotes').innerHTML = '<div class="ba-empty">Upar batch number likh kar "Load" dabayein।</div>';
       document.getElementById('baMcq').innerHTML = '';
+      document.getElementById('baMock').innerHTML = '';
       return;
     }
-    const nEl = document.getElementById('baNotes'), mEl = document.getElementById('baMcq');
+    const nEl = document.getElementById('baNotes'), mEl = document.getElementById('baMcq'), kEl = document.getElementById('baMock');
     nEl.innerHTML = cur.notes.length ? cur.notes.map((n, i) => {
       const off = baHiddenNotes.has(baNoteKey(n));
       return `<label class="ba-item ${off ? 'off' : ''}">
@@ -990,24 +1006,31 @@
         <input type="checkbox" data-kind="mcq" data-i="${i}" ${off ? '' : 'checked'} onchange="baToggle(this)">
         <span><div class="t">${esc(c.chapter)}</div><div class="m">${c.questionCount || 0} questions</div></span></label>`;
     }).join('') : '<div class="ba-empty">Is course ke koi MCQ chapters nahi hain.</div>';
+    kEl.innerHTML = cur.mock.length ? cur.mock.map((c, i) => {
+      const off = baHiddenMock.has(baMockKey(c));
+      return `<label class="ba-item ${off ? 'off' : ''}">
+        <input type="checkbox" data-kind="mock" data-i="${i}" ${off ? '' : 'checked'} onchange="baToggle(this)">
+        <span><div class="t">${esc(c.chapter)}</div><div class="m">${c.questionCount || 0} questions · ${c.duration || 90} min</div></span></label>`;
+    }).join('') : '<div class="ba-empty">Is course ka koi mock test nahi hai.</div>';
   }
 
   function baToggle(cb){
     const cur = baCurrent();
-    const isNotes = cb.dataset.kind === 'notes';
-    const item = (isNotes ? cur.notes : cur.mcq)[+cb.dataset.i];
-    const key = isNotes ? baNoteKey(item) : baMcqKey(item);
-    const set = isNotes ? baHiddenNotes : baHiddenMcq;
+    const kind = cb.dataset.kind;
+    const list = kind === 'notes' ? cur.notes : kind === 'mock' ? cur.mock : cur.mcq;
+    const item = list[+cb.dataset.i];
+    const key = kind === 'notes' ? baNoteKey(item) : kind === 'mock' ? baMockKey(item) : baMcqKey(item);
+    const set = kind === 'notes' ? baHiddenNotes : kind === 'mock' ? baHiddenMock : baHiddenMcq;
     if (cb.checked) set.delete(key); else set.add(key);
     cb.closest('.ba-item').classList.toggle('off', !cb.checked);
   }
 
   function baSetAll(kind, visible){
     const cur = baCurrent();
-    const list = kind === 'notes' ? cur.notes : cur.mcq;
-    const set  = kind === 'notes' ? baHiddenNotes : baHiddenMcq;
+    const list = kind === 'notes' ? cur.notes : kind === 'mock' ? cur.mock : cur.mcq;
+    const set  = kind === 'notes' ? baHiddenNotes : kind === 'mock' ? baHiddenMock : baHiddenMcq;
     list.forEach(x => {
-      const key = kind === 'notes' ? baNoteKey(x) : baMcqKey(x);
+      const key = kind === 'notes' ? baNoteKey(x) : kind === 'mock' ? baMockKey(x) : baMcqKey(x);
       if (visible) set.delete(key); else set.add(key);
     });
     baRender();
@@ -1025,7 +1048,7 @@
     const btn = document.getElementById('baSaveBtn');
     btn.disabled = true; setBaMsg('Saving…', '');
     try{
-      await window.saveBatchAccess(batch, Array.from(baHiddenNotes), Array.from(baHiddenMcq));
+      await window.saveBatchAccess(batch, Array.from(baHiddenNotes), Array.from(baHiddenMcq), Array.from(baHiddenMock));
       setBaMsg('✅ Batch ' + batch + ' ke liye save ho gaya.', 'ok');
     } catch(err){
       console.error(err);

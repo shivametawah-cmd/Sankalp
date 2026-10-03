@@ -8,6 +8,7 @@
   Quiz history: Firestore → scores collection (by studentId)
   Notes: notes-index.js (window.STATIC_NOTES)
   MCQ: chapters-index.js (window.STATIC_CHAPTERS)
+  Mock tests: mocks-index.js (window.STATIC_MOCKS) — batch-wise via batchAccess.hiddenMocks
   =====================================================================
 -->
 <html lang="en">
@@ -20,6 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="chapters-index.js"></script>
+<script src="mocks-index.js"></script>
 <script src="notes-index.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
@@ -53,15 +55,15 @@
   };
 
   // Batch-wise visibility rules set by admin (shivam.html) → Firestore: batchAccess/{batch}
-  // Returns { hiddenNotes:[...], hiddenChapters:[...] }  |  null if fetch failed
+  // Returns { hiddenNotes:[...], hiddenChapters:[...], hiddenMocks:[...] }  |  null if fetch failed
   window.getBatchAccess = async function(batch){
     const key = String(batch || '').trim().toLowerCase();
-    if (!key) return { hiddenNotes: [], hiddenChapters: [] };
+    if (!key) return { hiddenNotes: [], hiddenChapters: [], hiddenMocks: [] };
     try {
       const snap = await getDoc(doc(db, 'batchAccess', key));
-      if (!snap.exists()) return { hiddenNotes: [], hiddenChapters: [] };
+      if (!snap.exists()) return { hiddenNotes: [], hiddenChapters: [], hiddenMocks: [] };
       const d = snap.data();
-      return { hiddenNotes: d.hiddenNotes || [], hiddenChapters: d.hiddenChapters || [] };
+      return { hiddenNotes: d.hiddenNotes || [], hiddenChapters: d.hiddenChapters || [], hiddenMocks: d.hiddenMocks || [] };
     } catch(err){
       console.error('Batch access fetch failed:', err);
       return null;
@@ -272,10 +274,18 @@
       <div class="notes-list" id="mcqList"><div class="empty-note">Loading chapters…</div></div>
     </section>
 
+    <section id="mockSection">
+      <div class="section-head">
+        <h2>📝 Mock Tests</h2>
+        <span class="sub">Full-length exam practice for your course</span>
+      </div>
+      <div class="notes-list" id="mockList"><div class="empty-note">Loading mock tests…</div></div>
+    </section>
+
     <section>
       <div class="section-head">
         <h2>📊 My Quiz History</h2>
-        <span class="sub">Your best score in each chapter</span>
+        <span class="sub">Your best score in each chapter &amp; mock test</span>
       </div>
       <div class="quiz-table-wrap">
         <table>
@@ -380,7 +390,7 @@ function renderFeeBanner(){
 
 // ── 5) Notes ──────────────────────────────────────────────────────────
 // Batch access rules (filled at boot from Firestore). Empty = nothing hidden.
-let batchAccess = { hiddenNotes: [], hiddenChapters: [] };
+let batchAccess = { hiddenNotes: [], hiddenChapters: [], hiddenMocks: [] };
 
 function loadNotes(){
   const all = window.STATIC_NOTES || [];
@@ -430,6 +440,30 @@ function renderMCQList(chapters){
         <div class="meta"><span class="tag">${c.course}</span>${c.questionCount||0} questions</div>
       </div>
       <a class="download-btn" href="${c.url}" target="_blank" rel="noopener">Start Quiz →</a>
+    </div>`).join('');
+}
+
+// ── 6b) Mock tests (batch-wise via batchAccess.hiddenMocks) ───────────
+function loadMockList(){
+  const all = window.STATIC_MOCKS || [];
+  const hidden = new Set(batchAccess.hiddenMocks || []);
+  return all.filter(c =>
+    (c.course||'').trim().toLowerCase() === (student.course||'').trim().toLowerCase() &&
+    !hidden.has(c.id || c.url));
+}
+function renderMockList(mocks){
+  const el = document.getElementById('mockList');
+  if (!mocks.length){
+    el.innerHTML = `<div class="empty-note">📌 No mock tests available yet for <b>${student.course||'your course'}</b>. Check back soon.</div>`;
+    return;
+  }
+  el.innerHTML = mocks.map(c => `
+    <div class="note-card">
+      <div class="note-info">
+        <h3>${c.chapter}</h3>
+        <div class="meta"><span class="tag">${c.course}</span>${c.questionCount||0} questions · ${c.duration||90} min</div>
+      </div>
+      <a class="download-btn" href="${c.url}" target="_blank" rel="noopener">Start Mock Test →</a>
     </div>`).join('');
 }
 
@@ -501,7 +535,7 @@ async function loadQuizHistory(){
     if (!byChapter[cid]) byChapter[cid] = [];
     byChapter[cid].push(a);
   });
-  const meta = window.STATIC_CHAPTERS || [];
+  const meta = (window.STATIC_CHAPTERS || []).concat(window.STATIC_MOCKS || []);
   return Object.keys(byChapter).map(cid => {
     const attempts = byChapter[cid];
     const best = attempts.reduce((m,a) => a.pct > m.pct ? a : m, attempts[0]);
@@ -548,11 +582,13 @@ waitForFirebase(async function(){
   if (access) batchAccess = access;       // fetch fail ho to sab dikhega (fail-open)
   renderNotes(loadNotes());
   renderMCQList(loadMCQList());
+  renderMockList(loadMockList());
   // 2) Quiz history
   loadQuizHistory().then(renderQuizHistory);
 }, function(){
   renderNotes(loadNotes());
   renderMCQList(loadMCQList());
+  renderMockList(loadMockList());
   renderQuizHistory([]);
 });
 </script>

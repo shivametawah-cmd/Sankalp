@@ -28,6 +28,7 @@
 <title>Sankalp Computer Classes — Bidhuna, Auraiya | CCC, ADCA, Tally, MS Office &amp; more</title>
 <meta name="description" content="Sankalp Computer Classes, Bidhuna (Auraiya, UP) — CCC, ADCA, Tally, MS Office, LibreOffice, Windows, AI &amp; Ubuntu courses. Established 2026. Call 9286733232.">
 <link rel="icon" href="logo.png" type="image/png">
+<script src="mocks-index.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -312,6 +313,7 @@
         <li><a href="#why-us">Why us</a></li>
         <li><a href="#find-us">Find us</a></li>
         <li><a href="mcq-quiz.html">MCQ</a></li>
+        <li><a href="mock-tests.html">Mock Tests</a></li>
         <li><a href="verify-certificate.html">Verify Certificate</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
@@ -665,6 +667,19 @@
     </div>
   </section>
 
+  <!-- ---------- MOCK TESTS ---------- -->
+  <section id="mock-tests" style="background:var(--paper-alt); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="section-tag">free_ccc_mock_tests</span>
+        <h2>Practise the real CCC exam — free</h2>
+        <p>Full-length mock tests in the NIELIT pattern: 100 questions in English + Hindi, 90-minute timer, instant score and answer review.</p>
+      </div>
+      <div class="why-grid" id="indexMockGrid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));"></div>
+      <p style="margin-top:20px;"><a class="btn btn-teal" href="mock-tests.html">View all mock tests →</a></p>
+    </div>
+  </section>
+
   <!-- ---------- WHY US ---------- -->
   <section id="why-us">
     <div class="wrap">
@@ -770,6 +785,22 @@
 </footer>
 
 <script>
+  // ---------- Mock tests section (list comes from mocks-index.js) ----------
+  (function(){
+    const grid = document.getElementById('indexMockGrid');
+    const list = window.STATIC_MOCKS || [];
+    const esc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    if (!grid) return;
+    if (!list.length){ grid.parentElement.parentElement.style.display = 'none'; return; }
+    grid.innerHTML = list.map((m, i) => `
+      <div class="why-card">
+        <span class="num">${esc(m.course)} · MOCK ${String(i+1).padStart(2,'0')}</span>
+        <h3>${esc(m.chapter)}</h3>
+        <p>${m.questionCount || 0} questions · ${m.duration || 90} minutes · English + Hindi</p>
+        <p style="margin-top:12px;"><a href="${esc(m.url)}" style="color:var(--teal-dark); font-weight:700;">Start test →</a></p>
+      </div>`).join('');
+  })();
+
   // Mobile nav toggle
   const menuToggle = document.getElementById('menuToggle');
   const primaryNav = document.getElementById('primaryNav');

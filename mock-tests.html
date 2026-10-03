@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<!--
+  SANKALP COMPUTER CLASSES — All Mock Tests (hub)
+  List comes from mocks-index.js (window.STATIC_MOCKS). If a student is logged in,
+  mocks hidden for their batch (shivam.html → Batch access) are hidden here too.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCC Mock Tests — Full Length (Hindi + English) | Sankalp Computer Classes</title>
+<meta name="description" content="Free full-length CCC mock tests in the NIELIT pattern — 100 bilingual questions, 90-minute timer, instant score and leaderboard. Sankalp Computer Classes, Bidhuna, Auraiya.">
+<link rel="icon" href="logo.png" type="image/png">
+<link rel="canonical" href="https://sankalpcomputerclasses.in/mock-tests.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="mocks-index.js"></script>
+<style>
+  :root{
+    --ink:#132038; --ink-soft:#2b3a58; --paper:#f6f4ee; --paper-alt:#eeebe2;
+    --card:#ffffff; --gold:#d99a1f; --gold-dark:#b87f14;
+    --teal:#0f6f6c; --teal-dark:#0b524f;
+    --line:#e1ddd0; --radius:14px; --shadow:0 10px 30px -18px rgba(19,32,56,0.35);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--paper); color:var(--ink); font-family:"Source Sans 3", system-ui, sans-serif; line-height:1.6; min-height:100vh;}
+  h1,h2,h3{font-family:"Space Grotesk", system-ui, sans-serif; line-height:1.25;}
+  .wrap{max-width:860px; margin:0 auto; padding:0 20px;}
+  header.topbar{background:var(--ink); padding:20px 0;}
+  header.topbar .wrap{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
+  .brand img{width:40px; height:40px; border-radius:8px; background:#fff;}
+  .brand strong{font-family:"Space Grotesk"; color:#fff; font-size:1rem; display:block;}
+  .brand span{font-size:.75rem; color:#c9cdd8;}
+  .back-link{color:#dfe2ea; text-decoration:none; font-size:.85rem; font-weight:600;}
+  .back-link:hover{color:#fff;}
+  main{padding:40px 0 60px;}
+  .eyebrow{display:inline-block; font-family:"Space Grotesk"; font-size:.72rem; font-weight:700; letter-spacing:.04em; color:var(--teal-dark); background:rgba(15,111,108,0.1); padding:5px 11px; border-radius:999px; margin-bottom:12px;}
+  main h1{font-size:1.7rem; margin-bottom:6px;}
+  .hi{color:var(--ink-soft); margin-bottom:12px;}
+  .lede{color:var(--ink-soft); font-size:.95rem; max-width:64ch; margin-bottom:26px;}
+  .list{display:grid; gap:14px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow); display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .card h3{font-size:1.02rem; margin-bottom:2px;}
+  .card .hi-name{font-size:.85rem; color:var(--ink-soft); margin-bottom:8px;}
+  .tags{display:flex; gap:8px; flex-wrap:wrap; font-size:.78rem;}
+  .tags span{background:rgba(15,111,108,0.1); color:var(--teal-dark); padding:2px 10px; border-radius:999px; font-weight:600;}
+  .tags span.best{background:#eaf7f0; color:#1c7c4d;}
+  .go{background:var(--gold); color:#241a02; padding:10px 20px; border-radius:9px; font-weight:700; font-size:.9rem; text-decoration:none; white-space:nowrap;}
+  .go:hover{background:var(--gold-dark);}
+  .empty{text-align:center; padding:34px 20px; color:var(--ink-soft); background:var(--card); border:1px dashed var(--line); border-radius:12px;}
+  .cross{margin-top:26px; font-size:.88rem; color:var(--ink-soft);}
+  .cross a{color:var(--teal-dark); font-weight:600;}
+  footer{background:#0d1728; color:#aab0c0; padding:22px 0; font-size:.83rem; text-align:center;}
+  footer a{color:#c9cdd8;}
+</style>
+<script type="module">
+  // Only used to hide mocks that the admin turned off for the logged-in student's batch.
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyARCHtO6xh7xbXP3UOIqoErxwwbvVSBxb4",
+    authDomain: "sankalp-quiz-5b907.firebaseapp.com",
+    projectId: "sankalp-quiz-5b907",
+    storageBucket: "sankalp-quiz-5b907.firebasestorage.app",
+    messagingSenderId: "919711308932",
+    appId: "1:919711308932:web:61c7b1a82b80f6b9b4b6d1"
+  };
+  const db = getFirestore(initializeApp(firebaseConfig));
+  window.getHiddenMocksForBatch = async function(batch){
+    const key = String(batch || '').trim().toLowerCase();
+    if (!key) return [];
+    try {
+      const snap = await getDoc(doc(db, 'batchAccess', key));
+      return snap.exists() ? (snap.data().hiddenMocks || []) : [];
+    } catch (e) { return []; }
+  };
+</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <img src="logo.png" alt="" onerror="this.style.background='var(--ink)'; this.src='';">
+      <div><strong>Sankalp Computer Classes</strong><span>Mock Tests</span></div>
+    </a>
+    <a class="back-link" href="index.html">← Home</a>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <span class="eyebrow">NIELIT PATTERN · FULL LENGTH</span>
+    <h1>CCC Mock Tests</h1>
+    <div class="hi">CCC मॉक टेस्ट — पूरे सिलेबस पर आधारित</div>
+    <p class="lede">Practise the real exam format: 100 bilingual (English + Hindi) questions on the whole CCC syllabus, a 90-minute timer, 50% pass mark, instant score, answer review and leaderboard.</p>
+    <div class="list" id="mockList"><div class="empty">Loading mock tests…</div></div>
+    <p class="cross">Want to practise chapter by chapter first? <a href="mcq-quiz.html">Browse all MCQ chapters →</a></p>
+  </div>
+</main>
+
+<footer>&copy; 2026 Sankalp Computer Classes, Bidhuna, Auraiya, UP &middot; <a href="index.html">Home</a> &middot; <a href="mcq-quiz.html">MCQ Chapters</a></footer>
+
+<script>
+function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function bestLocal(id){
+  try {
+    const arr = (JSON.parse(localStorage.getItem('sankalp_mcq_scores') || '{}'))[id] || [];
+    return arr.length ? Math.max.apply(null, arr.map(a => a.pct || 0)) : null;
+  } catch(e){ return null; }
+}
+function render(list){
+  const el = document.getElementById('mockList');
+  if (!list.length){ el.innerHTML = '<div class="empty">📌 No mock tests available right now. Please check back soon.</div>'; return; }
+  el.innerHTML = list.map(m => {
+    const b = bestLocal(m.id);
+    return `<div class="card">
+      <div>
+        <h3>${esc(m.chapter)}</h3>
+        <div class="hi-name">${esc(m.chapterHi || '')}</div>
+        <div class="tags"><span>${esc(m.course)}</span><span>${m.questionCount || 0} questions</span><span>${m.duration || 90} min</span>${b!==null ? `<span class="best">Your best: ${b}%</span>` : ''}</div>
+      </div>
+      <a class="go" href="${esc(m.url)}">Start Mock Test →</a>
+    </div>`;
+  }).join('');
+}
+(async function(){
+  const all = window.STATIC_MOCKS || [];
+  let student = null;
+  try { student = JSON.parse(sessionStorage.getItem('sankalp_student') || localStorage.getItem('sankalp_student') || 'null'); } catch(e){}
+  if (!(student && student.batch)){ render(all); return; }
+  // logged-in student: apply batch rules (wait for the Firebase module, fail-open)
+  for (let t = 0; t < 40 && !window.getHiddenMocksForBatch; t++) await new Promise(r => setTimeout(r, 100));
+  const hidden = new Set(window.getHiddenMocksForBatch ? await window.getHiddenMocksForBatch(student.batch) : []);
+  render(all.filter(m => !hidden.has(m.id || m.url)));
+})();
+</script>
+</body>
+</html>
