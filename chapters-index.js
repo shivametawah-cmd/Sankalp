@@ -57,6 +57,30 @@ window.STATIC_CHAPTERS = [
     url: 'ccc-chapter2-mcq.html'
   },
   {
+    id: 'ccc-ch3',
+    course: 'CCC',
+    chapter: 'Chapter 3: Introduction to Word Processing',
+    chapterHi: 'अध्याय 3: वर्ड प्रोसेसिंग का परिचय',
+    questionCount: 50,
+    url: 'ccc-chapter3-mcq.html'
+  },
+  {
+    id: 'ccc-ch4',
+    course: 'CCC',
+    chapter: 'Chapter 4: Introduction to Spreadsheet',
+    chapterHi: 'अध्याय 4: स्प्रेडशीट का परिचय',
+    questionCount: 50,
+    url: 'ccc-chapter4-mcq.html'
+  },
+  {
+    id: 'ccc-ch5',
+    course: 'CCC',
+    chapter: 'Chapter 5: Introduction to Presentation',
+    chapterHi: 'अध्याय 5: प्रेजेंटेशन का परिचय',
+    questionCount: 50,
+    url: 'ccc-chapter5-mcq.html'
+  },
+  {
     id: 'mso-word',
     course: 'Microsoft Office',
     chapter: 'MS Word',
@@ -65,53 +89,30 @@ window.STATIC_CHAPTERS = [
     url: 'msword-mcq.html'
   },
   {
-    id: 'ccc-ch3',
-    course: 'CCC',
-    chapter: 'Chapter 3: Word Processing',
-    chapterHi: 'अध्याय 3: वर्ड प्रोसेसिंग',
-    questionCount: 50,
-    url: 'ccc-chapter3-mcq.html'
-  },
-{
-    id: 'ccc-ch4',
-    course: 'CCC',
-    chapter: 'Chapter 4: Spreadsheet',
-    chapterHi: 'अध्याय 4: स्प्रेडशीट',
-    questionCount: 50,
-    url: 'ccc-chapter4-mcq.html'
-  },
-  {
-    id: 'adca-ch1',
+    id: 'adca-ch1-basic',
     course: 'ADCA',
-    chapter: 'Chapter 1: Fundamentals of computer-Basic',
-    chapterHi: 'अध्याय 1: कंप्यूटर की मूलभूत अवधारणाएँ-बेसिक',
+    chapter: 'Chapter 1: Fundamentals of Computer — Basic Level',
+    chapterHi: 'अध्याय 1: कंप्यूटर के मूल सिद्धांत — बेसिक स्तर',
     questionCount: 20,
     url: 'adca-chapter1-basic-mcq.html'
   },
-    {
-    id: 'adca-ch1',
+  {
+    id: 'adca-ch1-intermediate',
     course: 'ADCA',
-    chapter: 'Chapter 1: Fundamentals of computer-Intermediate',
-    chapterHi: 'अध्याय 1: कंप्यूटर की मूलभूत अवधारणाएँ-इंटरमीडिएट',
+    chapter: 'Chapter 1: Fundamentals of Computer — Intermediate Level',
+    chapterHi: 'अध्याय 1: कंप्यूटर के मूल सिद्धांत — इंटरमीडिएट स्तर',
     questionCount: 20,
     url: 'adca-chapter1-intermediate-mcq.html'
   },
-      {
-    id: 'adca-ch1',
+  {
+    id: 'adca-ch1-hard',
     course: 'ADCA',
-    chapter: 'Chapter 1: Fundamentals of computer-Hard',
-    chapterHi: 'अध्याय 1: कंप्यूटर की मूलभूत अवधारणाएँ-हार्ड',
+    chapter: 'Chapter 1: Fundamentals of Computer — Hard Level',
+    chapterHi: 'अध्याय 1: कंप्यूटर के मूल सिद्धांत — हार्ड स्तर',
     questionCount: 20,
     url: 'adca-chapter1-hard-mcq.html'
-  },
-     {
-    id: 'ccc-ch5',
-    course: 'CCC',
-    chapter: 'Chapter 5: Introduction to Presentation',
-    chapterHi: 'अध्याय 5: प्रेजेंटेशन का परिचय',
-    questionCount: 50,
-    url: 'ccc-chapter5-mcq.html'
-  },
+  }
+
   // 👇 Naya chapter yahan neeche add karo, upar wale jaisa hi ek block
   // copy-paste karke. Pichle block ke baad comma (,) lagana mat bhoolna.
   //

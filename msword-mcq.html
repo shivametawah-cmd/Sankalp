@@ -15,6 +15,20 @@
 <meta name="description" content="Take a free 50-question bilingual (Hindi + English) self-scoring MCQ quiz on MS Word — ribbon tabs, shortcuts, Mail Merge, Track Changes and more. Question by question, instant score at the end. Sankalp Computer Classes, Bidhuna, Auraiya.">
 <link rel="icon" href="logo.png" type="image/png">
 <link rel="canonical" href="https://sankalpcomputerclasses.in/msword-mcq.html">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Sankalp Computer Classes">
+<meta name="theme-color" content="#0f6f6c">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sankalp Computer Classes">
+<meta property="og:locale" content="en_IN">
+<meta property="og:title" content="MS Word MCQ Quiz — 50 Questions (Hindi + English) | Sankalp Computer Classes">
+<meta property="og:description" content="Take a free 50-question bilingual (Hindi + English) self-scoring MCQ quiz on MS Word — ribbon tabs, shortcuts, Mail Merge, Track Changes and more. Question by question, instant score at the end. Sankalp Computer Classes, Bidhuna, Auraiya.">
+<meta property="og:url" content="https://sankalpcomputerclasses.in/msword-mcq.html">
+<meta property="og:image" content="https://sankalpcomputerclasses.in/logo.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MS Word MCQ Quiz — 50 Questions (Hindi + English)">
+<meta name="twitter:description" content="Take a free 50-question bilingual (Hindi + English) self-scoring MCQ quiz on MS Word — ribbon tabs, shortcuts, Mail Merge, Track Changes and more. Question by question, instant score at the end. Sankalp Computer Classes, Bidhuna, Auraiya.">
+<meta name="twitter:image" content="https://sankalpcomputerclasses.in/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -419,7 +433,7 @@ let currentStudentId = '';
 // ---------------------------------------------------------------------
 (function(){
   try {
-    const raw = sessionStorage.getItem('sankalp_student') || localStorage.getItem('sankalp_student');
+    const raw = sessionStorage.getItem('sankalp_student');
     if (raw){
       const loggedInStudent = JSON.parse(raw);
       if (loggedInStudent && loggedInStudent.name && loggedInStudent.studentId){
