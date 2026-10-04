@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function signedIn() { return request.auth != null; }
+    // Admin = a Firebase Auth user whose uid has a doc in /admins (create it by hand in the console)
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    // Quiz attempt written by the public quiz pages (no login needed to attempt a quiz)
+    function validScore() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['chapterId','name','studentId','correct','total','pct','date','createdAt'])
+        && d.keys().hasAll(['chapterId','name','correct','total','pct','date','createdAt'])
+        && d.chapterId is string && d.chapterId.size() > 0 && d.chapterId.size() <= 60
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 80
+        && (!('studentId' in d) || d.studentId == null || (d.studentId is string && d.studentId.size() <= 80))
+        && d.correct is int && d.total is int && d.pct is number
+        && d.total > 0 && d.total <= 300 && d.correct >= 0 && d.correct <= d.total
+        && d.pct >= 0 && d.pct <= 100
+        && d.date is string && d.date.size() <= 30
+        && d.createdAt == request.time;
+    }
+
+    // ---------- admins: nobody can write from the app ----------
+    match /admins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // ---------- students ----------
+    match /students/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (signedIn() && request.auth.uid == uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['mustChangePassword','lastLogin','lastLoginAt','passwordChangedAt']));
+    }
+
+    // ---------- monthly fees: admin writes, a student reads only own ----------
+    match /fees/{feeId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    // ---------- certificates: public single lookup by ID, never a public list ----------
+    match /certificates/{certId} {
+      allow get: if true;
+      allow list, write: if isAdmin();
+    }
+
+    // ---------- batch-wise notes / MCQ / mock access ----------
+    match /batchAccess/{batch} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---------- quiz scores / leaderboard ----------
+    match /scores/{scoreId} {
+      allow read: if true;
+      allow create: if validScore();
+      allow update, delete: if isAdmin();
+    }
+
+    // everything else stays closed
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

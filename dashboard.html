@@ -4,7 +4,7 @@
   =====================================================================
   Login: Firebase Authentication (login.html sets sessionStorage)
   Student profile: Firestore → students/{uid}
-  Fee data: Apps Script (same as before — sirf data ke liye)
+  Fee data: Firestore fees collection (set from shivam.html)
   Quiz history: Firestore → scores collection (by studentId)
   Notes: notes-index.js (window.STATIC_NOTES)
   MCQ: chapters-index.js (window.STATIC_CHAPTERS)
@@ -29,6 +29,7 @@
 <!-- Firebase: quiz scores -->
 <script type="module">
   import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import { getFirestore, collection, query, where, getDocs, doc, getDoc }
                                      from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
@@ -43,6 +44,20 @@
 
   const app = initializeApp(firebaseConfig);
   const db  = getFirestore(app);
+
+  // Live profile + this month's fee from Firestore (admin updates in shivam.html show up here)
+  window.getMyProfile = () => new Promise(res => {
+    const t = setTimeout(() => res(null), 6000);
+    const un = onAuthStateChanged(getAuth(app), async u => {
+      un(); clearTimeout(t);
+      if (!u) return res(null);
+      try {
+        const s = await getDoc(doc(db, 'students', u.uid));
+        const f = await getDocs(query(collection(db, 'fees'), where('uid', '==', u.uid)));
+        res(s.exists() ? { profile: s.data(), fees: f.docs.map(x => x.data()) } : null);
+      } catch (e) { console.error(e); res(null); }
+    });
+  });
 
   window.getStudentScores = async function(studentId){
     try {
@@ -326,9 +341,6 @@ const student = JSON.parse(raw || '{}');
 // Extra safety: if somehow a user with mustChangePassword=true lands here, redirect
 if (student.mustChangePassword){ window.location.href = 'login.html'; }
 
-// Apps Script URL — only for fee/student data (NOT login)
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxf7m3cgFy3KKi0L6H3JT0Y5s7Dk4PtOkMMnhzIy5y3CP2pbVWuIj9jn01P7dV_ZQ/exec';
-
 function logout(){
   sessionStorage.removeItem('sankalp_student');
   localStorage.removeItem('sankalp_student');
@@ -573,11 +585,22 @@ renderFeeBanner();
 // Firebase module (type="module") async load hota hai — poll karke wait karo
 function waitForFirebase(cb, onTimeout, tries){
   tries = tries || 0;
-  if (window.getStudentScores && window.getBatchAccess){ cb(); return; }
+  if (window.getStudentScores && window.getBatchAccess && window.getMyProfile){ cb(); return; }
   if (tries > 40){ onTimeout(); return; }
   setTimeout(function(){ waitForFirebase(cb, onTimeout, tries + 1); }, 100);
 }
 waitForFirebase(async function(){
+  // 0) Fresh profile + monthly fee status straight from Firebase
+  const me = await window.getMyProfile();
+  if (me){
+    Object.assign(student, me.profile);
+    const now = new Date(), mk = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const fee = me.fees.find(f => f.monthKey === mk);
+    student.currentMonth = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    student.monthlyFeeStatus = fee && String(fee.status).toLowerCase() === 'paid' ? 'paid' : 'pending';
+    sessionStorage.setItem('sankalp_student', JSON.stringify(student));
+    renderGreeting(); renderInfoCards(); renderFeeBanner();
+  }
   // 1) Batch rules pehle lao, phir notes/MCQ filter karke dikhao
   const access = await window.getBatchAccess(student.batch);
   if (access) batchAccess = access;       // fetch fail ho to sab dikhega (fail-open)

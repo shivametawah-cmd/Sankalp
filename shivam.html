@@ -2,19 +2,13 @@
 <!--
   SANKALP COMPUTER CLASSES — Admin Dashboard (shivam.html)
   ------------------------------------------------------------
-  SETUP NOTES:
-  1. This page is password-protected (see ADMIN_PASSWORD below) and
-     pulls data from your Google Sheet via the Apps Script backend
-     you deployed. Nobody can see this page unless they know the
-     exact URL — do NOT link to it from your public website.
-  2. Change ADMIN_PASSWORD below to something only you know.
-  3. WEB_APP_URL and SECRET_KEY are already filled in from your
-     Apps Script deployment. If you ever redeploy the script and
-     get a new URL, update WEB_APP_URL below.
-  4. To add a new month's fee for a student, just add a new row in
-     the "Fees" tab of your Google Sheet (Student Name, Course,
-     Month, Amount, Date Paid, Status). Click "Refresh Data" on this
-     page afterwards to see it reflected here.
+  100% Firebase (no Google Sheet / Apps Script):
+   - Admin login  : Firebase Authentication (username + password) + Firestore admins/{uid}
+   - Students     : Firestore students/{uid}   (admission form, Active / Inactive / Completed)
+   - Monthly fees : Firestore fees/{uid_YYYY-MM}
+   - Certificates : Firestore certificates/{ID}   (read by verify-certificate.html)
+   - Quiz scores / batch access : same as before
+  Rules: see firestore.rules. Do NOT link this page from the public website.
 ------------------------------------------------------------- -->
 <html lang="en">
 <head>
@@ -33,13 +27,14 @@
 <script src="notes-index.js"></script>
 <!-- Firebase: reads the shared quiz-score leaderboard written by the MCQ quiz pages -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
     getFirestore, collection, getDocs, query, orderBy,
-    doc, setDoc, getDoc
+    doc, setDoc, getDoc, updateDoc, deleteDoc
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
-    getAuth, createUserWithEmailAndPassword
+    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    signOut, onAuthStateChanged, setPersistence, browserSessionPersistence
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
   // Same Firebase project the quiz pages (mcq-quiz.html, ccc-chapter*-mcq.html, msword-mcq.html) use.
@@ -56,27 +51,51 @@
   const quizDb  = getFirestore(quizApp);
   const quizAuth = getAuth(quizApp);
 
-  // Called by the Create Student form
-  window.createStudentInFirebase = async function(studentId, name, course, batch, tempPassword){
-    const email = studentId.trim().toLowerCase() + '@sankalp.local';
-    // 1. Create Firebase Auth user
-    const cred = await createUserWithEmailAndPassword(quizAuth, email, tempPassword);
-    const uid  = cred.user.uid;
-    // 2. Save profile in Firestore
-    await setDoc(doc(quizDb, 'students', uid), {
-      studentId:          studentId.trim().toLowerCase(),
-      name:               name.trim(),
-      course:             course.trim(),
-      batch:              batch.trim(),
-      status:             'Active',
-      admissionDate:      new Date().toISOString().split('T')[0],
-      feeStatus:          'Pending',
-      monthlyFeeStatus:   'pending',
-      currentMonth:       new Date().toLocaleString('en-US', { month:'long', year:'numeric' }),
-      mustChangePassword: true,
-      createdAt:          new Date().toISOString()
+  // ---- Admin auth: username + password live in Firebase Authentication ----
+  // Username "shivam" => Firebase user  shivam@admin.sankalpcomputerclasses.in  (a full email also works).
+  // That user must also have a Firestore doc  admins/{uid}.
+  const ADMIN_DOMAIN = 'admin.sankalpcomputerclasses.in';
+  const persistReady = setPersistence(quizAuth, browserSessionPersistence); // session ends when tab closes
+  window.adminLogin = async function(user, pw){
+    await persistReady;
+    const u = user.trim().toLowerCase();
+    const cred = await signInWithEmailAndPassword(quizAuth, u.includes('@') ? u : u + '@' + ADMIN_DOMAIN, pw);
+    const a = await getDoc(doc(quizDb, 'admins', cred.user.uid));
+    if (!a.exists()){ await signOut(quizAuth); const e = new Error('not admin'); e.code = 'app/not-admin'; throw e; }
+    return a.data();
+  };
+  window.adminLogout = () => signOut(quizAuth);
+  window.adminSession = () => persistReady.then(() => new Promise(res => {
+    const un = onAuthStateChanged(quizAuth, async u => {
+      un(); if (!u) return res(null);
+      try { const a = await getDoc(doc(quizDb, 'admins', u.uid)); res(a.exists() ? a.data() : null); } catch(e){ res(null); }
     });
-    return uid;
+  }));
+
+  // ---- Data: students / fees / certificates ----
+  const snapAll = async c => (await getDocs(collection(quizDb, c))).docs.map(d => ({ id: d.id, ...d.data() }));
+  window.fsLoadAll = async () => {
+    const [students, fees, certs] = await Promise.all([snapAll('students'), snapAll('fees'), snapAll('certificates')]);
+    return { students, fees, certs };
+  };
+  window.fsSaveFee       = (id, data) => setDoc(doc(quizDb, 'fees', id), data);
+  window.fsUpdateStudent = (uid, patch) => updateDoc(doc(quizDb, 'students', uid), patch);
+  window.fsSaveCert      = (id, data) => setDoc(doc(quizDb, 'certificates', id), data);
+  window.fsDeleteCert    = id => deleteDoc(doc(quizDb, 'certificates', id));
+
+  // New admission: the student's Auth login is created on a SECOND app instance so the admin stays logged in.
+  window.createStudentAccount = async function(studentId, tempPassword, profile){
+    const sec = initializeApp(quizFirebaseConfig, 'sec-' + Date.now());
+    let uid;
+    try {
+      const a2 = getAuth(sec);
+      const cred = await createUserWithEmailAndPassword(a2, studentId + '@sankalp.local', tempPassword);
+      uid = cred.user.uid;
+      await signOut(a2);
+    } finally { await deleteApp(sec); }
+    const data = { ...profile, studentId, mustChangePassword: true, createdAt: new Date().toISOString() };
+    await setDoc(doc(quizDb, 'students', uid), data);
+    return { uid, data };
   };
 
   // ---- Batch-wise Notes/MCQ/Mock access (Firestore: batchAccess/{batch}) ----
@@ -296,6 +315,13 @@
   .ba-msg.ok{color:var(--ok);} .ba-msg.err{color:var(--danger);}
   @media (max-width:1100px){ .ba-cols{grid-template-columns:1fr 1fr;} }
   @media (max-width:760px){ .ba-cols{grid-template-columns:1fr;} }
+  .modal-wide{max-width:760px;}
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:0 16px;}
+  @media (max-width:640px){ .form-grid{grid-template-columns:1fr;} }
+  .pill-inactive{background:#fbeae6; color:var(--danger);}
+  .row-btn{background:none; border:1px solid var(--line); border-radius:6px; padding:3px 10px; font-size:.78rem; font-weight:600; color:var(--teal-dark); margin-right:4px;}
+  .row-btn:hover{border-color:var(--teal);}
+  .row-btn.danger{color:var(--danger);}
 </style>
 </head>
 <body>
@@ -306,9 +332,10 @@
     <img src="logo.png" alt="" onerror="this.style.background='var(--ink)'; this.src='';">
     <h2>Admin Dashboard</h2>
     <p>Sankalp Computer Classes — authorized access only</p>
-    <p class="login-error" id="loginError">Wrong password, try again.</p>
-    <input type="password" id="passwordInput" placeholder="Enter admin password" autocomplete="off">
-    <button onclick="tryLogin()">Login</button>
+    <p class="login-error" id="loginError">Username ya password galat hai.</p>
+    <input type="text" id="userInput" placeholder="Admin username" autocomplete="username">
+    <input type="password" id="passwordInput" placeholder="Password" autocomplete="current-password">
+    <button id="loginBtn" onclick="tryLogin()">Login</button>
   </div>
 </div>
 
@@ -326,8 +353,9 @@
       <div class="topbar-actions">
         <a class="btn btn-outline" href="#monthlyFeeStatusPanel">Fee status</a>
         <a class="btn btn-outline" href="#quizScoresPanel">Quiz scores</a>
+        <a class="btn btn-outline" href="#certPanel">Certificates</a>
         <a class="btn btn-outline" href="#batchAccessPanel">Batch access</a>
-        <button class="btn btn-gold" onclick="openCreateStudent()">+ New Student Login</button>
+        <button class="btn btn-gold" onclick="openStudentModal()">+ New Admission</button>
         <button class="btn btn-outline" onclick="refreshAll()">Refresh data</button>
         <button class="btn btn-outline" onclick="logout()">Logout</button>
       </div>
@@ -376,21 +404,22 @@
       <div class="panel">
         <div class="panel-head">
           <h3>Students (<span id="studentCount">0</span>)</h3>
-          <input type="text" id="studentSearch" placeholder="Search by name or course..." oninput="renderStudents()">
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <select id="studentStatusFilter" onchange="renderStudents()" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px; font-size:.85rem;">
+              <option value="">All status</option><option value="active">Active</option><option value="inactive">Inactive</option><option value="completed">Completed</option>
+            </select>
+            <input type="text" id="studentSearch" placeholder="Search name, ID, course, batch..." oninput="renderStudents()">
+          </div>
         </div>
         <div class="table-scroll">
           <table>
             <thead>
               <tr>
-                <th>Name</th><th>Course</th><th>Status</th><th>Admission date</th>
-                <th>Admission fee</th><th>Adm. fee status</th>
-                <th>Father's name</th>
-                <th>Mother's name</th><th>DOB</th><th>Apaar ID</th><th>Aadhar</th>
-                <th>Aadhar upload</th><th>Marksheet</th>
+                <th>Student ID</th><th>Name</th><th>Course</th><th>Batch</th><th>Status</th><th>Admission date</th><th>Adm. fee</th><th>Adm. fee status</th><th>Monthly fee</th><th>Father</th><th>Mother</th><th>Phone</th><th>DOB</th><th>Apaar ID</th><th>Aadhar</th><th>Docs</th><th>Actions</th>
               </tr>
             </thead>
             <tbody id="studentsBody">
-              <tr class="empty-row"><td colspan="13">Loading…</td></tr>
+              <tr class="empty-row"><td colspan="16">Loading…</td></tr>
             </tbody>
           </table>
         </div>
@@ -407,10 +436,10 @@
         <div class="table-scroll">
           <table>
             <thead>
-              <tr><th>Name</th><th>Course</th><th>Status</th><th>Amount</th><th>Date paid</th></tr>
+              <tr><th>Name</th><th>Course</th><th>Status</th><th>Amount</th><th>Date paid</th><th>Action</th></tr>
             </thead>
             <tbody id="monthStatusBody">
-              <tr class="empty-row"><td colspan="5">Loading…</td></tr>
+              <tr class="empty-row"><td colspan="6">Loading…</td></tr>
             </tbody>
           </table>
         </div>
@@ -431,6 +460,26 @@
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div class="panel" id="certPanel">
+        <div class="panel-head">
+          <h3>🎓 Certificates (<span id="certCount">0</span>)</h3>
+          <input type="text" id="certSearch" placeholder="Search ID, name, course..." oninput="renderCerts()">
+        </div>
+        <div class="ba-body">
+          <div class="ba-hint" style="margin-top:0;">Yahan jo certificate save karoge wahi <b>verify-certificate.html</b> par Certificate ID dalne par dikhega.</div>
+          <div class="ba-controls">
+            <div><label>Certificate ID</label><input type="text" id="ct_id" style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; width:150px;"></div>
+            <div><label>Student name</label><input type="text" id="ct_name" style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; width:200px;"></div>
+            <div><label>Course</label><input type="text" id="ct_course" list="courseList" style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; width:140px;"></div>
+            <div><label>Issue date</label><input type="date" id="ct_date" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px;"></div>
+            <div><button class="btn-teal" style="flex:none; padding:9px 18px;" onclick="saveCert()">💾 Save certificate</button></div>
+          </div>
+          <span class="ba-msg" id="ctMsg"></span>
+        </div>
+        <div class="table-scroll"><table><thead><tr><th>Certificate ID</th><th>Name</th><th>Course</th><th>Issue date</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="certBody"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody></table></div>
       </div>
 
       <div class="panel" id="batchAccessPanel">
@@ -500,73 +549,69 @@
   </main>
 </div>
 
-<!-- ================= CREATE STUDENT MODAL ================= -->
-<div class="modal-overlay" id="createStudentModal">
-  <div class="modal-box">
-    <h3>➕ Naya Student Login Banao</h3>
-    <p class="modal-sub">Firebase mein student ka account ban jayega। Pehli baar login par password change mandatory hoga।</p>
-
-    <div class="modal-alert" id="createAlert"></div>
-
-    <div class="form-field">
-      <label>Student ID <span style="color:var(--danger)">*</span></label>
-      <input type="text" id="cs_studentId" placeholder="e.g. sankalp101" autocomplete="off">
+<!-- ================= ADMISSION / EDIT STUDENT MODAL ================= -->
+<datalist id="courseList"><option value="CCC"><option value="DCA"><option value="ADCA"><option value="Tally"><option value="MS Office"><option value="LibreOffice"><option value="Windows"><option value="AI"><option value="Ubuntu"><option value="O Level"><option value="Typing"></datalist>
+<div class="modal-overlay" id="studentModal">
+  <div class="modal-box modal-wide">
+    <h3 id="stTitle">➕ New Admission</h3>
+    <p class="modal-sub" id="stSub"></p>
+    <div class="modal-alert" id="stAlert"></div>
+    <div class="form-grid">
+<div class="form-field"><label>Student ID *</label><input type="text" id="st_studentId" autocomplete="off" ></div>
+<div class="form-field"><label>Temporary password * (min 6)</label><input type="text" id="st_password" autocomplete="off" ></div>
+<div class="form-field"><label>Student name *</label><input type="text" id="st_name" autocomplete="off" ></div>
+<div class="form-field"><label>Course *</label><select id="st_course"><option value="">-- chunein --</option><option>CCC</option><option>DCA</option><option>ADCA</option><option>Tally</option><option>MS Office</option><option>LibreOffice</option><option>Windows</option><option>AI</option><option>Ubuntu</option><option>O Level</option><option>Typing</option></select></div>
+<div class="form-field"><label>Batch number</label><input type="number" id="st_batch" autocomplete="off" min="1" step="1"></div>
+<div class="form-field"><label>Status *</label><select id="st_status"><option value="Active">🟢 Active</option><option value="Inactive">🔴 Inactive</option><option value="Completed">✔ Completed</option></select></div>
+<div class="form-field"><label>Admission date</label><input type="date" id="st_admissionDate" autocomplete="off" ></div>
+<div class="form-field"><label>Admission fee (₹)</label><input type="number" id="st_admissionFee" autocomplete="off" min="0"></div>
+<div class="form-field"><label>Admission fee status</label><select id="st_admFeeStatus"><option>Pending</option><option>Paid</option></select></div>
+<div class="form-field"><label>Monthly fee (₹)</label><input type="number" id="st_monthlyFee" autocomplete="off" min="0"></div>
+<div class="form-field"><label>Father's name</label><input type="text" id="st_fatherName" autocomplete="off" ></div>
+<div class="form-field"><label>Mother's name</label><input type="text" id="st_motherName" autocomplete="off" ></div>
+<div class="form-field"><label>Date of birth</label><input type="date" id="st_dob" autocomplete="off" ></div>
+<div class="form-field"><label>Phone</label><input type="tel" id="st_phone" autocomplete="off" ></div>
+<div class="form-field"><label>Apaar ID</label><input type="text" id="st_apaarId" autocomplete="off" ></div>
+<div class="form-field"><label>Aadhar (sirf last 4 digits)</label><input type="text" id="st_aadhar" autocomplete="off" maxlength="4" inputmode="numeric"></div>
+<div class="form-field"><label>Aadhar document link (optional)</label><input type="url" id="st_aadharUpload" autocomplete="off" ></div>
+<div class="form-field"><label>Marksheet link (optional)</label><input type="url" id="st_marksheetUpload" autocomplete="off" ></div>
     </div>
-    <div class="form-field">
-      <label>Naam (poora naam) <span style="color:var(--danger)">*</span></label>
-      <input type="text" id="cs_name" placeholder="e.g. Rahul Sharma" autocomplete="off">
-    </div>
-    <div class="form-field">
-      <label>Course <span style="color:var(--danger)">*</span></label>
-      <select id="cs_course">
-        <option value="">-- Course chunein --</option>
-        <option>CCC</option>
-        <option>DCA</option>
-        <option>ADCA</option>
-        <option>Tally</option>
-        <option>MS Office</option>
-        <option>O Level</option>
-        <option>Typing</option>
-      </select>
-    </div>
-    <div class="form-field">
-      <label>Batch Number</label>
-      <input type="number" id="cs_batch" min="1" step="1" placeholder="e.g. 1, 2, 3…" autocomplete="off">
-      <div style="font-size:.78rem; color:var(--ink-soft); margin-top:4px;">Jis batch mein student hai uska number likhein। Notes/MCQ isi number ke hisaab se dikhenge।</div>
-    </div>
-    <div class="form-field">
-      <label>Temporary Password <span style="color:var(--danger)">*</span></label>
-      <input type="text" id="cs_password" placeholder="e.g. Sankalp@123" autocomplete="off">
-      <div style="font-size:.78rem; color:var(--ink-soft); margin-top:4px;">Min 6 characters। Student ko yahi batana hoga — login ke baad change karna padega।</div>
-    </div>
-
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeCreateStudent()">Cancel</button>
-      <button class="btn-teal" id="createBtn" onclick="handleCreateStudent()">Account Banao →</button>
+      <button class="btn-cancel" onclick="closeModal('studentModal')">Cancel</button>
+      <button class="btn-teal" id="stSaveBtn" onclick="saveStudent()">Save admission →</button>
     </div>
-
-    <!-- Shown after successful creation -->
     <div class="created-box" id="createdBox">
       <b>✅ Student login ban gaya!</b>
       <div class="cred-row"><span>Student ID:</span><span id="cb_id">—</span></div>
       <div class="cred-row"><span>Password:</span><span id="cb_pw">—</span></div>
-      <div class="cred-row"><span>Email (internal):</span><span id="cb_email">—</span></div>
-      <div style="margin-top:10px; font-size:.8rem; color:var(--ink-soft);">
-        Yeh credentials student ko de do। Pehli baar login par password mandatory change hoga।
-      </div>
+      <div style="margin-top:10px; font-size:.8rem; color:var(--ink-soft);">Yeh credentials student ko de do. Pehli baar login par password change hoga.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MONTHLY FEE MODAL ================= -->
+<div class="modal-overlay" id="feeModal">
+  <div class="modal-box">
+    <h3>💰 Monthly fee</h3>
+    <p class="modal-sub" id="fm_title"></p>
+    <div class="modal-alert" id="fmAlert"></div>
+    <div class="form-field"><label>Amount (₹)</label><input type="number" id="fm_amount" min="0"></div>
+    <div class="form-field"><label>Status</label><select id="fm_status"><option>Paid</option><option>Pending</option></select></div>
+    <div class="form-field"><label>Date paid</label><input type="date" id="fm_date"></div>
+    <div class="form-field"><label>Mode</label><select id="fm_mode"><option>Cash</option><option>UPI</option><option>Bank transfer</option><option>Other</option></select></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('feeModal')">Cancel</button>
+      <button class="btn-teal" id="fmSaveBtn" onclick="saveFee()">Save fee</button>
     </div>
   </div>
 </div>
 
 <script>
-  // ============ CONFIG — edit only these two lines if you redeploy ============
-  const WEB_APP_URL   = 'https://script.google.com/macros/s/AKfycbxf7m3cgFy3KKi0L6H3JT0Y5s7Dk4PtOkMMnhzIy5y3CP2pbVWuIj9jn01P7dV_ZQ/exec';
-  const SECRET_KEY    = 'Fdsa@07022026';
-  const ADMIN_PASSWORD = 'sankalp@admin1';   // <-- change this to your own password
-  // ==============================================================================
 
   let allStudents = [];
   let allFees = [];
+  let allCerts = [];
+  const isActive = s => normalize(s.status || 'active') === 'active';
   let allQuizScores = [];
 
   // Friendly labels for known chapter IDs saved by the quiz pages.
@@ -588,38 +633,38 @@
     return CHAPTER_LABELS[id] || id || '—';
   }
 
-  function tryLogin(){
-    const val = document.getElementById('passwordInput').value;
-    if (val === ADMIN_PASSWORD){
-      sessionStorage.setItem('sankalp_admin_ok', '1');
-      document.getElementById('loginGate').style.display = 'none';
-      document.getElementById('dashboard').style.display = 'block';
-      loadData();
-      loadQuizScores();
-    } else {
-      document.getElementById('loginError').style.display = 'block';
-    }
-  }
-  document.getElementById('passwordInput').addEventListener('keydown', function(e){
-    if (e.key === 'Enter') tryLogin();
-  });
-  function logout(){
-    sessionStorage.removeItem('sankalp_admin_ok');
-    location.reload();
-  }
-  // Stay logged in for this browser tab session only
-  if (sessionStorage.getItem('sankalp_admin_ok') === '1'){
+  function showDash(){
     document.getElementById('loginGate').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
-    window.addEventListener('DOMContentLoaded', loadData);
-    window.addEventListener('DOMContentLoaded', loadQuizScores);
+    refreshAll();
   }
+  async function tryLogin(){
+    const u = document.getElementById('userInput').value, p = document.getElementById('passwordInput').value;
+    const err = document.getElementById('loginError'), btn = document.getElementById('loginBtn');
+    if (!u.trim() || !p){ err.textContent = 'Username aur password dono likhein.'; err.style.display = 'block'; return; }
+    if (!window.adminLogin){ err.textContent = 'Firebase load nahi hua, page refresh karein.'; err.style.display = 'block'; return; }
+    err.style.display = 'none'; btn.disabled = true; btn.textContent = 'Checking…';
+    try{
+      await window.adminLogin(u, p);
+      showDash();
+    } catch(e){
+      console.error(e);
+      err.textContent = e.code === 'app/not-admin' ? 'Yeh account admin nahi hai (admins collection mein add karein).'
+        : e.code === 'auth/too-many-requests' ? 'Bahut zyada koshish — thodi der baad try karein.'
+        : (e.code || '').startsWith('auth/') ? 'Username ya password galat hai.' : 'Login nahi hua: ' + (e.message || e);
+      err.style.display = 'block';
+    }
+    btn.disabled = false; btn.textContent = 'Login';
+  }
+  ['userInput','passwordInput'].forEach(id => document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); }));
+  async function logout(){ if (window.adminLogout) await window.adminLogout(); location.reload(); }
+  // Restore the admin session in this tab (Firebase Auth)
+  (function restore(t){
+    if (!window.adminSession){ if (t < 60) setTimeout(() => restore(t + 1), 100); return; }
+    window.adminSession().then(a => { if (a) showDash(); });
+  })(0);
 
-  // Refresh both data sources: the Google Sheet (students/fees) and the Firebase quiz scores.
-  function refreshAll(){
-    loadData();
-    loadQuizScores();
-  }
+  function refreshAll(){ loadData(); loadQuizScores(); }
 
   function showBanner(msg, isError){
     const b = document.getElementById('statusBanner');
@@ -650,20 +695,14 @@
 
   async function loadData(){
     hideBanner();
-    document.getElementById('studentsBody').innerHTML = '<tr class="empty-row"><td colspan="10">Loading…</td></tr>';
-    document.getElementById('feesBody').innerHTML = '<tr class="empty-row"><td colspan="6">Loading…</td></tr>';
     try{
-      const res = await fetch(WEB_APP_URL + '?key=' + encodeURIComponent(SECRET_KEY));
-      const data = await res.json();
-      if (data.error){
-        showBanner('Access error: ' + data.error + ' — check SECRET_KEY in the code.', true);
-        return;
-      }
-      allStudents = data.students || [];
-      allFees = data.fees || [];
+      const d = await window.fsLoadAll();
+      allStudents = d.students.map(x => ({ ...x, uid: x.id }))
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      allFees = d.fees; allCerts = d.certs;
       renderAll();
     } catch(err){
-      showBanner('Could not load data. Check your internet connection or the WEB_APP_URL in the code.', true);
+      showBanner('Data load nahi hua — Firestore rules publish karein aur admin account (admins/{uid}) check karein.', true);
       console.error(err);
     }
   }
@@ -676,13 +715,14 @@
     renderFees();
     populateMonthDropdown();
     renderMonthStatus();
+    renderCerts();
   }
 
   function populateMonthDropdown(){
     const select = document.getElementById('monthSelect');
     const monthsSet = new Set();
     allFees.forEach(f => { if (f.month) monthsSet.add(String(f.month).trim()); });
-    monthsSet.add(currentMonthLabel());
+    for (let i = 0; i < 7; i++){ const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); monthsSet.add(d.toLocaleString('en-US', { month: 'long', year: 'numeric' })); }
     // Sort months chronologically where possible, fallback to alphabetical
     const monthsArr = Array.from(monthsSet).sort((a, b) => {
       const da = new Date('1 ' + a), db = new Date('1 ' + b);
@@ -697,45 +737,25 @@
   function renderMonthStatus(){
     const select = document.getElementById('monthSelect');
     if (!select.value) select.value = currentMonthLabel();
-    const selectedMonth = normalize(select.value);
+    const mk = monthKeyOf(select.value);
     const q = normalize(document.getElementById('monthStatusSearch').value);
-
-    // Build a lookup of fee entries for the selected month, keyed by normalized student name
-    const feeForMonth = {};
-    allFees.forEach(f => {
-      if (normalize(f.month) === selectedMonth){
-        feeForMonth[normalize(f.name)] = f;
-      }
-    });
-
-    const activeStudents = allStudents.filter(s => normalize(s.status) !== 'completed');
-    const filtered = activeStudents.filter(s =>
-      normalize(s.name).includes(q) || normalize(s.course).includes(q)
-    );
-
+    const feeBy = {};
+    allFees.forEach(f => { if (f.monthKey === mk || (!f.monthKey && normalize(f.month) === normalize(select.value))) feeBy[f.uid || normalize(f.name)] = f; });
+    const list = allStudents.filter(isActive).filter(s => normalize(s.name).includes(q) || normalize(s.course).includes(q));
     const body = document.getElementById('monthStatusBody');
-    if (filtered.length === 0){
-      body.innerHTML = '<tr class="empty-row"><td colspan="5">No students found.</td></tr>';
-      return;
-    }
-    body.innerHTML = filtered.map(s => {
-      const fee = feeForMonth[normalize(s.name)];
-      const isPaid = fee && normalize(fee.status).includes('paid');
-      const pillClass = isPaid ? 'pill-paid' : 'pill-pending';
-      const label = isPaid ? 'Paid' : 'Pending';
-      return `
-      <tr>
-        <td>${s.name || '—'}</td>
-        <td>${s.course || '—'}</td>
-        <td><span class="pill ${pillClass}">${label}</span></td>
-        <td>${fee ? formatMoney(fee.amount) : '—'}</td>
-        <td>${fee ? formatDate(fee.date) : '—'}</td>
-      </tr>`;
+    if (!list.length){ body.innerHTML = '<tr class="empty-row"><td colspan="6">No active students found.</td></tr>'; return; }
+    body.innerHTML = list.map(s => {
+      const fee = feeBy[s.uid] || feeBy[normalize(s.name)];
+      const paid = fee && normalize(fee.status).includes('paid');
+      return `<tr><td>${esc(s.name)}</td><td>${esc(s.course)}</td>
+        <td><span class="pill ${paid ? 'pill-paid' : 'pill-pending'}">${paid ? 'Paid' : 'Pending'}</span></td>
+        <td>${fee ? formatMoney(fee.amount) : '—'}</td><td>${fee ? formatDate(fee.date) : '—'}</td>
+        <td><button class="row-btn" onclick="openFeeModal('${s.uid}')">${paid ? 'Edit' : '💰 Mark paid'}</button></td></tr>`;
     }).join('');
   }
 
   function renderSummary(){
-    document.getElementById('statTotalStudents').textContent = allStudents.length;
+    document.getElementById('statTotalStudents').textContent = allStudents.filter(isActive).length + ' active / ' + allStudents.length;
 
     let totalCollected = 0;
     allFees.forEach(f => {
@@ -746,7 +766,7 @@
     });
     document.getElementById('statTotalCollected').textContent = formatMoney(totalCollected);
 
-    const activeStudents = allStudents.filter(s => normalize(s.status) !== 'completed');
+    const activeStudents = allStudents.filter(s => isActive(s));
     const thisMonth = normalize(currentMonthLabel());
     const paidNames = new Set();
     allFees.forEach(f => {
@@ -788,7 +808,7 @@
   }
 
   function renderFeeChart(){
-    const activeStudents = allStudents.filter(s => normalize(s.status) !== 'completed');
+    const activeStudents = allStudents.filter(s => isActive(s));
     const thisMonth = normalize(currentMonthLabel());
     const paidNames = new Set();
     allFees.forEach(f => {
@@ -812,35 +832,27 @@
 
   function renderStudents(){
     const q = normalize(document.getElementById('studentSearch').value);
-    const filtered = allStudents.filter(s =>
-      normalize(s.name).includes(q) || normalize(s.course).includes(q)
-    );
-    document.getElementById('studentCount').textContent = filtered.length;
+    const sf = document.getElementById('studentStatusFilter').value;
+    const list = allStudents.filter(s =>
+      (!sf || normalize(s.status || 'active') === sf) &&
+      (normalize(s.name).includes(q) || normalize(s.course).includes(q) || normalize(s.studentId).includes(q) || normalize(s.batch).includes(q)));
+    document.getElementById('studentCount').textContent = list.length;
     const body = document.getElementById('studentsBody');
-    if (filtered.length === 0){
-      body.innerHTML = '<tr class="empty-row"><td colspan="13">No students found.</td></tr>';
-      return;
-    }
-    body.innerHTML = filtered.map(s => {
-      const statusNorm = normalize(s.status);
-      const pillClass = statusNorm === 'completed' ? 'pill-neutral' : 'pill-paid';
-      const admStatusNorm = normalize(s.admissionFeeStatus);
-      const admPillClass = admStatusNorm.includes('paid') ? 'pill-paid' : 'pill-pending';
-      return `
-      <tr>
-        <td>${s.name || '—'}</td>
-        <td>${s.course || '—'}</td>
-        <td><span class="pill ${pillClass}">${s.status || 'Active'}</span></td>
-        <td>${formatDate(s.admissionDate)}</td>
-        <td>${formatMoney(s.admissionFee)}</td>
-        <td><span class="pill ${admPillClass}">${s.admissionFeeStatus || 'Pending'}</span></td>
-        <td>${s.fatherName || '—'}</td>
-        <td>${s.motherName || '—'}</td>
-        <td>${formatDate(s.dob)}</td>
-        <td>${s.apaarId || '—'}</td>
-        <td>${s.aadharMasked || '—'}</td>
-        <td>${s.aadharUpload ? `<a class="link-photo" href="${s.aadharUpload}" target="_blank" rel="noopener">View</a>` : '—'}</td>
-        <td>${s.marksheetUpload ? `<a class="link-photo" href="${s.marksheetUpload}" target="_blank" rel="noopener">View</a>` : '—'}</td>
+    if (!list.length){ body.innerHTML = '<tr class="empty-row"><td colspan="16">No students found.</td></tr>'; return; }
+    body.innerHTML = list.map(s => {
+      const st = normalize(s.status || 'active');
+      const pc = st === 'active' ? 'pill-paid' : st === 'inactive' ? 'pill-inactive' : 'pill-neutral';
+      const adm = normalize(s.admissionFeeStatus || s.feeStatus).includes('paid');
+      const docs = [s.aadharUpload && `<a class="link-photo" href="${esc(s.aadharUpload)}" target="_blank" rel="noopener">Aadhar</a>`,
+                    s.marksheetUpload && `<a class="link-photo" href="${esc(s.marksheetUpload)}" target="_blank" rel="noopener">Marksheet</a>`].filter(Boolean).join(' · ') || '—';
+      return `<tr>
+        <td>${esc(s.studentId)}</td><td><b>${esc(s.name)}</b></td><td>${esc(s.course)}</td><td>${esc(s.batch || '—')}</td>
+        <td><span class="pill ${pc}">${esc(s.status || 'Active')}</span></td>
+        <td>${formatDate(s.admissionDate)}</td><td>${formatMoney(s.admissionFee)}</td>
+        <td><span class="pill ${adm ? 'pill-paid' : 'pill-pending'}">${adm ? 'Paid' : 'Pending'}</span></td>
+        <td>${formatMoney(s.monthlyFee)}</td><td>${esc(s.fatherName || '—')}</td><td>${esc(s.motherName || '—')}</td>
+        <td>${esc(s.phone || '—')}</td><td>${formatDate(s.dob)}</td><td>${esc(s.apaarId || '—')}</td><td>${esc(s.aadharMasked || '—')}</td><td>${docs}</td>
+        <td><button class="row-btn" onclick="openStudentModal('${s.uid}')">Edit</button><button class="row-btn ${st === 'active' ? 'danger' : ''}" onclick="toggleStatus('${s.uid}')">${st === 'active' ? 'Make inactive' : 'Make active'}</button></td>
       </tr>`;
     }).join('');
   }
@@ -1068,81 +1080,174 @@
     })(0);
   });
 
-  // ============ CREATE STUDENT FUNCTIONS ============
-  function openCreateStudent(){
-    document.getElementById('createStudentModal').classList.add('open');
-    document.getElementById('createAlert').classList.remove('show','ok','err');
+  // ============ ADMISSION / EDIT STUDENT ============
+  const todayStr = () => new Date().toISOString().split('T')[0];
+  function monthKeyOf(label){ const d = new Date('1 ' + label); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+  ['studentModal','feeModal'].forEach(id => document.getElementById(id).addEventListener('click', function(e){ if (e.target === this) closeModal(id); }));
+  function alertIn(id, msg, type){ const el = document.getElementById(id); el.textContent = msg; el.className = 'modal-alert show ' + type; }
+  const $v = id => document.getElementById(id).value.trim();
+  const ST_FIELDS = { st_name:'name', st_course:'course', st_batch:'batch', st_status:'status', st_admissionDate:'admissionDate', st_admissionFee:'admissionFee',
+    st_admFeeStatus:'admissionFeeStatus', st_monthlyFee:'monthlyFee', st_fatherName:'fatherName', st_motherName:'motherName', st_dob:'dob', st_phone:'phone',
+    st_apaarId:'apaarId', st_aadharUpload:'aadharUpload', st_marksheetUpload:'marksheetUpload' };
+  let editingUid = null;
+
+  function nextStudentId(){
+    let max = 100;
+    allStudents.forEach(s => { const m = /^sankalp(\d+)$/.exec(s.studentId || ''); if (m) max = Math.max(max, +m[1]); });
+    return 'sankalp' + (max + 1);
+  }
+  function openStudentModal(uid){
+    editingUid = uid || null;
+    const s = uid ? allStudents.find(x => x.uid === uid) : null;
+    document.getElementById('stAlert').className = 'modal-alert';
     document.getElementById('createdBox').classList.remove('show');
-    document.getElementById('cs_studentId').value = '';
-    document.getElementById('cs_name').value = '';
-    document.getElementById('cs_course').value = '';
-    document.getElementById('cs_batch').value = '';
-    document.getElementById('cs_password').value = '';
-    document.getElementById('createBtn').disabled = false;
-    document.getElementById('createBtn').textContent = 'Account Banao →';
-  }
-  function closeCreateStudent(){
-    document.getElementById('createStudentModal').classList.remove('open');
-  }
-  // Close modal on overlay click
-  document.getElementById('createStudentModal').addEventListener('click', function(e){
-    if (e.target === this) closeCreateStudent();
-  });
-
-  function showCreateAlert(msg, type){
-    const el = document.getElementById('createAlert');
-    el.textContent = msg;
-    el.className = 'modal-alert show ' + type;
-  }
-
-  async function handleCreateStudent(){
-    const studentId  = document.getElementById('cs_studentId').value.trim().toLowerCase();
-    const name       = document.getElementById('cs_name').value.trim();
-    const course     = document.getElementById('cs_course').value.trim();
-    const batch      = document.getElementById('cs_batch').value.trim();
-    const tempPw     = document.getElementById('cs_password').value;
-
-    if (!studentId || !name || !course || !tempPw){
-      showCreateAlert('Student ID, Naam, Course aur Password zaroori hain।', 'err');
-      return;
+    Object.keys(ST_FIELDS).forEach(id => { const v = s ? s[ST_FIELDS[id]] : ''; document.getElementById(id).value = v == null ? '' : v; });
+    document.getElementById('st_aadhar').value = s && s.aadharMasked ? String(s.aadharMasked).slice(-4) : '';
+    if (!s){
+      document.getElementById('st_status').value = 'Active';
+      document.getElementById('st_admFeeStatus').value = 'Pending';
+      document.getElementById('st_admissionDate').value = todayStr();
+      document.getElementById('st_studentId').value = nextStudentId();
+      document.getElementById('st_password').value = 'Sk@' + Math.floor(1000 + Math.random() * 9000);
+    } else {
+      document.getElementById('st_studentId').value = s.studentId || '';
+      document.getElementById('st_password').value = '';
     }
-    if (tempPw.length < 6){
-      showCreateAlert('Password kam se kam 6 characters ka hona chahiye।', 'err');
-      return;
-    }
-
-    const btn = document.getElementById('createBtn');
+    ['st_studentId','st_password'].forEach(id => { document.getElementById(id).parentElement.style.display = s ? 'none' : ''; });
+    document.getElementById('stTitle').textContent = s ? '✏️ Edit student — ' + (s.name || '') : '➕ New Admission';
+    document.getElementById('stSub').textContent = s ? 'Details update karke Save dabayein. Active / Inactive yahin se badal sakte hain.' : 'Student ka record + login Firebase mein ban jayega. Pehli baar login par password change mandatory hoga.';
+    document.getElementById('stSaveBtn').disabled = false;
+    document.getElementById('stSaveBtn').textContent = s ? 'Save changes' : 'Save admission →';
+    document.getElementById('studentModal').classList.add('open');
+  }
+  async function saveStudent(){
+    const btn = document.getElementById('stSaveBtn');
+    const profile = {};
+    Object.keys(ST_FIELDS).forEach(id => { profile[ST_FIELDS[id]] = $v(id); });
+    if (!profile.name || !profile.course){ alertIn('stAlert', 'Naam aur Course zaroori hain.', 'err'); return; }
+    ['admissionFee','monthlyFee'].forEach(k => { profile[k] = profile[k] === '' ? 0 : Number(profile[k]); });
+    const a4 = $v('st_aadhar');
+    if (a4 && !/^\d{4}$/.test(a4)){ alertIn('stAlert', 'Aadhar ke sirf aakhri 4 digit likhein.', 'err'); return; }
+    profile.aadharMasked = a4 ? 'XXXX-XXXX-' + a4 : '';
+    profile.feeStatus = profile.admissionFeeStatus;           // dashboard reads feeStatus
+    if (!window.fsUpdateStudent){ alertIn('stAlert', 'Firebase load nahi hua, page refresh karein.', 'err'); return; }
     btn.disabled = true;
-    btn.textContent = 'Bana raha hoon…';
-    document.getElementById('createAlert').classList.remove('show');
-    document.getElementById('createdBox').classList.remove('show');
-
     try{
-      if (!window.createStudentInFirebase){
-        showCreateAlert('Firebase service load nahi hua। Page refresh karein।', 'err');
-        btn.disabled = false; btn.textContent = 'Account Banao →';
-        return;
+      if (editingUid){
+        await window.fsUpdateStudent(editingUid, profile);
+        const i = allStudents.findIndex(x => x.uid === editingUid); allStudents[i] = { ...allStudents[i], ...profile };
+        alertIn('stAlert', '✅ Saved.', 'ok');
+      } else {
+        const sid = $v('st_studentId').toLowerCase(), pw = document.getElementById('st_password').value;
+        if (!/^[a-z0-9._-]{3,30}$/.test(sid)){ alertIn('stAlert', 'Student ID mein sirf a-z, 0-9, . _ - (3-30 chars) allowed hain.', 'err'); btn.disabled = false; return; }
+        if (pw.length < 6){ alertIn('stAlert', 'Password kam se kam 6 characters ka ho.', 'err'); btn.disabled = false; return; }
+        profile.monthlyFeeStatus = 'pending'; profile.currentMonth = currentMonthLabel();
+        const r = await window.createStudentAccount(sid, pw, profile);
+        allStudents.unshift({ ...r.data, uid: r.uid, id: r.uid });
+        document.getElementById('cb_id').textContent = sid; document.getElementById('cb_pw').textContent = pw;
+        document.getElementById('createdBox').classList.add('show');
+        alertIn('stAlert', '✅ ' + profile.name + ' ka admission ho gaya!', 'ok');
+        btn.textContent = 'Done'; renderAll(); return;
       }
-      await window.createStudentInFirebase(studentId, name, course, batch, tempPw);
-
-      // Show credentials
-      document.getElementById('cb_id').textContent    = studentId;
-      document.getElementById('cb_pw').textContent    = tempPw;
-      document.getElementById('cb_email').textContent = studentId + '@sankalp.local';
-      document.getElementById('createdBox').classList.add('show');
-      showCreateAlert('✅ ' + name + ' ka account successfully ban gaya!', 'ok');
-      btn.textContent = '+ Aur banao';
-      btn.disabled = false;
-
+      renderAll(); btn.disabled = false;
     } catch(err){
       console.error(err);
-      let msg = 'Account nahi bana। Dobara try karein।';
-      if (err.code === 'auth/email-already-in-use') msg = 'Yeh Student ID pehle se exist karta hai। Alag ID chunein।';
-      if (err.code === 'auth/weak-password')        msg = 'Password bahut weak hai। Thoda strong rakho।';
-      showCreateAlert(msg, 'err');
+      alertIn('stAlert', err.code === 'auth/email-already-in-use' ? 'Yeh Student ID pehle se hai, alag ID chunein.'
+        : err.code === 'permission-denied' || /permission/i.test(err.message || '') ? 'Permission denied — Firestore rules publish karein aur admin ke roop mein login rakhein.'
+        : 'Save nahi hua: ' + (err.message || err), 'err');
       btn.disabled = false;
-      btn.textContent = 'Account Banao →';
     }
+  }
+  async function toggleStatus(uid){
+    const s = allStudents.find(x => x.uid === uid); if (!s) return;
+    const next = normalize(s.status || 'active') === 'active' ? 'Inactive' : 'Active';
+    if (!confirm(s.name + ' ko ' + next + ' karna hai?')) return;
+    try{ await window.fsUpdateStudent(uid, { status: next }); s.status = next; renderAll(); }
+    catch(e){ console.error(e); showBanner('Status update nahi hua — rules/admin login check karein.', true); }
+  }
+
+  // ============ MONTHLY FEE ============
+  let feeCtx = null;
+  function openFeeModal(uid){
+    const s = allStudents.find(x => x.uid === uid); if (!s) return;
+    const label = document.getElementById('monthSelect').value || currentMonthLabel();
+    const mk = monthKeyOf(label);
+    const ex = allFees.find(f => f.uid === uid && f.monthKey === mk);
+    feeCtx = { s, label, mk };
+    document.getElementById('fm_title').textContent = s.name + ' — ' + label;
+    document.getElementById('fm_amount').value = ex ? ex.amount : (s.monthlyFee || '');
+    document.getElementById('fm_status').value = ex ? ex.status : 'Paid';
+    document.getElementById('fm_date').value = ex && ex.date ? ex.date : todayStr();
+    document.getElementById('fm_mode').value = (ex && ex.mode) || 'Cash';
+    document.getElementById('fmAlert').className = 'modal-alert';
+    document.getElementById('fmSaveBtn').disabled = false;
+    document.getElementById('feeModal').classList.add('open');
+  }
+  async function saveFee(){
+    const { s, label, mk } = feeCtx;
+    const raw = document.getElementById('fm_amount').value, amount = Number(raw);
+    if (raw === '' || !(amount >= 0)){ alertIn('fmAlert', 'Amount likhein.', 'err'); return; }
+    const status = document.getElementById('fm_status').value;
+    const data = { uid: s.uid, studentId: s.studentId || '', name: s.name || '', course: s.course || '', month: label, monthKey: mk, amount, status,
+      date: status === 'Paid' ? document.getElementById('fm_date').value : '', mode: document.getElementById('fm_mode').value, updatedAt: new Date().toISOString() };
+    const btn = document.getElementById('fmSaveBtn'); btn.disabled = true;
+    try{
+      await window.fsSaveFee(s.uid + '_' + mk, data);
+      const i = allFees.findIndex(f => f.uid === s.uid && f.monthKey === mk);
+      if (i >= 0) allFees[i] = { ...allFees[i], ...data }; else allFees.push({ id: s.uid + '_' + mk, ...data });
+      if (mk === monthKeyOf(currentMonthLabel())){
+        await window.fsUpdateStudent(s.uid, { monthlyFeeStatus: status.toLowerCase(), currentMonth: currentMonthLabel() });
+        s.monthlyFeeStatus = status.toLowerCase();
+      }
+      closeModal('feeModal'); renderAll();
+    } catch(e){ console.error(e); alertIn('fmAlert', 'Save nahi hua — rules/admin login check karein.', 'err'); btn.disabled = false; }
+  }
+
+  // ============ CERTIFICATES ============
+  const certKey = v => String(v || '').trim().toUpperCase().replace(/\s+/g, '');
+  function nextCertId(){
+    const y = new Date().getFullYear(); let max = 0;
+    allCerts.forEach(c => { const m = new RegExp('^SCC-' + y + '-(\\d+)$').exec(c.id); if (m) max = Math.max(max, +m[1]); });
+    return 'SCC-' + y + '-' + String(max + 1).padStart(3, '0');
+  }
+  function renderCerts(){
+    const q = normalize(document.getElementById('certSearch').value);
+    const list = allCerts.filter(c => normalize(c.id + c.name + c.course).includes(q))
+      .sort((a, b) => String(b.issueDate || '').localeCompare(String(a.issueDate || '')) || b.id.localeCompare(a.id));
+    document.getElementById('certCount').textContent = list.length;
+    if (!document.getElementById('ct_id').value) document.getElementById('ct_id').value = nextCertId();
+    if (!document.getElementById('ct_date').value) document.getElementById('ct_date').value = todayStr();
+    document.getElementById('certBody').innerHTML = list.length ? list.map(c => {
+      const rev = normalize(c.status).includes('revoke');
+      return `<tr><td><b>${esc(c.id)}</b></td><td>${esc(c.name)}</td><td>${esc(c.course)}</td><td>${formatDate(c.issueDate)}</td>
+        <td><span class="pill ${rev ? 'pill-pending' : 'pill-paid'}">${rev ? 'Revoked' : 'Valid'}</span></td>
+        <td><button class="row-btn" onclick="toggleCert('${esc(c.id)}')">${rev ? 'Restore' : 'Revoke'}</button><button class="row-btn danger" onclick="deleteCert('${esc(c.id)}')">Delete</button></td></tr>`;
+    }).join('') : '<tr class="empty-row"><td colspan="6">No certificates yet.</td></tr>';
+  }
+  function ctMsg(t, cls){ const el = document.getElementById('ctMsg'); el.textContent = t; el.className = 'ba-msg ' + (cls || ''); }
+  async function saveCert(){
+    const id = certKey(document.getElementById('ct_id').value), name = $v('ct_name'), course = $v('ct_course'), issueDate = document.getElementById('ct_date').value;
+    if (!id || !name || !course){ ctMsg('ID, naam aur course zaroori hain.', 'err'); return; }
+    const old = allCerts.find(c => c.id === id);
+    const data = { certificateId: id, name, course, issueDate, status: old ? (old.status || 'Valid') : 'Valid', createdAt: old ? old.createdAt : new Date().toISOString() };
+    try{
+      await window.fsSaveCert(id, data);
+      allCerts = allCerts.filter(c => c.id !== id).concat([{ id, ...data }]);
+      ['ct_id','ct_name','ct_course'].forEach(i => document.getElementById(i).value = '');
+      ctMsg('✅ Saved: ' + id, 'ok'); renderCerts();
+    } catch(e){ console.error(e); ctMsg('Save nahi hua — rules/admin login check karein.', 'err'); }
+  }
+  async function toggleCert(id){
+    const c = allCerts.find(x => x.id === id); if (!c) return;
+    const status = normalize(c.status).includes('revoke') ? 'Valid' : 'Revoked';
+    try{ const { id: _i, ...rest } = c; await window.fsSaveCert(id, { ...rest, status }); c.status = status; renderCerts(); }
+    catch(e){ console.error(e); ctMsg('Update nahi hua.', 'err'); }
+  }
+  async function deleteCert(id){
+    if (!confirm(id + ' delete karna hai? Verify page par yeh "not found" dikhega.')) return;
+    try{ await window.fsDeleteCert(id); allCerts = allCerts.filter(c => c.id !== id); renderCerts(); }
+    catch(e){ console.error(e); ctMsg('Delete nahi hua.', 'err'); }
   }
 </script>
 

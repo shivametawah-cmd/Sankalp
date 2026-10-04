@@ -6,20 +6,47 @@
   It does not need a password, and it never exposes the full list of
   certificates — only the single result matching the ID someone enters.
 
-  SETUP: WEB_APP_URL below is already filled in from your Apps Script
-  deployment (same one used by shivam.html). If you ever redeploy the
-  script and get a new URL, update it in both files.
+  DATA: Firebase Firestore  certificates/{CERTIFICATE_ID}  (added from shivam.html → Certificates).
+  Rules allow a single-document read only — the full list can never be fetched from this page.
 ------------------------------------------------------------- -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Verify Certificate — Sankalp Computer Classes</title>
-<meta name="description" content="Verify a certificate issued by Sankalp Computer Classes, Bidhuna, Auraiya.">
+<meta name="description" content="Verify a certificate issued by Sankalp Computer Classes, Bidhuna, Auraiya. Enter the Certificate ID to confirm it is genuine.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://sankalpcomputerclasses.in/verify-certificate.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Verify Certificate — Sankalp Computer Classes">
+<meta property="og:description" content="Check whether a certificate was issued by Sankalp Computer Classes, Bidhuna, Auraiya.">
+<meta property="og:url" content="https://sankalpcomputerclasses.in/verify-certificate.html">
+<meta property="og:image" content="https://sankalpcomputerclasses.in/logo.png">
 <link rel="icon" href="logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  const db = getFirestore(initializeApp({
+    apiKey: "AIzaSyARCHtO6xh7xbXP3UOIqoErxwwbvVSBxb4",
+    authDomain: "sankalp-quiz-5b907.firebaseapp.com",
+    projectId: "sankalp-quiz-5b907",
+    storageBucket: "sankalp-quiz-5b907.firebasestorage.app",
+    messagingSenderId: "919711308932",
+    appId: "1:919711308932:web:61c7b1a82b80f6b9b4b6d1"
+  }));
+  // Single certificate lookup by ID (doc id = ID in capitals, no spaces)
+  window.fetchCertificate = async function(id){
+    const key = String(id || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!key || key.includes('/')) return { found: false };
+    const snap = await getDoc(doc(db, 'certificates', key));
+    if (!snap.exists()) return { found: false };
+    const d = snap.data();
+    return { found: true, certificateId: d.certificateId || key, name: d.name, course: d.course, issueDate: d.issueDate, status: d.status };
+  };
+</script>
 <style>
   :root{
     --ink:#132038; --ink-soft:#2b3a58; --paper:#f6f4ee; --card:#ffffff;
@@ -118,7 +145,7 @@
 </div>
 
 <script>
-  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxf7m3cgFy3KKi0L6H3JT0Y5s7Dk4PtOkMMnhzIy5y3CP2pbVWuIj9jn01P7dV_ZQ/exec';
+  const esc = x => String(x == null ? '' : x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
   document.getElementById('certInput').addEventListener('keydown', function(e){
     if (e.key === 'Enter') verifyCertificate();
@@ -144,8 +171,9 @@
     box.classList.remove('show');
 
     try{
-      const res = await fetch(WEB_APP_URL + '?action=verify&id=' + encodeURIComponent(id));
-      const data = await res.json();
+      for (let t = 0; t < 50 && !window.fetchCertificate; t++) await new Promise(r => setTimeout(r, 100));
+      if (!window.fetchCertificate) throw new Error('Firebase not loaded');
+      const data = await window.fetchCertificate(id);
       showResult(data, id);
     } catch(err){
       showResult({ found: false, networkError: true }, id);
@@ -184,16 +212,16 @@
         ? 'This certificate ID was issued but has since been revoked.'
         : 'This certificate was issued by Sankalp Computer Classes.';
       details.innerHTML = `
-        <div class="detail-row"><span class="label">Certificate ID</span><span class="value">${data.certificateId || '—'}</span></div>
-        <div class="detail-row"><span class="label">Student name</span><span class="value">${data.name || '—'}</span></div>
-        <div class="detail-row"><span class="label">Course</span><span class="value">${data.course || '—'}</span></div>
+        <div class="detail-row"><span class="label">Certificate ID</span><span class="value">${esc(data.certificateId) || '—'}</span></div>
+        <div class="detail-row"><span class="label">Student name</span><span class="value">${esc(data.name) || '—'}</span></div>
+        <div class="detail-row"><span class="label">Course</span><span class="value">${esc(data.course) || '—'}</span></div>
         <div class="detail-row"><span class="label">Issue date</span><span class="value">${formatDate(data.issueDate)}</span></div>
       `;
     } else {
       card.className = 'result-card invalid';
       icon.textContent = '❌';
       title.textContent = 'Certificate not found';
-      sub.textContent = `No certificate matches ID "${queriedId}". Please check the ID and try again, or contact us.`;
+      sub.innerHTML = `No certificate matches ID "${esc(queriedId)}". Please check the ID and try again, or contact us.`;
       details.innerHTML = '';
     }
   }
