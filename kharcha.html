@@ -12,7 +12,7 @@ body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 Georgia,'Noto S
 h1{font-size:1.4rem;margin:4px 0 12px}
 h2{font-size:1.05rem;margin:0 0 8px}
 .tabs{display:flex;gap:8px;margin-bottom:12px}
-.tabs button{flex:1;padding:12px;border:2px solid var(--ac);background:none;color:var(--ac);font:inherit;font-weight:700;border-radius:10px}
+.tabs button{flex:1;padding:12px 4px;font-size:.9rem;border:2px solid var(--ac);background:none;color:var(--ac);font:inherit;font-weight:700;border-radius:10px}
 .tabs button.on{background:var(--ac);color:var(--bg)}
 .card{background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
 input,select{font:inherit;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);width:100%;margin-bottom:8px}
@@ -48,27 +48,14 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <p id="msg" class="mu"></p>
 <div class="tabs">
   <button id="t-clean" class="on" onclick="tab('clean')">Cleaning</button>
-  <button id="t-camp" onclick="tab('camp')">Water Campers</button>
+  <button id="t-camp" onclick="tab('camp')">Campers</button>
+  <button id="t-elec" onclick="tab('elec')">Bijli</button>
+  <button id="t-misc" onclick="tab('misc')">Anya</button>
 </div>
 
-<section id="p-clean">
-  <div class="card">
-    <h2>Naya kharcha</h2>
-    <div class="g">
-      <select id="ct"><option value="l">Safai wali</option><option value="m">Samaan</option></select>
-      <input id="cd" type="date" aria-label="Tarikh">
-    </div>
-    <input id="cn" placeholder="Naam / samaan (jaise Phenyl, Mop)">
-    <input id="ca" type="number" inputmode="decimal" placeholder="Rakam (₹)">
-    <button class="btn" onclick="addC()">Kharcha jodo</button>
-  </div>
-  <div class="card">
-    <h2>Hisaab</h2>
-    <input id="cm" type="month" onchange="rc()" aria-label="Mahina">
-    <div id="cs"></div>
-    <div id="cl"></div>
-  </div>
-</section>
+<section id="p-clean"></section>
+<section id="p-elec" class="hide"></section>
+<section id="p-misc" class="hide"></section>
 
 <section id="p-camp" class="hide">
   <div class="card">
@@ -126,7 +113,7 @@ function logout(){signOut(auth)}
 function listen(){
   $('msg').textContent='';
   unsubs=[
-    onSnapshot(collection(db,'kharchaCleaning'),s=>{D.clean=s.docs.map(x=>({id:x.id,...x.data()}));rc()},fail),
+    onSnapshot(collection(db,'kharchaCleaning'),s=>{D.clean=s.docs.map(x=>({id:x.id,...x.data()}));rcAll()},fail),
     onSnapshot(collection(db,'kharchaCamp'),s=>{D.camp={};s.docs.forEach(x=>D.camp[x.id]=x.data());rk()},fail),
     onSnapshot(doc(db,'kharchaSettings','main'),s=>{D.rate=s.exists()?(s.data().rate||0):0;rk()},fail)
   ];
@@ -139,34 +126,58 @@ onAuthStateChanged(auth,u=>{
 });
 
 function tab(t){
-  ['clean','camp'].forEach(x=>{
+  ['clean','camp','elec','misc'].forEach(x=>{
     $('p-'+x).classList.toggle('hide',x!==t);
     $('t-'+x).classList.toggle('on',x===t);
   });
   if(t==='camp')rk();
 }
 
-/* ---------- Cleaning ---------- */
-function addC(){
-  const a=+$('ca').value;
-  if(!a){$('ca').focus();return}
-  addDoc(collection(db,'kharchaCleaning'),{d:$('cd').value||today(),t:$('ct').value,n:$('cn').value.trim(),a,createdAt:serverTimestamp()}).catch(fail);
-  $('cn').value='';$('ca').value='';
+/* ---------- Kharcha lists: Cleaning / Bijli / Anya ---------- */
+const G={
+  clean:{ts:[['l','Safai wali'],['m','Samaan']],ph:'Naam / samaan (jaise Phenyl, Mop)'},
+  elec:{ts:[['e','Bijli bill']],ph:'Bill ka mahina / note (jaise Sept bill)',units:1},
+  misc:{ts:[['x','Anya kharcha']],ph:'Kis cheez ka kharcha (jaise Repair, Chai)'}
+};
+const lab=(g,t)=>(G[g].ts.find(x=>x[0]===t)||[])[1]||'';
+function build(g){
+  const c=G[g],multi=c.ts.length>1;
+  const dt=`<input id="${g}-d" type="date" aria-label="Tarikh">`;
+  $('p-'+g).innerHTML=`<div class="card"><h2>Naya kharcha</h2>
+    ${multi?`<div class="g"><select id="${g}-t">${c.ts.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('')}</select>${dt}</div>`
+      :`<input id="${g}-t" type="hidden" value="${c.ts[0][0]}">${dt}`}
+    <input id="${g}-n" placeholder="${c.ph}">
+    ${c.units?`<input id="${g}-u" type="number" inputmode="decimal" placeholder="Units (optional)">`:''}
+    <input id="${g}-a" type="number" inputmode="decimal" placeholder="Rakam (₹)">
+    <button class="btn" onclick="addX('${g}')">Kharcha jodo</button></div>
+    <div class="card"><h2>Hisaab</h2>
+    <input id="${g}-m" type="month" onchange="rx('${g}')" aria-label="Mahina">
+    <div id="${g}-s"></div><div id="${g}-l"></div></div>`;
+  $(g+'-d').value=today();$(g+'-m').value=today().slice(0,7);
 }
-function delC(id){deleteDoc(doc(db,'kharchaCleaning',id)).catch(fail)}
-function rc(){
-  const m=$('cm').value;
-  const L=D.clean.filter(x=>!m||x.d.startsWith(m)).sort((a,b)=>b.d.localeCompare(a.d));
+function addX(g){
+  const a=+$(g+'-a').value;
+  if(!a){$(g+'-a').focus();return}
+  const e={d:$(g+'-d').value||today(),t:$(g+'-t').value,n:$(g+'-n').value.trim(),a,createdAt:serverTimestamp()};
+  const u=$(g+'-u');
+  if(u&&+u.value)e.u=+u.value;
+  addDoc(collection(db,'kharchaCleaning'),e).catch(fail);
+  $(g+'-n').value='';$(g+'-a').value='';if(u)u.value='';
+}
+function delX(id){deleteDoc(doc(db,'kharchaCleaning',id)).catch(fail)}
+function rx(g){
+  const multi=G[g].ts.length>1,ks=G[g].ts.map(x=>x[0]),m=$(g+'-m').value;
+  const L=D.clean.filter(x=>ks.includes(x.t)&&(!m||String(x.d).startsWith(m))).sort((a,b)=>String(b.d).localeCompare(String(a.d)));
   const s=t=>L.filter(x=>x.t===t).reduce((p,x)=>p+x.a,0);
-  $('cs').innerHTML=
-    `<div class="row"><span>Safai wali</span><b>${inr(s('l'))}</b></div>`+
-    `<div class="row"><span>Samaan</span><b>${inr(s('m'))}</b></div>`+
-    `<div class="row"><b>Kul</b><b>${inr(s('l')+s('m'))}</b></div>`;
-  $('cl').innerHTML=L.length?L.map(x=>
-    `<div class="row"><span>${x.t==='l'?'Safai wali':'Samaan'}${x.n?' – '+esc(x.n):''}<br><span class="mu">${x.d}</span></span>`+
-    `<span>${inr(x.a)} <button class="x" onclick="delC('${x.id}')" aria-label="Hatao">✕</button></span></div>`
-  ).join(''):'<p class="mu">Is mahine koi kharcha nahi likha.</p>';
+  $(g+'-s').innerHTML=(multi?G[g].ts.map(x=>`<div class="row"><span>${x[1]}</span><b>${inr(s(x[0]))}</b></div>`).join(''):'')+
+    `<div class="row"><b>Kul</b><b>${inr(L.reduce((p,x)=>p+x.a,0))}</b></div>`;
+  $(g+'-l').innerHTML=L.length?L.map(x=>{
+    const txt=multi?lab(g,x.t)+(x.n?' – '+esc(x.n):''):esc(x.n||lab(g,x.t));
+    return `<div class="row"><span>${txt}${x.u?' ('+x.u+' units)':''}<br><span class="mu">${x.d}</span></span>`+
+      `<span>${inr(x.a)} <button class="x" onclick="delX('${x.id}')" aria-label="Hatao">✕</button></span></div>`;
+  }).join(''):'<p class="mu">Is mahine koi kharcha nahi likha.</p>';
 }
+const rcAll=()=>Object.keys(G).forEach(rx);
 
 /* ---------- Water campers ---------- */
 function setRate(v){setDoc(doc(db,'kharchaSettings','main'),{rate:+v||0}).catch(fail)}
@@ -227,9 +238,8 @@ function rk(){
     `<div class="row"><b>Baaki</b><b>${inr(due-paid)}</b></div>`;
 }
 
-Object.assign(window,{tab,addC,delC,rc,mv,pick,upd,setRate,login,logout});
-$('cd').value=today();
-$('cm').value=today().slice(0,7);
+Object.assign(window,{tab,addX,delX,rx,mv,pick,upd,setRate,login,logout});
+Object.keys(G).forEach(build);
 </script>
 </body>
 </html>
