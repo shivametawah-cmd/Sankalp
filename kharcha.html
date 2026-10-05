@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kharcha Tracker</title>
+<style>
+:root{--bg:#eef3f4;--cd:#fff;--tx:#17262b;--mu:#667a80;--ac:#0b6e7f;--ok:#c8ecd4;--no:#f7d0cc;--bd:#d5e0e3}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1a1d;--cd:#16262a;--tx:#e6f0f2;--mu:#8ba3a9;--ac:#4cc3d6;--ok:#14452c;--no:#5a2320;--bd:#27403f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 Georgia,'Noto Serif Devanagari',serif;padding:14px;max-width:640px;margin:auto}
+h1{font-size:1.4rem;margin:4px 0 12px}
+h2{font-size:1.05rem;margin:0 0 8px}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tabs button{flex:1;padding:12px;border:2px solid var(--ac);background:none;color:var(--ac);font:inherit;font-weight:700;border-radius:10px}
+.tabs button.on{background:var(--ac);color:var(--bg)}
+.card{background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
+input,select{font:inherit;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);width:100%;margin-bottom:8px}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{padding:10px 14px;border:0;border-radius:8px;background:var(--ac);color:var(--bg);font:inherit;font-weight:700;width:100%}
+.btn.s{width:auto;padding:8px 12px}
+.row{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd)}
+.row:last-child{border:0}
+.mu{color:var(--mu);font-size:.85rem}
+.x{background:none;border:0;color:var(--mu);font-size:1.1rem}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.nav button{border:1px solid var(--bd);background:none;color:var(--tx);border-radius:8px;padding:6px 14px;font-size:1.1rem}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal b{font-size:.75rem;color:var(--mu)}
+.day{aspect-ratio:1;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit;position:relative;padding:0}
+.day.y{background:var(--ok)}.day.n{background:var(--no)}
+.day.sel{outline:3px solid var(--ac)}
+.day small{position:absolute;right:3px;bottom:1px;font-size:.7rem}
+.key{display:flex;gap:12px;font-size:.8rem;margin:8px 0}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+.hide{display:none}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--ac)}
+</style>
+</head>
+<body>
+<h1>Kharcha Tracker</h1>
+<div id="login" class="card"><h2>Admin login</h2>
+<input id="em" type="text" placeholder="Admin username" autocomplete="username">
+<input id="pw" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+<button class="btn" onclick="login()">Login</button><p id="lerr" class="mu"></p></div>
+<div id="app" class="hide">
+<p class="mu"><a href="shivam.html">← Dashboard</a> · <span id="who"></span> <button class="x" onclick="logout()">Logout</button></p>
+<p id="msg" class="mu"></p>
+<div class="tabs">
+  <button id="t-clean" class="on" onclick="tab('clean')">Cleaning</button>
+  <button id="t-camp" onclick="tab('camp')">Water Campers</button>
+</div>
+
+<section id="p-clean">
+  <div class="card">
+    <h2>Naya kharcha</h2>
+    <div class="g">
+      <select id="ct"><option value="l">Safai wali</option><option value="m">Samaan</option></select>
+      <input id="cd" type="date" aria-label="Tarikh">
+    </div>
+    <input id="cn" placeholder="Naam / samaan (jaise Phenyl, Mop)">
+    <input id="ca" type="number" inputmode="decimal" placeholder="Rakam (₹)">
+    <button class="btn" onclick="addC()">Kharcha jodo</button>
+  </div>
+  <div class="card">
+    <h2>Hisaab</h2>
+    <input id="cm" type="month" onchange="rc()" aria-label="Mahina">
+    <div id="cs"></div>
+    <div id="cl"></div>
+  </div>
+</section>
+
+<section id="p-camp" class="hide">
+  <div class="card">
+    <label class="mu" for="rate">Ek camper ka rate (₹)</label>
+    <input id="rate" type="number" inputmode="decimal" onchange="setRate(this.value)">
+    <div class="nav">
+      <button onclick="mv(-1)" aria-label="Pichhla mahina">‹</button>
+      <h2 id="mt" style="margin:0"></h2>
+      <button onclick="mv(1)" aria-label="Agla mahina">›</button>
+    </div>
+    <div class="cal" id="cal"></div>
+    <div class="key">
+      <span><i class="sw" style="background:var(--ok)"></i>Aaya</span>
+      <span><i class="sw" style="background:var(--no)"></i>Nahi aaya</span>
+      <span>₹ = payment hui</span>
+    </div>
+  </div>
+  <div class="card hide" id="pn-box"></div>
+  <div class="card"><h2>Is mahine ka hisaab</h2><div id="sm"></div></div>
+</section>
+</div>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {initializeAuth,browserSessionPersistence,signInWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import {getFirestore,collection,doc,addDoc,setDoc,deleteDoc,onSnapshot,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+/* ====== YAHAN APNA firebaseConfig PASTE KARO ====== */
+const firebaseConfig={
+  apiKey:"AIzaSyARCHtO6xh7xbXP3UOIqoErxwwbvVSBxb4",
+  authDomain:"sankalp-quiz-5b907.firebaseapp.com",
+  projectId:"sankalp-quiz-5b907",
+  storageBucket:"sankalp-quiz-5b907.firebasestorage.app",
+  messagingSenderId:"919711308932",
+  appId:"1:919711308932:web:61c7b1a82b80f6b9b4b6d1"
+};
+/* ================================================== */
+
+const app=initializeApp(firebaseConfig),auth=initializeAuth(app,{persistence:browserSessionPersistence}),db=getFirestore(app);
+const D={clean:[],camp:{},rate:0};
+const $=id=>document.getElementById(id);
+const inr=n=>'₹'+(+n||0).toLocaleString('en-IN');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const today=()=>{const t=new Date();return t.getFullYear()+'-'+pad(t.getMonth()+1)+'-'+pad(t.getDate())};
+let cur=new Date(),sel=null,unsubs=[];
+const fail=e=>{$('msg').textContent='Dikkat: '+(e.code||e.message)+'. Ye account /admins mein hona chahiye.'};
+
+/* ---------- login ---------- */
+function login(){
+  $('lerr').textContent='';
+  signInWithEmailAndPassword(auth,(u=>u.includes('@')?u:u+'@admin.sankalpcomputerclasses.in')($('em').value.trim().toLowerCase()),$('pw').value)
+    .catch(()=>{$('lerr').textContent='Username ya password galat hai.'});
+}
+function logout(){signOut(auth)}
+function listen(){
+  $('msg').textContent='';
+  unsubs=[
+    onSnapshot(collection(db,'kharchaCleaning'),s=>{D.clean=s.docs.map(x=>({id:x.id,...x.data()}));rc()},fail),
+    onSnapshot(collection(db,'kharchaCamp'),s=>{D.camp={};s.docs.forEach(x=>D.camp[x.id]=x.data());rk()},fail),
+    onSnapshot(doc(db,'kharchaSettings','main'),s=>{D.rate=s.exists()?(s.data().rate||0):0;rk()},fail)
+  ];
+}
+onAuthStateChanged(auth,u=>{
+  unsubs.forEach(f=>f());unsubs=[];
+  $('login').classList.toggle('hide',!!u);
+  $('app').classList.toggle('hide',!u);
+  if(u){$('who').textContent=u.email;listen()}
+});
+
+function tab(t){
+  ['clean','camp'].forEach(x=>{
+    $('p-'+x).classList.toggle('hide',x!==t);
+    $('t-'+x).classList.toggle('on',x===t);
+  });
+  if(t==='camp')rk();
+}
+
+/* ---------- Cleaning ---------- */
+function addC(){
+  const a=+$('ca').value;
+  if(!a){$('ca').focus();return}
+  addDoc(collection(db,'kharchaCleaning'),{d:$('cd').value||today(),t:$('ct').value,n:$('cn').value.trim(),a,createdAt:serverTimestamp()}).catch(fail);
+  $('cn').value='';$('ca').value='';
+}
+function delC(id){deleteDoc(doc(db,'kharchaCleaning',id)).catch(fail)}
+function rc(){
+  const m=$('cm').value;
+  const L=D.clean.filter(x=>!m||x.d.startsWith(m)).sort((a,b)=>b.d.localeCompare(a.d));
+  const s=t=>L.filter(x=>x.t===t).reduce((p,x)=>p+x.a,0);
+  $('cs').innerHTML=
+    `<div class="row"><span>Safai wali</span><b>${inr(s('l'))}</b></div>`+
+    `<div class="row"><span>Samaan</span><b>${inr(s('m'))}</b></div>`+
+    `<div class="row"><b>Kul</b><b>${inr(s('l')+s('m'))}</b></div>`;
+  $('cl').innerHTML=L.length?L.map(x=>
+    `<div class="row"><span>${x.t==='l'?'Safai wali':'Samaan'}${x.n?' – '+esc(x.n):''}<br><span class="mu">${x.d}</span></span>`+
+    `<span>${inr(x.a)} <button class="x" onclick="delC('${x.id}')" aria-label="Hatao">✕</button></span></div>`
+  ).join(''):'<p class="mu">Is mahine koi kharcha nahi likha.</p>';
+}
+
+/* ---------- Water campers ---------- */
+function setRate(v){setDoc(doc(db,'kharchaSettings','main'),{rate:+v||0}).catch(fail)}
+function mv(n){cur=new Date(cur.getFullYear(),cur.getMonth()+n,1);sel=null;rk()}
+function pick(k){sel=k;rk()}
+function upd(s){
+  const e={...(D.camp[sel]||{})};
+  if(s!==undefined)e.s=s;
+  e.n=+$('pc').value||1;
+  e.p=+$('pp').value||0;
+  const r=doc(db,'kharchaCamp',sel);
+  (!e.s&&!e.p?deleteDoc(r):setDoc(r,e)).catch(fail);
+}
+function rk(){
+  const y=cur.getFullYear(),m=cur.getMonth(),pre=y+'-'+pad(m+1);
+  $('rate').value=D.rate||'';
+  $('mt').textContent=cur.toLocaleDateString('hi-IN',{month:'long',year:'numeric'});
+  const first=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate();
+  let h=['र','सो','मं','बु','गु','शु','श'].map(d=>`<b>${d}</b>`).join('');
+  for(let i=0;i<first;i++)h+='<i></i>';
+  for(let d=1;d<=n;d++){
+    const k=pre+'-'+pad(d),e=D.camp[k]||{};
+    h+=`<button class="day ${e.s||''} ${k===sel?'sel':''}" onclick="pick('${k}')">${d}${e.p?'<small>₹</small>':''}</button>`;
+  }
+  $('cal').innerHTML=h;
+  const box=$('pn-box');
+  if(sel){
+    const e=D.camp[sel]||{};
+    box.classList.remove('hide');
+    box.innerHTML=`<h2>${sel}</h2>
+      <div class="g">
+        <button class="btn" onclick="upd('y')">Camper aaya</button>
+        <button class="btn" style="background:#b3372f;color:#fff" onclick="upd('n')">Nahi aaya</button>
+      </div>
+      <div class="g" style="margin-top:8px">
+        <div><label class="mu" for="pc">Kitne camper</label><input id="pc" type="number" min="1" value="${e.n||1}"></div>
+        <div><label class="mu" for="pp">Payment (₹)</label><input id="pp" type="number" inputmode="decimal" value="${e.p||''}"></div>
+      </div>
+      <div class="g">
+        <button class="btn" onclick="upd()">Payment save karo</button>
+        <button class="btn" style="background:var(--mu)" onclick="upd('')">Mark hatao</button>
+      </div>`;
+  }else box.classList.add('hide');
+  let came=0,miss=0,cnt=0,paid=0;
+  Object.keys(D.camp).filter(k=>k.startsWith(pre)).forEach(k=>{
+    const e=D.camp[k];
+    if(e.s==='y'){came++;cnt+=e.n||1}
+    if(e.s==='n')miss++;
+    paid+=e.p||0;
+  });
+  const due=cnt*(D.rate||0);
+  $('sm').innerHTML=
+    `<div class="row"><span>Aaya (din)</span><b>${came}</b></div>`+
+    `<div class="row"><span>Nahi aaya (din)</span><b>${miss}</b></div>`+
+    `<div class="row"><span>Kul camper</span><b>${cnt}</b></div>`+
+    `<div class="row"><span>Kul bill</span><b>${inr(due)}</b></div>`+
+    `<div class="row"><span>Payment hui</span><b>${inr(paid)}</b></div>`+
+    `<div class="row"><b>Baaki</b><b>${inr(due-paid)}</b></div>`;
+}
+
+Object.assign(window,{tab,addC,delC,rc,mv,pick,upd,setRate,login,logout});
+$('cd').value=today();
+$('cm').value=today().slice(0,7);
+</script>
+</body>
+</html>
