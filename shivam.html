@@ -399,8 +399,8 @@
       <div class="topbar-actions">
         <a class="btn btn-outline" href="#monthlyFeeStatusPanel">Fee status</a>
         <a class="btn btn-outline" href="#quizScoresPanel">Quiz scores</a>
-        <a class="btn btn-outline" href="#certPanel">Certificates</a>
-        <a class="btn btn-outline" href="#batchAccessPanel">Batch access</a>
+        <button class="btn btn-outline" onclick="openPanelModal('certModal')">Certificates</button>
+        <button class="btn btn-outline" onclick="openPanelModal('batchModal')">Batch access</button>
         <button class="btn btn-outline" onclick="xpOpen()">Expenses</button>
         <button class="btn btn-gold" onclick="openStudentModal()">+ New Admission</button>
         <button class="btn btn-outline" onclick="refreshAll()">Refresh data</button>
@@ -510,66 +510,6 @@
               <tr class="empty-row"><td colspan="6">Loading…</td></tr>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <div class="panel" id="certPanel">
-        <div class="panel-head">
-          <h3>🎓 Certificates (<span id="certCount">0</span>)</h3>
-          <input type="text" id="certSearch" placeholder="Search ID, name, course..." oninput="renderCerts()">
-        </div>
-        <div class="ba-body">
-          <div class="ba-hint" style="margin-top:0;">Yahan jo certificate save karoge wahi <b>verify-certificate.html</b> par Certificate ID dalne par dikhega.</div>
-          <div class="ba-controls">
-            <div><label>Certificate ID</label><input type="text" id="ct_id" style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; width:150px;"></div>
-            <div><label>Student name</label><input type="text" id="ct_name" style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; width:200px;"></div>
-            <div><label>Course</label><input type="text" id="ct_course" list="courseList" style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; width:140px;"></div>
-            <div><label>Issue date</label><input type="date" id="ct_date" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px;"></div>
-            <div><button class="btn-teal" style="flex:none; padding:9px 18px;" onclick="saveCert()">💾 Save certificate</button></div>
-          </div>
-          <span class="ba-msg" id="ctMsg"></span>
-        </div>
-        <div class="table-scroll"><table><thead><tr><th>Certificate ID</th><th>Name</th><th>Course</th><th>Issue date</th><th>Status</th><th>Action</th></tr></thead>
-          <tbody id="certBody"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody></table></div>
-      </div>
-
-      <div class="panel" id="batchAccessPanel">
-        <div class="panel-head">
-          <h3>🔒 Batch-wise Notes, MCQ &amp; Mock Test access</h3>
-        </div>
-        <div class="ba-body">
-          <div class="ba-controls">
-            <div><label for="baBatch">Batch Number</label>
-              <input type="text" id="baBatch" list="baBatchList" inputmode="numeric" placeholder="e.g. 1" autocomplete="off"
-                     style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-size:.9rem; width:150px;"
-                     onkeydown="if(event.key==='Enter') baLoad()">
-              <datalist id="baBatchList"></datalist></div>
-            <div><button class="btn-teal" style="flex:none; padding:9px 18px;" onclick="baLoad()">Load →</button></div>
-            <div><label for="baCourse">Course</label>
-              <select id="baCourse" onchange="baRender()"></select></div>
-          </div>
-          <div class="ba-hint">✔ tick = is batch ko dikhega &nbsp;|&nbsp; ☐ untick = is batch se chhup jayega. Naya notes/MCQ/mock add karne par woh sab batches ko apne aap dikhega jab tak aap untick na karein. Changes <b>Save</b> dabane par hi lagte hain.</div>
-          <div class="ba-cols">
-            <div class="ba-col">
-              <h4><span>📄 Notes</span>
-                <span><button class="ba-mini" onclick="baSetAll('notes', true)">Sab select</button><button class="ba-mini" onclick="baSetAll('notes', false)">Sab hatao</button></span></h4>
-              <div id="baNotes"></div>
-            </div>
-            <div class="ba-col">
-              <h4><span>🧠 MCQ chapters</span>
-                <span><button class="ba-mini" onclick="baSetAll('mcq', true)">Sab select</button><button class="ba-mini" onclick="baSetAll('mcq', false)">Sab hatao</button></span></h4>
-              <div id="baMcq"></div>
-            </div>
-            <div class="ba-col">
-              <h4><span>📝 Mock tests</span>
-                <span><button class="ba-mini" onclick="baSetAll('mock', true)">Sab select</button><button class="ba-mini" onclick="baSetAll('mock', false)">Sab hatao</button></span></h4>
-              <div id="baMock"></div>
-            </div>
-          </div>
-          <div class="ba-foot">
-            <button class="btn-teal" id="baSaveBtn" onclick="baSave()">💾 Save for this batch</button>
-            <span class="ba-msg" id="baMsg"></span>
-          </div>
         </div>
       </div>
 
@@ -698,6 +638,70 @@
           </div>
         </div>
     <div class="modal-actions" style="margin-top:18px;"><button class="btn-cancel" onclick="closeModal('expenseModal')">Close</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="certModal">
+  <div class="modal-box modal-wide" style="max-width:960px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+      <h3 style="margin:0;">🎓 Certificates (<span id="certCount">0</span>)</h3>
+      <input type="text" id="certSearch" placeholder="Search ID, name, course..." oninput="renderCerts()" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px; font-size:.85rem; min-width:220px;">
+    </div>
+        <div class="ba-body">
+          <div class="ba-hint" style="margin-top:0;">Yahan jo certificate save karoge wahi <b>verify-certificate.html</b> par Certificate ID dalne par dikhega.</div>
+          <div class="ba-controls">
+            <div><label>Certificate ID</label><input type="text" id="ct_id" style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; width:150px;"></div>
+            <div><label>Student name</label><input type="text" id="ct_name" style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; width:200px;"></div>
+            <div><label>Course</label><input type="text" id="ct_course" list="courseList" style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; width:140px;"></div>
+            <div><label>Issue date</label><input type="date" id="ct_date" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px;"></div>
+            <div><button class="btn-teal" style="flex:none; padding:9px 18px;" onclick="saveCert()">💾 Save certificate</button></div>
+          </div>
+          <span class="ba-msg" id="ctMsg"></span>
+        </div>
+        <div class="table-scroll"><table><thead><tr><th>Certificate ID</th><th>Name</th><th>Course</th><th>Issue date</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="certBody"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody></table></div>
+    <div class="modal-actions" style="margin-top:16px;"><button class="btn-cancel" onclick="closeModal('certModal')">Close</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="batchModal">
+  <div class="modal-box modal-wide" style="max-width:1040px;">
+    <h3 style="margin-bottom:14px;">🔒 Batch-wise Notes, MCQ &amp; Mock Test access</h3>
+        <div class="ba-body">
+          <div class="ba-controls">
+            <div><label for="baBatch">Batch Number</label>
+              <input type="text" id="baBatch" list="baBatchList" inputmode="numeric" placeholder="e.g. 1" autocomplete="off"
+                     style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-size:.9rem; width:150px;"
+                     onkeydown="if(event.key==='Enter') baLoad()">
+              <datalist id="baBatchList"></datalist></div>
+            <div><button class="btn-teal" style="flex:none; padding:9px 18px;" onclick="baLoad()">Load →</button></div>
+            <div><label for="baCourse">Course</label>
+              <select id="baCourse" onchange="baRender()"></select></div>
+          </div>
+          <div class="ba-hint">✔ tick = is batch ko dikhega &nbsp;|&nbsp; ☐ untick = is batch se chhup jayega. Naya notes/MCQ/mock add karne par woh sab batches ko apne aap dikhega jab tak aap untick na karein. Changes <b>Save</b> dabane par hi lagte hain.</div>
+          <div class="ba-cols">
+            <div class="ba-col">
+              <h4><span>📄 Notes</span>
+                <span><button class="ba-mini" onclick="baSetAll('notes', true)">Sab select</button><button class="ba-mini" onclick="baSetAll('notes', false)">Sab hatao</button></span></h4>
+              <div id="baNotes"></div>
+            </div>
+            <div class="ba-col">
+              <h4><span>🧠 MCQ chapters</span>
+                <span><button class="ba-mini" onclick="baSetAll('mcq', true)">Sab select</button><button class="ba-mini" onclick="baSetAll('mcq', false)">Sab hatao</button></span></h4>
+              <div id="baMcq"></div>
+            </div>
+            <div class="ba-col">
+              <h4><span>📝 Mock tests</span>
+                <span><button class="ba-mini" onclick="baSetAll('mock', true)">Sab select</button><button class="ba-mini" onclick="baSetAll('mock', false)">Sab hatao</button></span></h4>
+              <div id="baMock"></div>
+            </div>
+          </div>
+          <div class="ba-foot">
+            <button class="btn-teal" id="baSaveBtn" onclick="baSave()">💾 Save for this batch</button>
+            <span class="ba-msg" id="baMsg"></span>
+          </div>
+        </div>
+    <div class="modal-actions" style="margin-top:16px;"><button class="btn-cancel" onclick="closeModal('batchModal')">Close</button></div>
   </div>
 </div>
 
@@ -1479,6 +1483,10 @@
     };
     build(); xpRender();
   })();
+
+  // ============ Certificates / Batch access open as windows ============
+  function openPanelModal(id){ document.getElementById(id).classList.add('open'); }
+  ['certModal','batchModal'].forEach(id => document.getElementById(id).addEventListener('click', function(e){ if (e.target === this) closeModal(id); }));
 </script>
 
 </body>
