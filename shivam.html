@@ -30,7 +30,7 @@
   import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
     getFirestore, collection, getDocs, query, orderBy,
-    doc, setDoc, getDoc, updateDoc, deleteDoc
+    doc, setDoc, getDoc, updateDoc, deleteDoc, addDoc, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -119,6 +119,18 @@
     });
   };
 
+  // ---- Centre expenses + water campers (Firestore: kharchaCleaning, kharchaCamp, kharchaSettings; admin-only rules) ----
+  window.khListen = (onExp, onCamp, onRate, onErr) => {
+    onSnapshot(collection(quizDb, 'kharchaCleaning'), q => onExp(q.docs.map(d => ({ id: d.id, ...d.data() }))), onErr);
+    onSnapshot(collection(quizDb, 'kharchaCamp'), q => { const m = {}; q.docs.forEach(d => m[d.id] = d.data()); onCamp(m); }, onErr);
+    onSnapshot(doc(quizDb, 'kharchaSettings', 'main'), q => onRate(q.exists() ? (q.data().rate || 0) : 0), onErr);
+  };
+  window.khAdd     = e => addDoc(collection(quizDb, 'kharchaCleaning'), { ...e, createdAt: serverTimestamp() });
+  window.khDel     = id => deleteDoc(doc(quizDb, 'kharchaCleaning', id));
+  window.khCampSet = (day, e) => setDoc(doc(quizDb, 'kharchaCamp', day), e);
+  window.khCampDel = day => deleteDoc(doc(quizDb, 'kharchaCamp', day));
+  window.khRate    = r => setDoc(doc(quizDb, 'kharchaSettings', 'main'), { rate: r });
+
   // Fetch every quiz attempt (all chapters) from the shared cloud "scores" collection.
   window.fetchAllQuizScores = async function () {
     try {
@@ -199,6 +211,7 @@
   /* ---------- Summary cards ---------- */
   .summary-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px;}
   .summary-grid-5{grid-template-columns:repeat(5,1fr);}
+  .summary-grid-6{grid-template-columns:repeat(6,1fr);}
   .summary-card{
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
     padding:20px; box-shadow:var(--shadow);
@@ -247,7 +260,7 @@
 
   @media (max-width: 900px){
     .summary-grid{grid-template-columns:1fr 1fr;}
-    .summary-grid-5{grid-template-columns:1fr 1fr;}
+    .summary-grid-5, .summary-grid-6{grid-template-columns:1fr 1fr;}
     .chart-grid{grid-template-columns:1fr;}
   }
 
@@ -322,6 +335,39 @@
   .row-btn{background:none; border:1px solid var(--line); border-radius:6px; padding:3px 10px; font-size:.78rem; font-weight:600; color:var(--teal-dark); margin-right:4px;}
   .row-btn:hover{border-color:var(--teal);}
   .row-btn.danger{color:var(--danger);}
+
+  /* ---------- Centre expenses panel ---------- */
+  .xp-tabs{display:flex; gap:6px;}
+  .xp-tabs button{padding:8px 16px; border:1px solid var(--line); background:#fff; border-radius:8px; font-weight:700; font-size:.85rem; color:var(--ink-soft); cursor:pointer;}
+  .xp-tabs button.on{background:var(--teal); border-color:var(--teal); color:#fff;}
+  .xp-body{padding:0;}
+  .xp-form{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:6px;}
+  .xp-lbl{display:block; font-size:.76rem; font-weight:700; color:var(--ink-soft); margin-bottom:4px;}
+  .xp-body input, .xp-body select{width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:8px; font:inherit; font-size:.9rem; background:#fff; color:var(--ink);}
+  .xp-bar{display:flex; gap:12px; flex-wrap:wrap; margin:18px 0 4px; padding-top:18px; border-top:1px solid var(--line);}
+  .xp-bar > div{flex:1; min-width:180px;}
+  .xp-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:14px 0;}
+  .xp-stat{background:var(--paper-alt); border-radius:10px; padding:12px 14px;}
+  .xp-stat span{display:block; font-size:.72rem; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:.04em;}
+  .xp-stat b{font-family:"Space Grotesk"; font-size:1.2rem;}
+  .xp-row{display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); font-size:.9rem;}
+  .xp-row:last-child{border-bottom:none;}
+  .xp-cal{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; text-align:center; max-width:440px;}
+  .xp-cal b{font-size:.74rem; color:var(--ink-soft);}
+  .xp-day{aspect-ratio:1; border:1px solid var(--line); border-radius:8px; background:#fff; font:inherit; position:relative; cursor:pointer; color:var(--ink); padding:0;}
+  .xp-day.y{background:#d9f0e2; border-color:#9fd3b4;}
+  .xp-day.n{background:#fbdcd6; border-color:#eba99d;}
+  .xp-day.sel{outline:3px solid var(--teal);}
+  .xp-day small{position:absolute; right:3px; bottom:1px; font-size:.65rem; color:var(--teal-dark); font-weight:700;}
+  .xp-nav{display:flex; align-items:center; justify-content:space-between; max-width:440px; margin:12px 0 8px;}
+  .xp-nav button{border:1px solid var(--line); background:#fff; border-radius:8px; padding:5px 14px; font-size:1.1rem; cursor:pointer;}
+  .xp-key{display:flex; gap:14px; flex-wrap:wrap; font-size:.8rem; color:var(--ink-soft); margin:10px 0;}
+  .xp-key i{display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:5px;}
+  .xp-err{color:var(--danger); font-size:.85rem; margin:0 0 10px;}
+  .xp-day-box{background:var(--paper-alt); border-radius:12px; padding:16px; margin:14px 0; max-width:440px;}
+  .xp-two{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;}
+  .xp-btn-red{background:var(--danger) !important;}
+  .xp-btn-grey{background:var(--ink-soft) !important;}
 </style>
 </head>
 <body>
@@ -355,7 +401,7 @@
         <a class="btn btn-outline" href="#quizScoresPanel">Quiz scores</a>
         <a class="btn btn-outline" href="#certPanel">Certificates</a>
         <a class="btn btn-outline" href="#batchAccessPanel">Batch access</a>
-        <a class="btn btn-gold" href="kharcha.html">Kharcha</a>
+        <button class="btn btn-outline" onclick="xpOpen()">Expenses</button>
         <button class="btn btn-gold" onclick="openStudentModal()">+ New Admission</button>
         <button class="btn btn-outline" onclick="refreshAll()">Refresh data</button>
         <button class="btn btn-outline" onclick="logout()">Logout</button>
@@ -368,7 +414,7 @@
 
       <div class="status-banner" id="statusBanner"></div>
 
-      <div class="summary-grid summary-grid-5">
+      <div class="summary-grid summary-grid-6">
         <div class="summary-card">
           <div class="label">Total students</div>
           <div class="value" id="statTotalStudents">—</div>
@@ -388,6 +434,10 @@
         <div class="summary-card danger">
           <div class="label">Admission fee pending</div>
           <div class="value" id="statAdmissionPending">—</div>
+        </div>
+        <div class="summary-card" style="cursor:pointer;" onclick="xpOpen()" title="Open expenses">
+          <div class="label">Expenses (this month)</div>
+          <div class="value" id="statExpenseMonth">—</div>
         </div>
       </div>
 
@@ -591,6 +641,66 @@
 </div>
 
 <!-- ================= MONTHLY FEE MODAL ================= -->
+<div class="modal-overlay" id="expenseModal">
+  <div class="modal-box modal-wide" style="max-width:820px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+      <h3 style="margin:0;">💼 Centre Expenses</h3>
+      <div class="xp-tabs">
+        <button id="xpT-exp" class="on" onclick="xpTab('exp')">Expenses</button>
+        <button id="xpT-camp" onclick="xpTab('camp')">Water Campers</button>
+      </div>
+    </div>
+        <div class="xp-body">
+          <p class="xp-err" id="xpErr"></p>
+
+          <div id="xp-exp">
+            <div class="xp-form">
+              <div><label class="xp-lbl" for="xeDate">Date</label><input type="date" id="xeDate"></div>
+              <div><label class="xp-lbl" for="xeCat">Category</label><select id="xeCat" onchange="xpCatChange()"></select></div>
+              <div><label class="xp-lbl" for="xeMode">Payment mode</label>
+                <select id="xeMode"><option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option></select></div>
+              <div><label class="xp-lbl" for="xeAmt">Amount (₹)</label><input type="number" id="xeAmt" inputmode="decimal" min="0"></div>
+              <div id="xeUnitsBox" style="display:none"><label class="xp-lbl" for="xeUnits">Units consumed</label><input type="number" id="xeUnits" inputmode="decimal" min="0"></div>
+              <div style="grid-column:1/-1"><label class="xp-lbl" for="xeNote">Note / description (optional)</label><input type="text" id="xeNote" placeholder="e.g. Sept bill, 2 toner cartridges, Ramesh salary"></div>
+            </div>
+            <button class="btn-teal" style="flex:none; margin-top:8px;" onclick="xpAdd()">+ Add expense</button>
+
+            <div class="xp-bar">
+              <div><label class="xp-lbl" for="xfMonth">Month</label><input type="month" id="xfMonth" onchange="xpRender()"></div>
+              <div><label class="xp-lbl" for="xfCat">Filter by category</label><select id="xfCat" onchange="xpRender()"></select></div>
+            </div>
+            <div class="xp-stats" id="xeStats"></div>
+            <div id="xeBreak"></div>
+            <div class="table-scroll" style="margin-top:14px;">
+              <table style="min-width:560px;">
+                <thead><tr><th>Date</th><th>Category</th><th>Details</th><th>Mode</th><th style="text-align:right">Amount</th><th></th></tr></thead>
+                <tbody id="xeRows"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="xp-camp" style="display:none">
+            <div style="max-width:220px;"><label class="xp-lbl" for="xcRate">Rate per camper (₹)</label>
+              <input type="number" id="xcRate" inputmode="decimal" min="0" onchange="xcRate(this.value)"></div>
+            <div class="xp-nav">
+              <button onclick="xcMove(-1)" aria-label="Previous month">‹</button>
+              <strong id="xcMonth"></strong>
+              <button onclick="xcMove(1)" aria-label="Next month">›</button>
+            </div>
+            <div class="xp-cal" id="xcCal"></div>
+            <div class="xp-key">
+              <span><i style="background:#d9f0e2"></i>Delivered</span>
+              <span><i style="background:#fbdcd6"></i>Not delivered</span>
+              <span>₹ = payment made</span>
+            </div>
+            <div class="xp-day-box" id="xcBox" style="display:none"></div>
+            <div class="xp-stats" id="xcStats"></div>
+          </div>
+        </div>
+    <div class="modal-actions" style="margin-top:18px;"><button class="btn-cancel" onclick="closeModal('expenseModal')">Close</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="feeModal">
   <div class="modal-box">
     <h3>💰 Monthly fee</h3>
@@ -665,7 +775,7 @@
     window.adminSession().then(a => { if (a) showDash(); });
   })(0);
 
-  function refreshAll(){ loadData(); loadQuizScores(); }
+  function refreshAll(){ loadData(); loadQuizScores(); if (window.xpStart) window.xpStart(); }
 
   function showBanner(msg, isError){
     const b = document.getElementById('statusBanner');
@@ -1250,6 +1360,125 @@
     try{ await window.fsDeleteCert(id); allCerts = allCerts.filter(c => c.id !== id); renderCerts(); }
     catch(e){ console.error(e); ctMsg('Delete nahi hua.', 'err'); }
   }
+
+  // ============ CENTRE EXPENSES + WATER CAMPERS ============
+  (function(){
+    const $ = id => document.getElementById(id);
+    const E = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const R = n => '₹' + (+n || 0).toLocaleString('en-IN');
+    const P = n => String(n).padStart(2, '0');
+    const T = () => { const t = new Date(); return t.getFullYear() + '-' + P(t.getMonth() + 1) + '-' + P(t.getDate()); };
+    const CATS = [
+      ['Staff & Salaries', ['Cleaning Staff Salary', 'Teacher / Staff Salary']],
+      ['Rent & Utilities', ['Centre Rent', 'Electricity Bill', 'Internet / Broadband', 'Mobile / Phone Recharge']],
+      ['Cleaning & Housekeeping', ['Cleaning Materials', 'Hygiene Supplies']],
+      ['Hardware & Maintenance', ['Computer / Laptop Purchase', 'Computer Repair & Servicing', 'Printer Ink / Toner', 'UPS / Battery', 'Cables, Keyboard & Accessories', 'Furniture & Fittings']],
+      ['Stationery & Printing', ['Paper & Stationery', 'Photocopy / Printing', 'Certificate & ID Card Printing']],
+      ['Software & Online', ['Software Licence', 'Domain & Hosting', 'Online Subscriptions']],
+      ['Marketing', ['Flex / Banner / Pamphlets', 'Social Media Ads', 'Admission Campaign']],
+      ['Exams & Fees', ['Exam / Registration Fees (NIELIT, CCC)', 'Government Fees / Licence', 'Bank Charges']],
+      ['General', ['Tea & Refreshments', 'Travel / Transport', 'Building Repairs', 'Miscellaneous']]
+    ];
+    const LEG = { l: 'Cleaning Staff Salary', m: 'Cleaning Materials', e: 'Electricity Bill', x: 'Miscellaneous' };  // entries saved by the earlier version
+    const D = { exp: [], camp: {}, rate: 0 };
+    let started = false, cur = new Date(), sel = null;
+    const fail = e => { $('xpErr').textContent = 'Could not load or save: ' + (e.code || e.message) + '. This account must be listed in the admins collection.'; };
+    const catOf = x => x.c || LEG[x.t] || 'Miscellaneous';
+
+    window.xpOpen = () => { $('expenseModal').classList.add('open'); if (window.xpStart) window.xpStart(); xpRender(); };
+    $('expenseModal').addEventListener('click', function(e){ if (e.target === this) this.classList.remove('open'); });
+    window.xpTab = t => {
+      ['exp', 'camp'].forEach(k => { $('xp-' + k).style.display = k === t ? '' : 'none'; $('xpT-' + k).classList.toggle('on', k === t); });
+      if (t === 'camp') xcRender();
+    };
+    window.xpCatChange = () => { $('xeUnitsBox').style.display = $('xeCat').value === 'Electricity Bill' ? '' : 'none'; };
+
+    function build(){
+      $('xeCat').innerHTML = '<option value="">Select category…</option>' + CATS.map(g => '<optgroup label="' + E(g[0]) + '">' + g[1].map(c => '<option>' + E(c) + '</option>').join('') + '</optgroup>').join('');
+      $('xfCat').innerHTML = '<option value="">All categories</option>' + CATS.map(g => '<optgroup label="' + E(g[0]) + '">' + g[1].map(c => '<option>' + E(c) + '</option>').join('') + '</optgroup>').join('');
+      $('xeDate').value = T(); $('xfMonth').value = T().slice(0, 7);
+    }
+
+    window.xpAdd = () => {
+      const a = +$('xeAmt').value, c = $('xeCat').value;
+      if (!c){ $('xeCat').focus(); return; }
+      if (!a){ $('xeAmt').focus(); return; }
+      const e = { d: $('xeDate').value || T(), c, n: $('xeNote').value.trim(), a, pm: $('xeMode').value };
+      const u = +$('xeUnits').value; if (c === 'Electricity Bill' && u) e.u = u;
+      window.khAdd(e).catch(fail);
+      $('xeNote').value = ''; $('xeAmt').value = ''; $('xeUnits').value = '';
+    };
+    window.xpDel = id => { if (confirm('Delete this expense?')) window.khDel(id).catch(fail); };
+
+    window.xpRender = () => {
+      const nowM = T().slice(0, 7);
+      $('statExpenseMonth').textContent = R(D.exp.filter(x => String(x.d).startsWith(nowM)).reduce((p, x) => p + x.a, 0));
+      const m = $('xfMonth').value, f = $('xfCat').value;
+      const L = D.exp.filter(x => (!m || String(x.d).startsWith(m)) && (!f || catOf(x) === f)).sort((a, b) => String(b.d).localeCompare(String(a.d)));
+      const by = {}; L.forEach(x => by[catOf(x)] = (by[catOf(x)] || 0) + x.a);
+      const tot = L.reduce((p, x) => p + x.a, 0), top = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
+      $('xeStats').innerHTML =
+        '<div class="xp-stat"><span>Total expenses</span><b>' + R(tot) + '</b></div>' +
+        '<div class="xp-stat"><span>Entries</span><b>' + L.length + '</b></div>' +
+        '<div class="xp-stat"><span>Highest category</span><b style="font-size:.95rem">' + (top ? E(top[0]) + '<br>' + R(top[1]) : '—') + '</b></div>';
+      $('xeBreak').innerHTML = Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, v]) => '<div class="xp-row"><span>' + E(k) + '</span><b>' + R(v) + '</b></div>').join('');
+      $('xeRows').innerHTML = L.length ? L.map(x =>
+        '<tr><td>' + E(x.d) + '</td><td>' + E(catOf(x)) + '</td><td>' + E(x.n || '') + (x.u ? ' <span style="color:var(--ink-soft)">(' + x.u + ' units)</span>' : '') + '</td><td>' + E(x.pm || '—') + '</td>' +
+        '<td style="text-align:right;font-weight:700">' + R(x.a) + '</td><td><button class="row-btn danger" onclick="xpDel(\'' + E(x.id) + '\')">Delete</button></td></tr>'
+      ).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);padding:22px">No expenses recorded for this selection.</td></tr>';
+    };
+
+    // ---- Water campers ----
+    window.xcRate = v => window.khRate(+v || 0).catch(fail);
+    window.xcMove = n => { cur = new Date(cur.getFullYear(), cur.getMonth() + n, 1); sel = null; xcRender(); };
+    window.xcPick = k => { sel = k; xcRender(); };
+    window.xcUpd = s => {
+      const e = { ...(D.camp[sel] || {}) };
+      if (s !== undefined) e.s = s;
+      e.n = +$('xcQty').value || 1; e.p = +$('xcPay').value || 0;
+      (!e.s && !e.p ? window.khCampDel(sel) : window.khCampSet(sel, e)).catch(fail);
+    };
+    function xcRender(){
+      const y = cur.getFullYear(), mo = cur.getMonth(), pre = y + '-' + P(mo + 1);
+      $('xcRate').value = D.rate || '';
+      $('xcMonth').textContent = cur.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+      const first = new Date(y, mo, 1).getDay(), n = new Date(y, mo + 1, 0).getDate();
+      let h = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => '<b>' + d + '</b>').join('');
+      for (let i = 0; i < first; i++) h += '<i></i>';
+      for (let d = 1; d <= n; d++){
+        const k = pre + '-' + P(d), e = D.camp[k] || {};
+        h += '<button class="xp-day ' + (e.s || '') + (k === sel ? ' sel' : '') + '" onclick="xcPick(\'' + k + '\')">' + d + (e.p ? '<small>₹</small>' : '') + '</button>';
+      }
+      $('xcCal').innerHTML = h;
+      const box = $('xcBox');
+      if (sel){
+        const e = D.camp[sel] || {};
+        box.style.display = '';
+        box.innerHTML = '<strong>' + sel + '</strong>' +
+          '<div class="xp-two"><button class="btn-teal" onclick="xcUpd(\'y\')">Delivered</button><button class="btn-teal xp-btn-red" onclick="xcUpd(\'n\')">Not delivered</button></div>' +
+          '<div class="xp-two"><div><label class="xp-lbl" for="xcQty">Campers delivered</label><input id="xcQty" type="number" min="1" value="' + (e.n || 1) + '"></div>' +
+          '<div><label class="xp-lbl" for="xcPay">Payment made (₹)</label><input id="xcPay" type="number" inputmode="decimal" value="' + (e.p || '') + '"></div></div>' +
+          '<div class="xp-two"><button class="btn-teal" onclick="xcUpd()">Save payment</button><button class="btn-teal xp-btn-grey" onclick="xcUpd(\'\')">Clear day</button></div>';
+      } else box.style.display = 'none';
+      let came = 0, miss = 0, cnt = 0, paid = 0;
+      Object.keys(D.camp).filter(k => k.startsWith(pre)).forEach(k => {
+        const e = D.camp[k];
+        if (e.s === 'y'){ came++; cnt += e.n || 1; }
+        if (e.s === 'n') miss++;
+        paid += e.p || 0;
+      });
+      const due = cnt * (D.rate || 0);
+      $('xcStats').innerHTML = [['Days delivered', came], ['Days missed', miss], ['Total campers', cnt], ['Total bill', R(due)], ['Paid', R(paid)], ['Balance due', R(due - paid)]]
+        .map(([a, b]) => '<div class="xp-stat"><span>' + a + '</span><b>' + b + '</b></div>').join('');
+    }
+
+    window.xpStart = () => {
+      if (started || !window.khListen) return;
+      started = true;
+      window.khListen(l => { D.exp = l; xpRender(); }, c => { D.camp = c; xcRender(); }, r => { D.rate = r; xcRender(); }, fail);
+    };
+    build(); xpRender();
+  })();
 </script>
 
 </body>
