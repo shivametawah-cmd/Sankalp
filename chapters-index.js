@@ -111,14 +111,14 @@ window.STATIC_CHAPTERS = [
     chapterHi: 'अध्याय 1: कंप्यूटर के मूल सिद्धांत — हार्ड स्तर',
     questionCount: 20,
     url: 'adca-chapter1-hard-mcq.html'
-  }
+  },
   {
-    id: 'adca-ch1-hard',
-    course: 'ADCA',
-    chapter: 'Chapter 1: Test',
-    chapterHi: 'अध्याय 1: परीक्षण',
+    id: 'ccc-ch1-mixed',
+    course: 'CCC',
+    chapter: 'Chapter 1: Introduction to Computer — Syllabus-Based Mixed Level (Basic + Intermediate + Hard)',
+    chapterHi: 'अध्याय 1: कंप्यूटर का परिचय — सिलेबस आधारित मिक्स्ड स्तर (बेसिक + इंटरमीडिएट + हार्ड)',
     questionCount: 50,
-    url: 'adca-chapter1-test.html'
+    url: 'ccc-chapter1-mixed-mcq.html'
   }
   // 👇 Naya chapter yahan neeche add karo, upar wale jaisa hi ek block
   // copy-paste karke. Pichle block ke baad comma (,) lagana mat bhoolna.
