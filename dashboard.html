@@ -24,6 +24,7 @@
 <script src="chapters-index.js"></script>
 <script src="mocks-index.js"></script>
 <script src="notes-index.js"></script>
+<script src="practicals-index.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <!-- Firebase: quiz scores -->
@@ -74,12 +75,12 @@
   // Returns { hiddenNotes:[...], hiddenChapters:[...], hiddenMocks:[...] }  |  null if fetch failed
   window.getBatchAccess = async function(batch){
     const key = String(batch || '').trim().toLowerCase();
-    if (!key) return { hiddenNotes: [], hiddenChapters: [], hiddenMocks: [] };
+    if (!key) return { hiddenNotes: [], hiddenChapters: [], hiddenMocks: [], hiddenPracticals: [] };
     try {
       const snap = await getDoc(doc(db, 'batchAccess', key));
-      if (!snap.exists()) return { hiddenNotes: [], hiddenChapters: [], hiddenMocks: [] };
+      if (!snap.exists()) return { hiddenNotes: [], hiddenChapters: [], hiddenMocks: [], hiddenPracticals: [] };
       const d = snap.data();
-      return { hiddenNotes: d.hiddenNotes || [], hiddenChapters: d.hiddenChapters || [], hiddenMocks: d.hiddenMocks || [] };
+      return { hiddenNotes: d.hiddenNotes || [], hiddenChapters: d.hiddenChapters || [], hiddenMocks: d.hiddenMocks || [], hiddenPracticals: d.hiddenPracticals || [] };
     } catch(err){
       console.error('Batch access fetch failed:', err);
       return null;
@@ -284,6 +285,14 @@
 
     <section>
       <div class="section-head">
+        <h2>🛠️ My Practicals</h2>
+        <span class="sub">Practical exercises for your course</span>
+      </div>
+      <div class="notes-list" id="practicalList"><div class="empty-note">Loading practicals…</div></div>
+    </section>
+
+    <section>
+      <div class="section-head">
         <h2>🧠 MCQ Practice</h2>
         <span class="sub">Chapters available for your course</span>
       </div>
@@ -403,7 +412,7 @@ function renderFeeBanner(){
 
 // ── 5) Notes ──────────────────────────────────────────────────────────
 // Batch access rules (filled at boot from Firestore). Empty = nothing hidden.
-let batchAccess = { hiddenNotes: [], hiddenChapters: [], hiddenMocks: [] };
+let batchAccess = { hiddenNotes: [], hiddenChapters: [], hiddenMocks: [], hiddenPracticals: [] };
 
 function loadNotes(){
   const all = window.STATIC_NOTES || [];
@@ -428,6 +437,34 @@ function renderNotes(notes){
     </div>`).join('');
 }
 document.getElementById('notesList').addEventListener('click', e => {
+  const btn = e.target.closest('.read-btn');
+  if (btn) openNoteViewer(btn.dataset.file, btn.dataset.title);
+});
+
+// ── 5b) Practicals (batch-wise via batchAccess.hiddenPracticals) ───────
+function loadPracticals(){
+  const all = window.STATIC_PRACTICALS || [];
+  const hidden = new Set(batchAccess.hiddenPracticals || []);
+  return all.filter(p =>
+    (p.course||'').trim().toLowerCase() === (student.course||'').trim().toLowerCase() &&
+    !hidden.has(p.file));
+}
+function renderPracticals(list){
+  const el = document.getElementById('practicalList');
+  if (!list.length){
+    el.innerHTML = `<div class="empty-note">📌 Coming soon! Practicals for <b>${student.course||'your course'}</b> will appear here soon.</div>`;
+    return;
+  }
+  el.innerHTML = list.map(p => `
+    <div class="note-card">
+      <div class="note-info">
+        <h3>${p.title}</h3>
+        <div class="meta"><span class="tag">${p.type||'PDF'}</span>${p.course}</div>
+      </div>
+      <button class="read-btn" data-file="${p.file}" data-title="${(p.title||'Practical').replace(/"/g,'&quot;')}">📖 Open Practical</button>
+    </div>`).join('');
+}
+document.getElementById('practicalList').addEventListener('click', e => {
   const btn = e.target.closest('.read-btn');
   if (btn) openNoteViewer(btn.dataset.file, btn.dataset.title);
 });
@@ -605,12 +642,14 @@ waitForFirebase(async function(){
   const access = await window.getBatchAccess(student.batch);
   if (access) batchAccess = access;       // fetch fail ho to sab dikhega (fail-open)
   renderNotes(loadNotes());
+  renderPracticals(loadPracticals());
   renderMCQList(loadMCQList());
   renderMockList(loadMockList());
   // 2) Quiz history
   loadQuizHistory().then(renderQuizHistory);
 }, function(){
   renderNotes(loadNotes());
+  renderPracticals(loadPracticals());
   renderMCQList(loadMCQList());
   renderMockList(loadMockList());
   renderQuizHistory([]);
