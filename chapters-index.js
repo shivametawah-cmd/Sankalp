@@ -114,11 +114,11 @@ window.STATIC_CHAPTERS = [
   },
   {
     id: 'ccc-ch1-mixed',
-    course: 'CCC',
+    course: 'ADCA',
     chapter: 'Chapter 1: Introduction to Computer — Syllabus-Based Mixed Level (Basic + Intermediate + Hard)',
     chapterHi: 'अध्याय 1: कंप्यूटर का परिचय — सिलेबस आधारित मिक्स्ड स्तर (बेसिक + इंटरमीडिएट + हार्ड)',
     questionCount: 50,
-    url: 'ccc-chapter1-mixed-mcq.html'
+    url: 'adca-chapter-1-test.html'
   }
   // 👇 Naya chapter yahan neeche add karo, upar wale jaisa hi ek block
   // copy-paste karke. Pichle block ke baad comma (,) lagana mat bhoolna.
