@@ -112,7 +112,14 @@ window.STATIC_CHAPTERS = [
     questionCount: 20,
     url: 'adca-chapter1-hard-mcq.html'
   }
-
+  {
+    id: 'adca-ch1-hard',
+    course: 'ADCA',
+    chapter: 'Chapter 1: Test',
+    chapterHi: 'अध्याय 1: परीक्षण',
+    questionCount: 50,
+    url: 'adca-chapter1-test.html'
+  }
   // 👇 Naya chapter yahan neeche add karo, upar wale jaisa hi ek block
   // copy-paste karke. Pichle block ke baad comma (,) lagana mat bhoolna.
   //
