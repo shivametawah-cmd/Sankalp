@@ -31,7 +31,7 @@
 <script type="module">
   import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-  import { getFirestore, collection, query, where, getDocs, doc, getDoc }
+  import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, serverTimestamp }
                                      from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -59,6 +59,30 @@
       } catch (e) { console.error(e); res(null); }
     });
   });
+
+  // ---- Practical submissions (student uploads; admin rates in shivam.html) ----
+  const authReady = new Promise(res => { const un = onAuthStateChanged(getAuth(app), u => { un(); res(u); }); });
+  window.pxMine = async () => {
+    const u = await authReady; if (!u) return {};
+    const q = await getDocs(query(collection(db, 'practicalSubmissions'), where('uid', '==', u.uid)));
+    const m = {}; q.docs.forEach(x => { const v = x.data(); m[v.practicalKey] = v; }); return m;
+  };
+  window.pxUpload = async (meta, blob, fileName, onProg) => {
+    const u = await authReady; if (!u) throw new Error('Please log in again');
+    const id = u.uid + '__' + meta.key, ref = doc(db, 'practicalSubmissions', id);
+    const url = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
+    const b64 = url.slice(url.indexOf(',') + 1), CH = 700000, n = Math.ceil(b64.length / CH);
+    const old = await getDoc(ref), oldParts = old.exists() ? (old.data().parts || 0) : 0;
+    await setDoc(ref, { uid: u.uid, studentId: meta.studentId, name: meta.name, course: meta.course, batch: meta.batch,
+      practical: meta.title, practicalKey: meta.key, fileName, fileType: blob.type || 'application/octet-stream', size: blob.size,
+      parts: 0, status: 'uploading', rating: null, feedback: '', submittedAt: serverTimestamp() });
+    for (let i = 0; i < n; i++){
+      await setDoc(doc(db, 'practicalSubmissions', id, 'parts', String(i)), { i, data: b64.slice(i * CH, (i + 1) * CH) });
+      if (onProg) onProg((i + 1) / n);
+    }
+    for (let i = n; i < oldParts; i++) await deleteDoc(doc(db, 'practicalSubmissions', id, 'parts', String(i)));
+    await setDoc(ref, { parts: n, status: 'submitted' }, { merge: true });
+  };
 
   window.getStudentScores = async function(studentId){
     try {
@@ -173,6 +197,13 @@
     font-family:inherit; white-space:nowrap;
   }
   .read-btn:hover{background:var(--teal-dark);}
+  .px-actions{display:flex; gap:8px; flex-wrap:wrap;}
+  .px-up{background:var(--gold); color:#241a02; border:none; padding:9px 16px; border-radius:8px; font-weight:700; font-size:.85rem; cursor:pointer; font-family:inherit; white-space:nowrap;}
+  .px-up:hover{background:var(--gold-dark);}
+  .px-up:disabled{opacity:.6; cursor:wait;}
+  .px-status{flex-basis:100%; font-size:.85rem; padding:8px 12px; border-radius:8px; background:var(--paper-alt);}
+  .px-status.wait{background:#fff6e0; color:#8a5a00;}
+  .px-status.rated{background:var(--ok-bg); color:var(--ok);}
 
   /* Note viewer */
   .note-viewer-overlay{
@@ -289,6 +320,7 @@
         <span class="sub">Practical exercises for your course</span>
       </div>
       <div class="notes-list" id="practicalList"><div class="empty-note">Loading practicals…</div></div>
+      <input type="file" id="pxFile" hidden accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.txt">
     </section>
 
     <section>
@@ -449,24 +481,79 @@ function loadPracticals(){
     (p.course||'').trim().toLowerCase() === (student.course||'').trim().toLowerCase() &&
     !hidden.has(p.file));
 }
+let mySubs = {}, pxTarget = null;
+const pxKey = f => String(f).replace(/[^A-Za-z0-9_-]/g, '_');
+const pxEsc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function loadMySubs(){
+  if (!window.pxMine) return;
+  try { mySubs = await window.pxMine(); renderPracticals(loadPracticals()); } catch(e){ console.error(e); }
+}
+function pxStatus(p){
+  const s = mySubs[pxKey(p.file)];
+  if (!s) return 'Not submitted yet — upload your practical file to get a rating.';
+  if (s.rating != null) return '<span class="px-status rated" style="padding:0">⭐ Rating: <b>' + s.rating + '/10</b>' + (s.feedback ? ' — ' + pxEsc(s.feedback) : '') + '</span>';
+  const when = s.submittedAt && s.submittedAt.toDate ? s.submittedAt.toDate().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '';
+  return '⏳ Submitted' + (when ? ' on ' + when : '') + ' (' + pxEsc(s.fileName) + ') — waiting for review';
+}
 function renderPracticals(list){
   const el = document.getElementById('practicalList');
   if (!list.length){
     el.innerHTML = `<div class="empty-note">📌 Coming soon! Practicals for <b>${student.course||'your course'}</b> will appear here soon.</div>`;
     return;
   }
-  el.innerHTML = list.map(p => `
+  el.innerHTML = list.map(p => {
+    const k = pxKey(p.file), s = mySubs[k], rated = s && s.rating != null;
+    const cls = rated ? 'rated' : (s ? 'wait' : '');
+    return `
     <div class="note-card">
       <div class="note-info">
         <h3>${p.title}</h3>
         <div class="meta"><span class="tag">${p.type||'PDF'}</span>${p.course}</div>
       </div>
-      <button class="read-btn" data-file="${p.file}" data-title="${(p.title||'Practical').replace(/"/g,'&quot;')}">📖 Open Practical</button>
-    </div>`).join('');
+      <div class="px-actions">
+        <button class="read-btn" data-file="${p.file}" data-title="${(p.title||'Practical').replace(/"/g,'&quot;')}">📖 Open Practical</button>
+        ${rated ? '' : `<button class="px-up" data-key="${k}" data-title="${(p.title||'Practical').replace(/"/g,'&quot;')}">${s ? '🔄 Re-upload' : '📤 Upload my work'}</button>`}
+      </div>
+      <div class="px-status ${cls}" data-stat="${k}">${pxStatus(p)}</div>
+    </div>`;
+  }).join('');
+}
+function pxShrink(file){
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); c.toBlob(b => b ? res(b) : rej(new Error('Image error')), 'image/jpeg', .8);
+    };
+    img.onerror = () => rej(new Error('Could not read the image')); img.src = url;
+  });
 }
 document.getElementById('practicalList').addEventListener('click', e => {
-  const btn = e.target.closest('.read-btn');
-  if (btn) openNoteViewer(btn.dataset.file, btn.dataset.title);
+  const r = e.target.closest('.read-btn');
+  if (r) { openNoteViewer(r.dataset.file, r.dataset.title); return; }
+  const u = e.target.closest('.px-up');
+  if (u){ pxTarget = { key: u.dataset.key, title: u.dataset.title, btn: u }; const f = document.getElementById('pxFile'); f.value = ''; f.click(); }
+});
+document.getElementById('pxFile').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file || !pxTarget) return;
+  const t = pxTarget, st = document.querySelector('[data-stat="' + t.key + '"]');
+  const msg = m => { if (st) st.innerHTML = m; };
+  if (!/\.(pdf|jpe?g|png|docx?|txt)$/i.test(file.name)){ alert('Allowed files: PDF, JPG, PNG, DOC, DOCX, TXT'); return; }
+  try {
+    let blob = file, name = file.name;
+    if (file.type.startsWith('image/')){ blob = await pxShrink(file); name = file.name.replace(/\.[^.]+$/, '') + '.jpg'; }
+    if (blob.size > 4 * 1024 * 1024){ alert('File is too large (max 4 MB). Please compress it and try again.'); return; }
+    t.btn.disabled = true; msg('Uploading… 0%');
+    await window.pxUpload({ key: t.key, title: t.title, studentId: student.studentId || '', name: student.name || '', course: student.course || '', batch: student.batch || '' },
+      blob, name, p => msg('Uploading… ' + Math.round(p * 100) + '%'));
+    await loadMySubs();
+  } catch(err){
+    console.error(err);
+    msg('<span style="color:var(--warn)">Upload failed. Please try again. (' + pxEsc(err.code || err.message) + ')</span>');
+    t.btn.disabled = false;
+  }
 });
 
 // ── 6) MCQ list ───────────────────────────────────────────────────────
@@ -643,6 +730,7 @@ waitForFirebase(async function(){
   if (access) batchAccess = access;       // fetch fail ho to sab dikhega (fail-open)
   renderNotes(loadNotes());
   renderPracticals(loadPracticals());
+  loadMySubs();
   renderMCQList(loadMCQList());
   renderMockList(loadMockList());
   // 2) Quiz history

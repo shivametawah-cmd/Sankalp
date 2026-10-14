@@ -120,6 +120,12 @@
     });
   };
 
+  // ---- Practical submissions (students upload in dashboard.html; admin rates here) ----
+  window.pxListen = (cb, err) => onSnapshot(collection(quizDb, 'practicalSubmissions'), q => cb(q.docs.map(d => ({ id: d.id, ...d.data() }))), err);
+  window.pxRate   = (id, rating, feedback) => updateDoc(doc(quizDb, 'practicalSubmissions', id), { rating, feedback, ratedAt: serverTimestamp() });
+  window.pxFetchFile = async (id, n) => { let out = ''; for (let i = 0; i < n; i++) { const p = await getDoc(doc(quizDb, 'practicalSubmissions', id, 'parts', String(i))); out += p.data().data; } return out; };
+  window.pxDelete = async (id, n) => { for (let i = 0; i < n; i++) await deleteDoc(doc(quizDb, 'practicalSubmissions', id, 'parts', String(i))); await deleteDoc(doc(quizDb, 'practicalSubmissions', id)); };
+
   // ---- Centre expenses + water campers (Firestore: kharchaCleaning, kharchaCamp, kharchaSettings; admin-only rules) ----
   window.khListen = (onExp, onCamp, onRate, onErr) => {
     onSnapshot(collection(quizDb, 'kharchaCleaning'), q => onExp(q.docs.map(d => ({ id: d.id, ...d.data() }))), onErr);
@@ -402,6 +408,7 @@
         <a class="btn btn-outline" href="#quizScoresPanel">Quiz scores</a>
         <button class="btn btn-outline" onclick="openPanelModal('certModal')">Certificates</button>
         <button class="btn btn-outline" onclick="openPanelModal('batchModal')">Batch access</button>
+        <button class="btn btn-outline" onclick="openPanelModal('pxModal')">Submissions <span id="pxBadge" style="color:var(--gold);font-weight:800"></span></button>
         <button class="btn btn-outline" onclick="xpOpen()">Expenses</button>
         <button class="btn btn-gold" onclick="openStudentModal()">+ New Admission</button>
         <button class="btn btn-outline" onclick="refreshAll()">Refresh data</button>
@@ -711,6 +718,26 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="pxModal">
+  <div class="modal-box modal-wide" style="max-width:1120px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+      <h3 style="margin:0;">📝 Practical Submissions (<span id="pxCount">0</span>)</h3>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <select id="pxFilter" onchange="pxRender()" style="padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:.85rem;">
+          <option value="pending">Pending review</option><option value="all">All</option><option value="rated">Rated</option></select>
+        <input type="text" id="pxSearch" placeholder="Search student, ID, practical…" oninput="pxRender()" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px; font-size:.85rem; min-width:220px;">
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table style="min-width:900px;">
+        <thead><tr><th>Student</th><th>Practical</th><th>File</th><th>Submitted</th><th>Rating (1-10)</th><th>Feedback</th><th></th></tr></thead>
+        <tbody id="pxRows"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;"><button class="btn-cancel" onclick="closeModal('pxModal')">Close</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="feeModal">
   <div class="modal-box">
     <h3>💰 Monthly fee</h3>
@@ -785,7 +812,7 @@
     window.adminSession().then(a => { if (a) showDash(); });
   })(0);
 
-  function refreshAll(){ loadData(); loadQuizScores(); if (window.xpStart) window.xpStart(); }
+  function refreshAll(){ loadData(); loadQuizScores(); if (window.xpStart) window.xpStart(); if (window.pxStart) window.pxStart(); }
 
   function showBanner(msg, isError){
     const b = document.getElementById('statusBanner');
@@ -1503,7 +1530,60 @@
 
   // ============ Certificates / Batch access open as windows ============
   function openPanelModal(id){ document.getElementById(id).classList.add('open'); }
-  ['certModal','batchModal'].forEach(id => document.getElementById(id).addEventListener('click', function(e){ if (e.target === this) closeModal(id); }));
+  ['certModal','batchModal','pxModal'].forEach(id => document.getElementById(id).addEventListener('click', function(e){ if (e.target === this) closeModal(id); }));
+
+  // ============ PRACTICAL SUBMISSIONS (admin rating) ============
+  (function(){
+    const $ = id => document.getElementById(id);
+    const E = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    let subs = [], started = false;
+    const when = s => s.submittedAt && s.submittedAt.toDate ? s.submittedAt.toDate().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+    window.pxStart = () => {
+      if (started || !window.pxListen) return; started = true;
+      window.pxListen(l => { subs = l; pxRender(); }, e => console.error('Submissions:', e));
+    };
+    window.pxRender = () => {
+      const f = $('pxFilter').value, q = $('pxSearch').value.trim().toLowerCase();
+      const pend = subs.filter(x => x.rating == null && x.status !== 'uploading').length;
+      $('pxBadge').textContent = pend ? '(' + pend + ')' : '';
+      const L = subs.filter(x => x.status !== 'uploading' || x.parts)
+        .filter(x => f === 'all' || (f === 'rated' ? x.rating != null : x.rating == null))
+        .filter(x => !q || [x.name, x.studentId, x.practical, x.course, x.batch].join(' ').toLowerCase().includes(q))
+        .sort((a, b) => ((b.submittedAt && b.submittedAt.seconds) || 0) - ((a.submittedAt && a.submittedAt.seconds) || 0));
+      $('pxCount').textContent = L.length;
+      $('pxRows').innerHTML = L.length ? L.map(x => {
+        const i = E(x.id);
+        return '<tr><td><b>' + E(x.name) + '</b><br><span style="color:var(--ink-soft);font-size:.8rem">' + E(x.studentId) + ' · ' + E(x.course) + (x.batch ? ' · ' + E(x.batch) : '') + '</span></td>' +
+          '<td>' + E(x.practical) + '</td>' +
+          '<td><button class="row-btn" onclick="pxView(\'' + i + '\')">View</button><div style="font-size:.74rem;color:var(--ink-soft)">' + E(x.fileName) + '</div></td>' +
+          '<td>' + when(x) + '</td>' +
+          '<td><input type="number" id="pxR_' + i + '" min="1" max="10" step="0.5" value="' + (x.rating == null ? '' : x.rating) + '" style="width:70px;padding:7px;border:1px solid var(--line);border-radius:8px"></td>' +
+          '<td><input type="text" id="pxF_' + i + '" value="' + E(x.feedback || '') + '" placeholder="Optional comment" style="width:100%;min-width:150px;padding:7px;border:1px solid var(--line);border-radius:8px"></td>' +
+          '<td style="white-space:nowrap"><button class="row-btn" onclick="pxSave(\'' + i + '\')">Save</button><button class="row-btn danger" onclick="pxRemove(\'' + i + '\')">Delete</button></td></tr>';
+      }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);padding:22px">No submissions here yet.</td></tr>';
+    };
+    window.pxSave = id => {
+      const r = parseFloat($('pxR_' + id).value);
+      if (!(r >= 1 && r <= 10)){ alert('Rating must be between 1 and 10.'); return; }
+      window.pxRate(id, r, $('pxF_' + id).value.trim()).catch(e => alert('Could not save: ' + (e.code || e.message)));
+    };
+    window.pxRemove = id => {
+      const x = subs.find(s => s.id === id); if (!x || !confirm('Delete this submission permanently?')) return;
+      window.pxDelete(id, x.parts || 0).catch(e => alert('Could not delete: ' + (e.code || e.message)));
+    };
+    window.pxView = async id => {
+      const x = subs.find(s => s.id === id); if (!x) return;
+      const viewable = /pdf|image/.test(x.fileType || '');
+      const w = viewable ? window.open('', '_blank') : null;
+      try {
+        const bin = atob(await window.pxFetchFile(id, x.parts || 0)), arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([arr], { type: x.fileType || 'application/octet-stream' }));
+        if (w) w.location.href = url;
+        else { const a = document.createElement('a'); a.href = url; a.download = x.fileName || 'file'; document.body.appendChild(a); a.click(); a.remove(); }
+      } catch(e){ if (w) w.close(); alert('Could not open file: ' + (e.code || e.message)); }
+    };
+  })();
 </script>
 
 </body>

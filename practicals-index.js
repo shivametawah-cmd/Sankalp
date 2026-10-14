@@ -24,4 +24,5 @@ window.STATIC_PRACTICALS = [
   // ---- Example (isko copy karke apne asli practicals ke hisaab se badlo) ----
   // { title: "Practical 1: MS Word Basics", course: "CCC", type: "PDF", file: "practicals/ccc-practical-1.pdf" },
   { title: "Practical 2: MS Excel Home Tab", course: "ADCA", type: "PDF", file: "practicals/adca-excel-1.pdf" },
+  { title: "Practical 2: MS Excel Insert Tab", course: "ADCA", type: "PDF", file: "practicals/adca-excel-2.pdf" },
 ];
