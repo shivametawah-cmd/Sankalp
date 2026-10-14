@@ -72,7 +72,7 @@
     const id = u.uid + '__' + meta.key, ref = doc(db, 'practicalSubmissions', id);
     const url = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
     const b64 = url.slice(url.indexOf(',') + 1), CH = 700000, n = Math.ceil(b64.length / CH);
-    const old = await getDoc(ref), oldParts = old.exists() ? (old.data().parts || 0) : 0;
+    const oldParts = meta.oldParts || 0;   // known from the student's own submissions list (no read of a missing doc)
     await setDoc(ref, { uid: u.uid, studentId: meta.studentId, name: meta.name, course: meta.course, batch: meta.batch,
       practical: meta.title, practicalKey: meta.key, fileName, fileType: blob.type || 'application/octet-stream', size: blob.size,
       parts: 0, status: 'uploading', rating: null, feedback: '', submittedAt: serverTimestamp() });
@@ -490,7 +490,7 @@ async function loadMySubs(){
 }
 function pxStatus(p){
   const s = mySubs[pxKey(p.file)];
-  if (!s) return 'Not submitted yet — upload your practical file to get a rating.';
+  if (!s || (s.status === 'uploading' && !s.parts)) return 'Not submitted yet — upload your practical file to get a rating.';
   if (s.rating != null) return '<span class="px-status rated" style="padding:0">⭐ Rating: <b>' + s.rating + '/10</b>' + (s.feedback ? ' — ' + pxEsc(s.feedback) : '') + '</span>';
   const when = s.submittedAt && s.submittedAt.toDate ? s.submittedAt.toDate().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '';
   return '⏳ Submitted' + (when ? ' on ' + when : '') + ' (' + pxEsc(s.fileName) + ') — waiting for review';
@@ -546,7 +546,7 @@ document.getElementById('pxFile').addEventListener('change', async e => {
     if (file.type.startsWith('image/')){ blob = await pxShrink(file); name = file.name.replace(/\.[^.]+$/, '') + '.jpg'; }
     if (blob.size > 4 * 1024 * 1024){ alert('File is too large (max 4 MB). Please compress it and try again.'); return; }
     t.btn.disabled = true; msg('Uploading… 0%');
-    await window.pxUpload({ key: t.key, title: t.title, studentId: student.studentId || '', name: student.name || '', course: student.course || '', batch: student.batch || '' },
+    await window.pxUpload({ oldParts: (mySubs[t.key] || {}).parts || 0, key: t.key, title: t.title, studentId: student.studentId || '', name: student.name || '', course: student.course || '', batch: student.batch || '' },
       blob, name, p => msg('Uploading… ' + Math.round(p * 100) + '%'));
     await loadMySubs();
   } catch(err){
