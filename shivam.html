@@ -126,6 +126,30 @@
   window.pxFetchFile = async (id, n) => { let out = ''; for (let i = 0; i < n; i++) { const p = await getDoc(doc(quizDb, 'practicalSubmissions', id, 'parts', String(i))); out += p.data().data; } return out; };
   window.pxDelete = async (id, n) => { for (let i = 0; i < n; i++) await deleteDoc(doc(quizDb, 'practicalSubmissions', id, 'parts', String(i))); await deleteDoc(doc(quizDb, 'practicalSubmissions', id)); };
 
+  // ---- NEW practicals added from this panel (Firestore: practicals/{id} + parts/{p0.. | x0..}) ----
+  // Old practicals still come from practicals-index.js and are NOT touched.
+  // Files are stored as base64 chunks (same method as student submissions) -> no Firebase Storage needed.
+  const PRAC_CH = 700000;
+  const pracB64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => { const u = r.result; res(u.slice(u.indexOf(',') + 1)); }; r.onerror = rej; r.readAsDataURL(blob); });
+  window.pracFsList = async () => { const q = await getDocs(collection(quizDb, 'practicals')); return q.docs.map(d => ({ id: d.id, ...d.data() })); };
+  window.pracFsAdd = async (meta, pdf, tpl, onProg) => {
+    const ref = doc(collection(quizDb, 'practicals'));
+    const pb = await pracB64(pdf), tb = tpl ? await pracB64(tpl) : '';
+    const pn = Math.ceil(pb.length / PRAC_CH), tn = tb ? Math.ceil(tb.length / PRAC_CH) : 0, total = pn + tn;
+    let done = 0;
+    await setDoc(ref, { title: meta.title, course: meta.course, type: 'PDF', fileName: meta.fileName, tplName: meta.tplName || '', tplType: meta.tplType || '',
+      pdfParts: 0, tplParts: 0, status: 'uploading', createdAt: serverTimestamp() });
+    for (let i = 0; i < pn; i++) { await setDoc(doc(quizDb, 'practicals', ref.id, 'parts', 'p' + i), { data: pb.slice(i * PRAC_CH, (i + 1) * PRAC_CH) }); if (onProg) onProg(++done / total); }
+    for (let i = 0; i < tn; i++) { await setDoc(doc(quizDb, 'practicals', ref.id, 'parts', 'x' + i), { data: tb.slice(i * PRAC_CH, (i + 1) * PRAC_CH) }); if (onProg) onProg(++done / total); }
+    await setDoc(ref, { pdfParts: pn, tplParts: tn, status: 'ready' }, { merge: true });   // students see it only when 'ready'
+    return ref.id;
+  };
+  window.pracFsDelete = async p => {
+    for (let i = 0; i < (p.pdfParts || 0); i++) await deleteDoc(doc(quizDb, 'practicals', p.id, 'parts', 'p' + i));
+    for (let i = 0; i < (p.tplParts || 0); i++) await deleteDoc(doc(quizDb, 'practicals', p.id, 'parts', 'x' + i));
+    await deleteDoc(doc(quizDb, 'practicals', p.id));
+  };
+
   // ---- Centre expenses + water campers (Firestore: kharchaCleaning, kharchaCamp, kharchaSettings; admin-only rules) ----
   window.khListen = (onExp, onCamp, onRate, onErr) => {
     onSnapshot(collection(quizDb, 'kharchaCleaning'), q => onExp(q.docs.map(d => ({ id: d.id, ...d.data() }))), onErr);
@@ -408,6 +432,7 @@
         <a class="btn btn-outline" href="#quizScoresPanel">Quiz scores</a>
         <button class="btn btn-outline" onclick="openPanelModal('certModal')">Certificates</button>
         <button class="btn btn-outline" onclick="openPanelModal('batchModal')">Batch access</button>
+        <button class="btn btn-outline" onclick="pracOpen()">+ Practical</button>
         <button class="btn btn-outline" onclick="openPanelModal('pxModal')">Submissions <span id="pxBadge" style="color:var(--gold);font-weight:800"></span></button>
         <button class="btn btn-outline" onclick="xpOpen()">Expenses</button>
         <button class="btn btn-gold" onclick="openStudentModal()">+ New Admission</button>
@@ -738,6 +763,33 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="pracModal">
+  <div class="modal-box modal-wide" style="max-width:860px;">
+    <h3 style="margin:0 0 4px;">🛠️ Add new Practical</h3>
+    <p class="modal-sub">Naya practical PDF aur (optional) Excel template yahin se upload karein. Puraane practicals jaise hain waise hi rahenge.</p>
+    <div class="modal-alert" id="pracAlert"></div>
+    <div class="form-field"><label>Practical title</label><input type="text" id="pracTitle" maxlength="120" placeholder="e.g. Excel Practical - Student Marksheet" autocomplete="off"></div>
+    <div class="form-field"><label>Course</label>
+      <input type="text" id="pracCourse" list="pracCourseList" placeholder="e.g. CCC" autocomplete="off">
+      <datalist id="pracCourseList"><option value="CCC"><option value="DCA"><option value="ADCA"><option value="Tally"><option value="MS Office"><option value="O Level"><option value="Typing"></datalist>
+    </div>
+    <div class="form-field"><label>Practical file (PDF, max 8 MB)</label><input type="file" id="pracPdf" accept=".pdf,application/pdf"></div>
+    <div class="form-field"><label>Excel template for students (optional, .xlsx / .xls / .xlsm, max 3 MB)</label><input type="file" id="pracTpl" accept=".xlsx,.xls,.xlsm"></div>
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <button class="btn-teal" id="pracBtn" onclick="pracUpload()">⬆️ Upload practical</button>
+      <span id="pracMsg" style="font-size:.85rem; color:var(--ink-soft);"></span>
+    </div>
+    <h4 style="margin:22px 0 8px;">Added from this panel (<span id="pracCount">0</span>)</h4>
+    <div class="table-scroll">
+      <table style="min-width:620px;">
+        <thead><tr><th>Title</th><th>Course</th><th>Excel template</th><th>Added</th><th></th></tr></thead>
+        <tbody id="pracRows"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;"><button class="btn-cancel" onclick="closeModal('pracModal')">Close</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="feeModal">
   <div class="modal-box">
     <h3>💰 Monthly fee</h3>
@@ -812,7 +864,7 @@
     window.adminSession().then(a => { if (a) showDash(); });
   })(0);
 
-  function refreshAll(){ loadData(); loadQuizScores(); if (window.xpStart) window.xpStart(); if (window.pxStart) window.pxStart(); }
+  function refreshAll(){ loadData(); loadQuizScores(); if (window.xpStart) window.xpStart(); if (window.pxStart) window.pxStart(); if (window.pracSync) window.pracSync(); }
 
   function showBanner(msg, isError){
     const b = document.getElementById('statusBanner');
@@ -1583,6 +1635,70 @@
         else { const a = document.createElement('a'); a.href = url; a.download = x.fileName || 'file'; document.body.appendChild(a); a.click(); a.remove(); }
       } catch(e){ if (w) w.close(); alert('Could not open file: ' + (e.code || e.message)); }
     };
+  })();
+
+  // ============ ADD NEW PRACTICALS (stored in Firestore, shown on student dashboard) ============
+  (function(){
+    const $ = id => document.getElementById(id);
+    const E = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    let list = [];
+    const when = x => x.createdAt && x.createdAt.toDate ? x.createdAt.toDate().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+    const say = (t, color) => { $('pracMsg').textContent = t; $('pracMsg').style.color = color || 'var(--ink-soft)'; };
+
+    // Put the Firestore practicals into window.STATIC_PRACTICALS so "Batch access" can show/hide them too (key = "fs_<id>").
+    function mergeIntoStatic(){
+      const base = (window.STATIC_PRACTICALS || []).filter(p => !p.fsId);
+      window.STATIC_PRACTICALS = base.concat(list.map(x => ({ title: x.title, course: x.course, type: 'PDF', file: 'fs_' + x.id, fsId: x.id })));
+    }
+    function render(){
+      $('pracCount').textContent = list.length;
+      $('pracRows').innerHTML = list.length ? list.map(x =>
+        '<tr><td><b>' + E(x.title) + '</b><div style="font-size:.74rem;color:var(--ink-soft)">' + E(x.fileName) + '</div></td>' +
+        '<td>' + E(x.course) + '</td>' +
+        '<td>' + (x.tplParts ? '✅ ' + E(x.tplName) : '—') + '</td>' +
+        '<td>' + when(x) + '</td>' +
+        '<td><button class="row-btn danger" onclick="pracRemove(\'' + E(x.id) + '\')">Delete</button></td></tr>'
+      ).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:18px">Abhi koi naya practical add nahi hua.</td></tr>';
+    }
+    window.pracSync = async () => {
+      if (!window.pracFsList) return;
+      try { list = (await window.pracFsList()).filter(x => x.status === 'ready')
+              .sort((a, b) => ((b.createdAt && b.createdAt.seconds) || 0) - ((a.createdAt && a.createdAt.seconds) || 0)); }
+      catch(e){ console.error('Practicals:', e); say('Practicals load nahi hue — Firestore rules me "practicals" add karein.', '#b3261e'); return; }
+      mergeIntoStatic(); render();
+      if (window.baInit) window.baInit();     // refresh course list / batch-access checkboxes
+    };
+    window.pracOpen = () => { openPanelModal('pracModal'); window.pracSync(); };
+    window.pracUpload = async () => {
+      const title = $('pracTitle').value.trim(), course = $('pracCourse').value.trim();
+      const pdf = $('pracPdf').files[0], tpl = $('pracTpl').files[0];
+      if (!title || !course){ say('Title aur Course dono bharein.', '#b3261e'); return; }
+      if (!pdf){ say('Practical ki PDF file chunein.', '#b3261e'); return; }
+      if (!/\.pdf$/i.test(pdf.name)){ say('Practical file sirf PDF honi chahiye.', '#b3261e'); return; }
+      if (pdf.size > 8 * 1024 * 1024){ say('PDF 8 MB se badi hai — compress karke dobara try karein.', '#b3261e'); return; }
+      if (tpl && !/\.(xlsx|xls|xlsm)$/i.test(tpl.name)){ say('Template sirf Excel file (.xlsx/.xls/.xlsm) ho.', '#b3261e'); return; }
+      if (tpl && tpl.size > 3 * 1024 * 1024){ say('Excel template 3 MB se badi hai.', '#b3261e'); return; }
+      if (!window.pracFsAdd){ say('Firebase abhi load ho raha hai, thodi der baad try karein.', '#b3261e'); return; }
+      const btn = $('pracBtn'); btn.disabled = true; say('Uploading… 0%');
+      try {
+        await window.pracFsAdd({ title, course, fileName: pdf.name, tplName: tpl ? tpl.name : '', tplType: tpl ? tpl.type : '' }, pdf, tpl,
+          p => say('Uploading… ' + Math.round(p * 100) + '%'));
+        $('pracTitle').value = ''; $('pracPdf').value = ''; $('pracTpl').value = '';
+        say('✅ Practical add ho gaya — ' + course + ' ke students ko dikhega.', '#1a7f4b');
+        await window.pracSync();
+      } catch(e){
+        console.error(e);
+        say('Upload nahi hua (' + (e.code || e.message) + ') — Firestore rules me "practicals" ka write allow karein.', '#b3261e');
+      }
+      btn.disabled = false;
+    };
+    window.pracRemove = async id => {
+      const x = list.find(p => p.id === id);
+      if (!x || !confirm('"' + x.title + '" ko permanently delete karein? Students ko ye dikhna band ho jayega.')) return;
+      try { await window.pracFsDelete(x); await window.pracSync(); }
+      catch(e){ alert('Delete nahi hua: ' + (e.code || e.message)); }
+    };
+    $('pracModal').addEventListener('click', function(e){ if (e.target === this) closeModal('pracModal'); });
   })();
 </script>
 
