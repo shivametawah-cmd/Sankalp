@@ -113,6 +113,14 @@ window.STATIC_CHAPTERS = [
     url: 'adca-chapter1-hard-mcq.html'
   },
   {
+    id: 'adca-ch2',
+    course: 'ADCA',
+    chapter: 'Chapter 2: Introduction to Operating System',
+    chapterHi: 'अध्याय 2: ऑपरेटिंग सिस्टम का परिचय',
+    questionCount: 50,
+    url: 'ccc-chapter2-mcq.html'
+  },
+  {
     id: 'ccc-ch1-mixed',
     course: 'ADCA',
     chapter: 'Chapter 1: Introduction to Computer — Syllabus-Based Mixed Level (Basic + Intermediate + Hard)',
