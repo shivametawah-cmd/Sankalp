@@ -150,6 +150,22 @@
     await deleteDoc(doc(quizDb, 'practicals', p.id));
   };
 
+  // ---- NEW notes added from the panel (Firestore: notes/{id} + parts/p0..) + download helper ----
+  window.noteFsList = async () => { const q = await getDocs(collection(quizDb, 'notes')); return q.docs.map(d => ({ id: d.id, ...d.data() })); };
+  window.noteFsAdd = async (meta, pdf, onProg) => {
+    const ref = doc(collection(quizDb, 'notes'));
+    const pb = await pracB64(pdf), pn = Math.ceil(pb.length / PRAC_CH);
+    await setDoc(ref, { title: meta.title, course: meta.course, type: 'PDF', fileName: meta.fileName, pdfParts: 0, status: 'uploading', createdAt: serverTimestamp() });
+    for (let i = 0; i < pn; i++) { await setDoc(doc(quizDb, 'notes', ref.id, 'parts', 'p' + i), { data: pb.slice(i * PRAC_CH, (i + 1) * PRAC_CH) }); if (onProg) onProg((i + 1) / pn); }
+    await setDoc(ref, { pdfParts: pn, status: 'ready' }, { merge: true });
+    return ref.id;
+  };
+  window.noteFsDelete = async n => {
+    for (let i = 0; i < (n.pdfParts || 0); i++) await deleteDoc(doc(quizDb, 'notes', n.id, 'parts', 'p' + i));
+    await deleteDoc(doc(quizDb, 'notes', n.id));
+  };
+  window.matFetch = async (coll, id, prefix, n) => { let out = ''; for (let i = 0; i < n; i++) { const p = await getDoc(doc(quizDb, coll, id, 'parts', prefix + i)); out += p.data().data; } return out; };
+
   // ---- Centre expenses + water campers (Firestore: kharchaCleaning, kharchaCamp, kharchaSettings; admin-only rules) ----
   window.khListen = (onExp, onCamp, onRate, onErr) => {
     onSnapshot(collection(quizDb, 'kharchaCleaning'), q => onExp(q.docs.map(d => ({ id: d.id, ...d.data() }))), onErr);
@@ -433,6 +449,8 @@
         <button class="btn btn-outline" onclick="openPanelModal('certModal')">Certificates</button>
         <button class="btn btn-outline" onclick="openPanelModal('batchModal')">Batch access</button>
         <button class="btn btn-outline" onclick="pracOpen()">+ Practical</button>
+        <button class="btn btn-outline" onclick="noteOpen()">+ Notes</button>
+        <button class="btn btn-outline" onclick="matOpen()">Materials</button>
         <button class="btn btn-outline" onclick="openPanelModal('pxModal')">Submissions <span id="pxBadge" style="color:var(--gold);font-weight:800"></span></button>
         <button class="btn btn-outline" onclick="xpOpen()">Expenses</button>
         <button class="btn btn-gold" onclick="openStudentModal()">+ New Admission</button>
@@ -790,6 +808,49 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="noteModal">
+  <div class="modal-box modal-wide" style="max-width:860px;">
+    <h3 style="margin:0 0 4px;">📖 Add new Notes</h3>
+    <p class="modal-sub">Naye notes ki PDF yahin se upload karein. Chune hue course ke students ko dashboard par dikhenge. Puraane notes jaise hain waise hi rahenge.</p>
+    <div class="form-field"><label>Notes title</label><input type="text" id="noteTitle" maxlength="120" placeholder="e.g. Chapter 11: Computer Networks - Notes" autocomplete="off"></div>
+    <div class="form-field"><label>Course</label><input type="text" id="noteCourse" list="pracCourseList" placeholder="e.g. CCC" autocomplete="off"></div>
+    <div class="form-field"><label>Notes file (PDF, max 8 MB)</label><input type="file" id="notePdf" accept=".pdf,application/pdf"></div>
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <button class="btn-teal" id="noteBtn" onclick="noteUpload()">⬆️ Upload notes</button>
+      <span id="noteMsg" style="font-size:.85rem; color:var(--ink-soft);"></span>
+    </div>
+    <h4 style="margin:22px 0 8px;">Added from this panel (<span id="noteCount">0</span>)</h4>
+    <div class="table-scroll">
+      <table style="min-width:560px;">
+        <thead><tr><th>Title</th><th>Course</th><th>Added</th><th></th></tr></thead>
+        <tbody id="noteRows"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;"><button class="btn-cancel" onclick="closeModal('noteModal')">Close</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="matModal">
+  <div class="modal-box modal-wide" style="max-width:1100px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+      <h3 style="margin:0;">📚 All Uploaded Materials (<span id="matCount">0</span>)</h3>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <select id="matType" onchange="matRender()" style="padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:.85rem;">
+          <option value="all">All</option><option value="Notes">Notes</option><option value="Practical">Practicals</option></select>
+        <input type="text" id="matSearch" placeholder="Search title or course…" oninput="matRender()" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px; font-size:.85rem; min-width:210px;">
+      </div>
+    </div>
+    <p id="matMsg" style="font-size:.85rem; color:var(--ink-soft); margin:0 0 8px;"></p>
+    <div class="table-scroll">
+      <table style="min-width:760px;">
+        <thead><tr><th>Type</th><th>Title</th><th>Course</th><th>Source</th><th>Added</th><th>Download</th></tr></thead>
+        <tbody id="matRows"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;"><button class="btn-cancel" onclick="closeModal('matModal')">Close</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="feeModal">
   <div class="modal-box">
     <h3>💰 Monthly fee</h3>
@@ -864,7 +925,7 @@
     window.adminSession().then(a => { if (a) showDash(); });
   })(0);
 
-  function refreshAll(){ loadData(); loadQuizScores(); if (window.xpStart) window.xpStart(); if (window.pxStart) window.pxStart(); if (window.pracSync) window.pracSync(); }
+  function refreshAll(){ loadData(); loadQuizScores(); if (window.xpStart) window.xpStart(); if (window.pxStart) window.pxStart(); if (window.pracSync) window.pracSync(); if (window.noteSync) window.noteSync(); }
 
   function showBanner(msg, isError){
     const b = document.getElementById('statusBanner');
@@ -1699,6 +1760,96 @@
       catch(e){ alert('Delete nahi hua: ' + (e.code || e.message)); }
     };
     $('pracModal').addEventListener('click', function(e){ if (e.target === this) closeModal('pracModal'); });
+  })();
+
+  // ============ ADD NEW NOTES (Firestore) + ALL MATERIALS LIST WITH DOWNLOAD ============
+  (function(){
+    const $ = id => document.getElementById(id);
+    const E = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const when = x => x && x.createdAt && x.createdAt.toDate ? x.createdAt.toDate().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+    const secs = x => (x && x.createdAt && x.createdAt.seconds) || 0;
+    let notes = [], items = [];
+    const say = (t, color) => { $('noteMsg').textContent = t; $('noteMsg').style.color = color || 'var(--ink-soft)'; };
+
+    function mergeNotes(){
+      const base = (window.STATIC_NOTES || []).filter(n => !n.fsId);
+      window.STATIC_NOTES = base.concat(notes.map(x => ({ title: x.title, course: x.course, type: 'PDF', file: 'fs_' + x.id, fsId: x.id })));
+    }
+    function renderNotes(){
+      $('noteCount').textContent = notes.length;
+      $('noteRows').innerHTML = notes.length ? notes.map(x =>
+        '<tr><td><b>' + E(x.title) + '</b><div style="font-size:.74rem;color:var(--ink-soft)">' + E(x.fileName) + '</div></td><td>' + E(x.course) + '</td><td>' + when(x) + '</td>' +
+        '<td style="white-space:nowrap"><button class="row-btn" onclick="matDownload(\'notes\',\'' + E(x.id) + '\',\'pdf\')">⬇ Download</button><button class="row-btn danger" onclick="noteRemove(\'' + E(x.id) + '\')">Delete</button></td></tr>'
+      ).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:18px">Abhi koi naye notes add nahi hue.</td></tr>';
+    }
+    window.noteSync = async () => {
+      if (!window.noteFsList) return;
+      try { notes = (await window.noteFsList()).filter(x => x.status === 'ready').sort((a, b) => secs(b) - secs(a)); }
+      catch(e){ console.error('Notes:', e); say('Notes load nahi hue — Firestore rules me "notes" add karein.', '#b3261e'); return; }
+      mergeNotes(); renderNotes();
+      if (window.baInit) window.baInit();
+    };
+    window.noteOpen = () => { openPanelModal('noteModal'); window.noteSync(); };
+    window.noteUpload = async () => {
+      const title = $('noteTitle').value.trim(), course = $('noteCourse').value.trim(), pdf = $('notePdf').files[0];
+      if (!title || !course){ say('Title aur Course dono bharein.', '#b3261e'); return; }
+      if (!pdf){ say('Notes ki PDF file chunein.', '#b3261e'); return; }
+      if (!/\.pdf$/i.test(pdf.name)){ say('Notes sirf PDF file me hone chahiye.', '#b3261e'); return; }
+      if (pdf.size > 8 * 1024 * 1024){ say('PDF 8 MB se badi hai — compress karke dobara try karein.', '#b3261e'); return; }
+      if (!window.noteFsAdd){ say('Firebase abhi load ho raha hai, thodi der baad try karein.', '#b3261e'); return; }
+      const btn = $('noteBtn'); btn.disabled = true; say('Uploading… 0%');
+      try {
+        await window.noteFsAdd({ title, course, fileName: pdf.name }, pdf, p => say('Uploading… ' + Math.round(p * 100) + '%'));
+        $('noteTitle').value = ''; $('notePdf').value = '';
+        say('✅ Notes add ho gaye — ' + course + ' ke students ko dikhenge.', '#1a7f4b');
+        await window.noteSync();
+      } catch(e){ console.error(e); say('Upload nahi hua (' + (e.code || e.message) + ') — Firestore rules me "notes" ka write allow karein.', '#b3261e'); }
+      btn.disabled = false;
+    };
+    window.noteRemove = async id => {
+      const x = notes.find(n => n.id === id);
+      if (!x || !confirm('"' + x.title + '" ko permanently delete karein? Students ko ye dikhna band ho jayega.')) return;
+      try { await window.noteFsDelete(x); await window.noteSync(); } catch(e){ alert('Delete nahi hua: ' + (e.code || e.message)); }
+    };
+
+    // ---- all materials (repo files + panel uploads) ----
+    window.matOpen = async () => {
+      openPanelModal('matModal'); $('matMsg').textContent = 'Loading…';
+      const rows = [];
+      (window.STATIC_NOTES || []).filter(n => !n.fsId).forEach(n => rows.push({ kind: 'Notes', title: n.title, course: n.course, src: 'Repo file', file: n.file, ts: 0 }));
+      (window.STATIC_PRACTICALS || []).filter(n => !n.fsId).forEach(n => rows.push({ kind: 'Practical', title: n.title, course: n.course, src: 'Repo file', file: n.file, ts: 0 }));
+      try {
+        const [ns, ps] = await Promise.all([window.noteFsList(), window.pracFsList()]);
+        ns.filter(x => x.status === 'ready').forEach(x => rows.push({ kind: 'Notes', title: x.title, course: x.course, src: 'Added here', coll: 'notes', x, ts: secs(x) }));
+        ps.filter(x => x.status === 'ready').forEach(x => rows.push({ kind: 'Practical', title: x.title, course: x.course, src: 'Added here', coll: 'practicals', x, ts: secs(x) }));
+        $('matMsg').textContent = '';
+      } catch(e){ $('matMsg').textContent = 'Panel uploads load nahi hue (' + (e.code || e.message) + ') — Firestore rules check karein.'; }
+      items = rows.sort((a, b) => b.ts - a.ts); window.matRender();
+    };
+    window.matRender = () => {
+      const t = $('matType').value, q = $('matSearch').value.trim().toLowerCase();
+      const L = items.filter(r => (t === 'all' || r.kind === t) && (!q || (r.title + ' ' + r.course).toLowerCase().includes(q)));
+      $('matCount').textContent = L.length;
+      $('matRows').innerHTML = L.length ? L.map(r => {
+        const dl = r.x
+          ? '<button class="row-btn" onclick="matDownload(\'' + r.coll + '\',\'' + E(r.x.id) + '\',\'pdf\')">⬇ PDF</button>' +
+            (r.x.tplParts ? '<button class="row-btn" onclick="matDownload(\'' + r.coll + '\',\'' + E(r.x.id) + '\',\'tpl\')">⬇ Excel</button>' : '')
+          : '<a class="row-btn" style="text-decoration:none;display:inline-block" href="' + E(r.file) + '" download target="_blank" rel="noopener">⬇ Download</a>';
+        return '<tr><td>' + (r.kind === 'Notes' ? '📖 Notes' : '🛠️ Practical') + '</td><td><b>' + E(r.title) + '</b></td><td>' + E(r.course) + '</td><td>' + r.src + '</td><td>' + (r.x ? when(r.x) : '—') + '</td><td style="white-space:nowrap">' + dl + '</td></tr>';
+      }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);padding:20px">Koi material nahi mila.</td></tr>';
+    };
+    window.matDownload = async (coll, id, kind) => {
+      const r = items.find(i => i.x && i.x.id === id && i.coll === coll) || { x: (coll === 'notes' ? notes : []).find(n => n.id === id) };
+      const x = r.x; if (!x) return;
+      const tpl = kind === 'tpl', n = tpl ? x.tplParts : x.pdfParts;
+      try {
+        const bin = atob(await window.matFetch(coll, id, tpl ? 'x' : 'p', n || 0)), arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([arr], { type: tpl ? (x.tplType || 'application/octet-stream') : 'application/pdf' }));
+        const a = document.createElement('a'); a.href = url; a.download = (tpl ? x.tplName : x.fileName) || 'file'; document.body.appendChild(a); a.click(); a.remove();
+      } catch(e){ alert('Download nahi hua: ' + (e.code || e.message)); }
+    };
+    ['noteModal','matModal'].forEach(id => $(id).addEventListener('click', function(e){ if (e.target === this) closeModal(id); }));
   })();
 </script>
 

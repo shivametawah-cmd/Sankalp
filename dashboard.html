@@ -84,16 +84,21 @@
     await setDoc(ref, { parts: n, status: 'submitted' }, { merge: true });
   };
 
-  // ---- Practicals added by admin from shivam.html (Firestore: practicals/{id}); old static practicals unchanged ----
-  window.pracFsList = async () => {
-    await authReady;
-    const q = await getDocs(collection(db, 'practicals'));
-    return q.docs.map(x => ({ id: x.id, ...x.data() })).filter(x => x.status === 'ready');
-  };
-  window.pracFsFile = async (id, prefix, n) => {
-    let out = '';
-    for (let i = 0; i < n; i++){ const p = await getDoc(doc(db, 'practicals', id, 'parts', prefix + i)); out += p.data().data; }
+  // ---- Notes / practicals added from the admin panel (Firestore, status "ready") ----
+  window.fsMaterials = async () => {
+    const out = { notes: [], practicals: [] };
+    for (const c of ['notes', 'practicals']){
+      const q = await getDocs(query(collection(db, c), where('status', '==', 'ready')));
+      out[c] = q.docs.map(x => ({ id: x.id, ...x.data() }));
+    }
     return out;
+  };
+  window.fsBlobUrl = async (coll, id, prefix, n, type) => {
+    let b64 = '';
+    for (let i = 0; i < n; i++){ const p = await getDoc(doc(db, coll, id, 'parts', prefix + i)); b64 += p.data().data; }
+    const bin = atob(b64), arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return URL.createObjectURL(new Blob([arr], { type }));
   };
 
   window.getStudentScores = async function(studentId){
@@ -213,9 +218,8 @@
   .px-up{background:var(--gold); color:#241a02; border:none; padding:9px 16px; border-radius:8px; font-weight:700; font-size:.85rem; cursor:pointer; font-family:inherit; white-space:nowrap;}
   .px-up:hover{background:var(--gold-dark);}
   .px-up:disabled{opacity:.6; cursor:wait;}
-  .px-tpl{background:#1d6f42; color:#fff; border:none; padding:9px 16px; border-radius:8px; font-weight:700; font-size:.85rem; cursor:pointer; font-family:inherit; white-space:nowrap;}
-  .px-tpl:hover{background:#155a35;}
-  .px-tpl:disabled{opacity:.6; cursor:wait;}
+  .tpl-dl{background:none; color:var(--teal-dark); border:1px solid var(--teal); padding:8px 14px; border-radius:8px; font-weight:700; font-size:.85rem; cursor:pointer; font-family:inherit; white-space:nowrap;}
+  .tpl-dl:hover{background:#f0faf9;}
   .px-status{flex-basis:100%; font-size:.85rem; padding:8px 12px; border-radius:8px; background:var(--paper-alt);}
   .px-status.wait{background:#fff6e0; color:#8a5a00;}
   .px-status.rated{background:var(--ok-bg); color:var(--ok);}
@@ -485,12 +489,43 @@ function renderNotes(notes){
 }
 document.getElementById('notesList').addEventListener('click', e => {
   const btn = e.target.closest('.read-btn');
-  if (btn) openNoteViewer(btn.dataset.file, btn.dataset.title);
+  if (btn) openAny(btn.dataset.file, btn.dataset.title, 'notes');
 });
+
+// ── Firestore-added materials (from the admin panel) ───────────────────
+const fsPartCount = {};
+async function loadFsMaterials(){
+  if (!window.fsMaterials) return;
+  try {
+    const m = await window.fsMaterials();
+    const mk = x => ({ title: x.title, course: x.course, type: 'PDF', file: 'fs_' + x.id, fsId: x.id, pdfParts: x.pdfParts || 0, tplParts: x.tplParts || 0, tplName: x.tplName || '', tplType: x.tplType || '' });
+    window.STATIC_NOTES = (window.STATIC_NOTES || []).filter(n => !n.fsId).concat(m.notes.map(mk));
+    window.STATIC_PRACTICALS = (window.STATIC_PRACTICALS || []).filter(n => !n.fsId).concat(m.practicals.map(mk));
+    renderNotes(loadNotes()); renderPracticals(loadPracticals());
+  } catch(e){ console.error('Materials:', e); }
+}
+async function openAny(file, title, kind){
+  const item = ((kind === 'notes' ? window.STATIC_NOTES : window.STATIC_PRACTICALS) || []).find(x => x.file === file);
+  if (!item || !item.fsId){ openNoteViewer(file, title); return; }
+  document.getElementById('noteViewerTitle').textContent = title || 'Notes';
+  document.getElementById('noteViewerOverlay').classList.add('open');
+  document.getElementById('noteViewerBody').innerHTML = '<div class="note-viewer-loading">Loading…</div>';
+  try { openNoteViewer(await window.fsBlobUrl(kind, item.fsId, 'p', item.pdfParts || 0, 'application/pdf'), title); }
+  catch(e){ document.getElementById('noteViewerBody').innerHTML = '<div class="note-viewer-loading">File nahi khuli। Dobara try karein।</div>'; }
+}
+async function downloadTpl(btn){
+  const p = (window.STATIC_PRACTICALS || []).find(x => x.fsId === btn.dataset.id); if (!p) return;
+  const old = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing…';
+  try {
+    const url = await window.fsBlobUrl('practicals', p.fsId, 'x', p.tplParts, p.tplType || 'application/octet-stream');
+    const a = document.createElement('a'); a.href = url; a.download = p.tplName || 'template.xlsx'; document.body.appendChild(a); a.click(); a.remove();
+  } catch(e){ alert('Could not download the template (' + (e.code || e.message) + ')'); }
+  btn.disabled = false; btn.textContent = old;
+}
 
 // ── 5b) Practicals (batch-wise via batchAccess.hiddenPracticals) ───────
 function loadPracticals(){
-  const all = (window.STATIC_PRACTICALS || []).concat(window.FS_PRACTICALS || []);   // old (practicals-index.js) + new (admin panel)
+  const all = window.STATIC_PRACTICALS || [];
   const hidden = new Set(batchAccess.hiddenPracticals || []);
   return all.filter(p =>
     (p.course||'').trim().toLowerCase() === (student.course||'').trim().toLowerCase() &&
@@ -526,8 +561,8 @@ function renderPracticals(list){
         <div class="meta"><span class="tag">${p.type||'PDF'}</span>${p.course}</div>
       </div>
       <div class="px-actions">
-        <button class="read-btn" data-file="${p.file}" ${p.fsId ? `data-fs="${p.fsId}" data-parts="${p.pdfParts||0}"` : ''} data-title="${(p.title||'Practical').replace(/"/g,'&quot;')}">📖 Open Practical</button>
-        ${p.fsId && p.tplParts ? `<button class="px-tpl" data-fs="${p.fsId}" data-parts="${p.tplParts}" data-name="${pxEsc(p.tplName||'practical-template.xlsx')}" data-type="${pxEsc(p.tplType||'')}">📥 Excel Template</button>` : ''}
+        <button class="read-btn" data-file="${p.file}" data-title="${(p.title||'Practical').replace(/"/g,'&quot;')}">📖 Open Practical</button>
+        ${p.tplParts ? `<button class="tpl-dl" data-id="${p.fsId}">⬇ Excel template</button>` : ''}
         ${rated ? '' : `<button class="px-up" data-key="${k}" data-title="${(p.title||'Practical').replace(/"/g,'&quot;')}">${s ? '🔄 Re-upload' : '📤 Upload my work'}</button>`}
       </div>
       <div class="px-status ${cls}" data-stat="${k}">${pxStatus(p)}</div>
@@ -548,9 +583,9 @@ function pxShrink(file){
 }
 document.getElementById('practicalList').addEventListener('click', e => {
   const r = e.target.closest('.read-btn');
-  if (r) { if (r.dataset.fs) openFsPractical(r.dataset.fs, +r.dataset.parts, r.dataset.title); else openNoteViewer(r.dataset.file, r.dataset.title); return; }
-  const tp = e.target.closest('.px-tpl');
-  if (tp) { downloadFsTemplate(tp); return; }
+  if (r) { openAny(r.dataset.file, r.dataset.title, 'practicals'); return; }
+  const tp = e.target.closest('.tpl-dl');
+  if (tp) { downloadTpl(tp); return; }
   const u = e.target.closest('.px-up');
   if (u){ pxTarget = { key: u.dataset.key, title: u.dataset.title, btn: u }; const f = document.getElementById('pxFile'); f.value = ''; f.click(); }
 });
@@ -573,42 +608,6 @@ document.getElementById('pxFile').addEventListener('change', async e => {
     t.btn.disabled = false;
   }
 });
-
-// ── 5c) Practicals added by admin (stored in Firestore) ──────────────
-window.FS_PRACTICALS = [];
-async function loadFsPracticals(){
-  if (!window.pracFsList) return;
-  try {
-    const l = await window.pracFsList();
-    window.FS_PRACTICALS = l.map(x => ({ title: x.title, course: x.course, type: x.type || 'PDF', file: 'fs_' + x.id, fsId: x.id,
-      pdfParts: x.pdfParts || 0, tplParts: x.tplParts || 0, tplName: x.tplName || '', tplType: x.tplType || '' }));
-  } catch(e){ console.error('Admin practicals:', e); }   // fail-open: old practicals still show
-}
-function pxB64ToBytes(b64){ const bin = atob(b64), a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; }
-async function openFsPractical(id, parts, title){
-  document.getElementById('noteViewerTitle').textContent = title || 'Practical';
-  document.getElementById('noteViewerOverlay').classList.add('open');
-  document.getElementById('noteViewerControls').style.display = 'none';
-  document.getElementById('noteViewerBody').innerHTML = '<div class="note-viewer-loading">Loading practical…</div>';
-  try {
-    const bytes = pxB64ToBytes(await window.pracFsFile(id, 'p', parts));
-    openNoteViewer({ data: bytes }, title);            // same watermarked viewer as old practicals
-  } catch(e){
-    console.error(e);
-    document.getElementById('noteViewerBody').innerHTML = '<div class="note-viewer-loading">Practical nahi khula। Dobara try karein।</div>';
-  }
-}
-async function downloadFsTemplate(btn){
-  const old = btn.textContent; btn.disabled = true; btn.textContent = 'Downloading…';
-  try {
-    const bytes = pxB64ToBytes(await window.pracFsFile(btn.dataset.fs, 'x', +btn.dataset.parts));
-    const type = btn.dataset.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    const url = URL.createObjectURL(new Blob([bytes], { type }));
-    const a = document.createElement('a'); a.href = url; a.download = btn.dataset.name || 'practical-template.xlsx';
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
-  } catch(e){ console.error(e); alert('Template download nahi hua. Dobara try karein.'); }
-  btn.disabled = false; btn.textContent = old;
-}
 
 // ── 6) MCQ list ───────────────────────────────────────────────────────
 function loadMCQList(){
@@ -783,9 +782,9 @@ waitForFirebase(async function(){
   const access = await window.getBatchAccess(student.batch);
   if (access) batchAccess = access;       // fetch fail ho to sab dikhega (fail-open)
   renderNotes(loadNotes());
-  await loadFsPracticals();
   renderPracticals(loadPracticals());
   loadMySubs();
+  loadFsMaterials();
   renderMCQList(loadMCQList());
   renderMockList(loadMockList());
   // 2) Quiz history
