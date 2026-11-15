@@ -127,6 +127,14 @@ window.STATIC_CHAPTERS = [
     chapterHi: 'अध्याय 1: कंप्यूटर का परिचय — सिलेबस आधारित मिक्स्ड स्तर (बेसिक + इंटरमीडिएट + हार्ड)',
     questionCount: 50,
     url: 'adca-chapter-1-test.html'
+  },
+  {
+      id: 'Microsoft Office',
+    course: 'ADCA',
+    chapter: 'Excel',
+    chapterHi: 'एक्सेल',
+    questionCount: 50,
+    url: 'excel-mcq-50.html'
   }
   // 👇 Naya chapter yahan neeche add karo, upar wale jaisa hi ek block
   // copy-paste karke. Pichle block ke baad comma (,) lagana mat bhoolna.
