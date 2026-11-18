@@ -135,6 +135,21 @@ window.STATIC_CHAPTERS = [
     chapterHi: 'एक्सेल',
     questionCount: 50,
     url: 'excel-mcq-50.html'
+  },
+  {
+   id: 'ccc-ch6',
+    course: 'CCC',
+    chapter: 'Chapter 6: Introduction to Internet, WWW and Web Browsers',
+    chapterHi: 'अध्याय 6: इंटरनेट, WWW और वेब ब्राउज़र्स का परिचय',
+    questionCount: 50,
+    url: 'ccc-chapter6-mcq.html'
+  },
+  { id: 'ccc-ch7',
+    course: 'CCC',
+    chapter: 'Chapter 7: Communication and Collaboration',
+    chapterHi: 'अध्याय 7: संचार और सहयोग',
+    questionCount: 50,
+    url: 'ccc-chapter7-mcq.html'
   }
   // 👇 Naya chapter yahan neeche add karo, upar wale jaisa hi ek block
   // copy-paste karke. Pichle block ke baad comma (,) lagana mat bhoolna.
