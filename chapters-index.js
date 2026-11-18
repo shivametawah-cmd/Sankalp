@@ -150,6 +150,30 @@ window.STATIC_CHAPTERS = [
     chapterHi: 'अध्याय 7: संचार और सहयोग',
     questionCount: 50,
     url: 'ccc-chapter7-mcq.html'
+  },
+  {
+    id: 'ccc-ch8',
+    course: 'CCC',
+    chapter: 'Chapter 8: Application of Digital Financial Tools',
+    chapterHi: 'अध्याय 8: डिजिटल वित्तीय उपकरणों के अनुप्रयोग',
+    questionCount: 50,
+    url: 'ccc-chapter8-mcq.html'
+  },
+  {
+    id: 'ccc-ch9',
+    course: 'CCC',
+    chapter: 'Chapter 9: Overview of Futuristic Technologies',
+    chapterHi: 'अध्याय 9: भविष्य की तकनीकों का अवलोकन',
+    questionCount: 50,
+    url: 'ccc-chapter9-mcq.html'
+  },
+  {
+    id: 'ccc-ch10',
+    course: 'CCC',
+    chapter: 'Chapter 10: Overview of Cyber Security',
+    chapterHi: 'अध्याय 10: साइबर सुरक्षा का अवलोकन',
+    questionCount: 50,
+    url: 'ccc-chapter10-mcq.html'
   }
   // 👇 Naya chapter yahan neeche add karo, upar wale jaisa hi ek block
   // copy-paste karke. Pichle block ke baad comma (,) lagana mat bhoolna.
