@@ -174,6 +174,14 @@ window.STATIC_CHAPTERS = [
     chapterHi: 'अध्याय 10: साइबर सुरक्षा का अवलोकन',
     questionCount: 50,
     url: 'ccc-chapter10-mcq.html'
+  },
+  {
+    id: 'adca-ch3',
+    course: 'ADCA',
+    chapter: 'Chapter 3: Introduction to Word Processing',
+    chapterHi: 'अध्याय 3: वर्ड प्रोसेसिंग का परिचय',
+    questionCount: 50,
+    url: 'ccc-chapter3-mcq.html'
   }
   // 👇 Naya chapter yahan neeche add karo, upar wale jaisa hi ek block
   // copy-paste karke. Pichle block ke baad comma (,) lagana mat bhoolna.
