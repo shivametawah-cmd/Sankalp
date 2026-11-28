@@ -40,7 +40,7 @@
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-    signOut, onAuthStateChanged, setPersistence, browserSessionPersistence
+    signOut, onAuthStateChanged, setPersistence, browserSessionPersistence, updatePassword
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
   // Same Firebase project the quiz pages (mcq-quiz.html, ccc-chapter*-mcq.html, msword-mcq.html) use.
@@ -138,6 +138,31 @@
   // ---- Practical submissions (students upload in dashboard.html; admin rates here) ----
   window.pxListen = (cb, err) => onSnapshot(collection(quizDb, 'practicalSubmissions'), q => cb(q.docs.map(d => ({ id: d.id, ...d.data() }))), err);
   window.pxRate   = (id, rating, feedback) => updateDoc(doc(quizDb, 'practicalSubmissions', id), { rating, feedback, ratedAt: serverTimestamp() });
+  // ---- Teacher logins (admin only): Auth account is created on a SECOND app so the admin stays logged in ----
+  window.tcList = () => snapAll('teachers');
+  window.tcAdd = async (name, username, password) => {
+    const email = username + '@' + TEACHER_DOMAIN;
+    const sec = initializeApp(quizFirebaseConfig, 'sec-t-' + Date.now());
+    let uid;
+    try {
+      const a2 = getAuth(sec);
+      try { uid = (await createUserWithEmailAndPassword(a2, email, password)).user.uid; }
+      catch (e) {
+        // Username used before (its Auth account survives a delete). Re-use it if the same password is typed.
+        if (e.code !== 'auth/email-already-in-use') throw e;
+        try { uid = (await signInWithEmailAndPassword(a2, email, password)).user.uid; }
+        catch (e2) { const x = new Error('username used before'); x.code = 'app/username-taken'; throw x; }
+      }
+      await signOut(a2);
+    } finally { await deleteApp(sec); }
+    if ((await getDoc(doc(quizDb, 'teachers', uid))).exists()){ const x = new Error('exists'); x.code = 'app/teacher-exists'; throw x; }
+    await setDoc(doc(quizDb, 'teachers', uid), { name, username, active: true, createdAt: new Date().toISOString() });
+    return uid;
+  };
+  window.tcSetActive = (uid, active) => updateDoc(doc(quizDb, 'teachers', uid), { active });
+  window.tcDelete = uid => deleteDoc(doc(quizDb, 'teachers', uid));
+  window.changeMyPassword = pw => updatePassword(quizAuth.currentUser, pw);
+
   // ---- Approvals queue: a teacher's request is saved here; ONLY the admin applies it (Approve) ----
   window.apSubmit = (type, summary, payload, me, secret) => addDoc(collection(quizDb, 'approvals'), {
     type, summary, payload, ...(secret ? { secret } : {}), status: 'pending',
@@ -514,11 +539,13 @@
         <button class="btn btn-outline" onclick="pracOpen()">+ Practical</button>
         <button class="btn btn-outline admin-only" onclick="noteOpen()">+ Notes</button>
         <button class="btn btn-outline admin-only" onclick="matOpen()">Materials</button>
+        <button class="btn btn-outline admin-only" onclick="tcOpen()">👩‍🏫 Teachers</button>
         <button class="btn btn-outline" onclick="apOpen()"><span id="apBtnLabel">Approvals</span> <span id="apBadge" style="color:var(--gold);font-weight:800"></span></button>
         <button class="btn btn-outline" onclick="openPanelModal('pxModal')">Submissions <span id="pxBadge" style="color:var(--gold);font-weight:800"></span></button>
         <button class="btn btn-outline" onclick="xpOpen()">Expenses</button>
         <button class="btn btn-gold" onclick="openStudentModal()">+ New Admission</button>
         <button class="btn btn-outline" onclick="refreshAll()">Refresh data</button>
+        <button class="btn btn-outline" onclick="pwOpen()">Change password</button>
         <button class="btn btn-outline" onclick="logout()">Logout</button>
       </div>
     </div>
@@ -823,6 +850,45 @@
           </div>
         </div>
     <div class="modal-actions" style="margin-top:16px;"><button class="btn-cancel" onclick="closeModal('batchModal')">Close</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="teacherModal">
+  <div class="modal-box modal-wide" style="max-width:900px;">
+    <h3 style="margin:0 0 4px;">👩‍🏫 Teacher logins (<span id="tcCount">0</span>)</h3>
+    <p class="modal-sub">Yahan se teacher ka login banayein ya hatayein. Teacher login page par <b>"Login as Teacher"</b> chun kar username + password se login karega. Uske har kaam ke liye aapki approval lagegi.</p>
+    <div class="modal-alert" id="tcAlert"></div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; align-items:end;">
+      <div class="form-field" style="margin:0;"><label>Teacher ka naam</label><input type="text" id="tcName" maxlength="60" placeholder="e.g. Ravi Kumar" autocomplete="off"></div>
+      <div class="form-field" style="margin:0;"><label>Username (login ID)</label><input type="text" id="tcUser" maxlength="30" placeholder="e.g. ravi" autocomplete="off"></div>
+      <div class="form-field" style="margin:0;"><label>Password</label><input type="text" id="tcPass" maxlength="40" autocomplete="off"></div>
+      <button class="btn-teal" id="tcAddBtn" onclick="tcAddBtn()">+ Add teacher login</button>
+    </div>
+    <div class="created-box" id="tcCreated" style="margin-top:12px;">
+      <b>✅ Teacher login ban gaya!</b>
+      <div class="cred-row"><span>Username:</span><span id="tcC_u">—</span></div>
+      <div class="cred-row"><span>Password:</span><span id="tcC_p">—</span></div>
+      <div style="font-size:.8rem; margin-top:6px;">Yeh teacher ko de dein. Wo "Change password" se apna password badal sakta hai.</div>
+    </div>
+    <div class="table-scroll" style="margin-top:16px;">
+      <table style="min-width:640px;">
+        <thead><tr><th>Name</th><th>Username</th><th>Added</th><th>Status</th><th></th></tr></thead>
+        <tbody id="tcRows"></tbody>
+      </table>
+    </div>
+    <p style="font-size:.78rem; color:var(--ink-soft); margin:10px 0 0;">Delete karne par teacher turant panel mein ghus nahi payega. Uska Firebase login account Authentication list mein bacha rehta hai (client se hat nahi sakta) — wo bekaar hai. Wahi username dobara banana ho to wahi password daalein.</p>
+    <div class="modal-actions" style="margin-top:16px;"><button class="btn-cancel" onclick="closeModal('teacherModal')">Close</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="pwModal">
+  <div class="modal-box" style="max-width:420px;">
+    <h3 style="margin:0 0 4px;">🔑 Change password</h3>
+    <p class="modal-sub">Apne login ka naya password set karein.</p>
+    <div class="modal-alert" id="pwAlert"></div>
+    <div class="form-field"><label>New password (min 6)</label><input type="password" id="pw1" autocomplete="new-password"></div>
+    <div class="form-field"><label>Confirm new password</label><input type="password" id="pw2" autocomplete="new-password"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('pwModal')">Close</button><button class="btn-teal" onclick="pwSave()">Save password</button></div>
   </div>
 </div>
 
@@ -1866,6 +1932,79 @@
         else { const a = document.createElement('a'); a.href = url; a.download = x.fileName || 'file'; document.body.appendChild(a); a.click(); a.remove(); }
       } catch(e){ if (w) w.close(); alert('Could not open file: ' + (e.code || e.message)); }
     };
+  })();
+
+  // ============ TEACHER LOGINS (admin) + CHANGE PASSWORD ============
+  (function(){
+    const $ = id => document.getElementById(id);
+    const E = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    let list = [];
+    const gen = () => 'Tc@' + Math.floor(1000 + Math.random() * 9000);
+    const when = t => t ? formatDate(t) : '—';
+    window.tcOpen = async () => {
+      $('tcAlert').className = 'modal-alert'; $('tcCreated').classList.remove('show');
+      $('tcName').value = ''; $('tcUser').value = ''; $('tcPass').value = gen();
+      openPanelModal('teacherModal'); await tcLoad();
+    };
+    async function tcLoad(){
+      try { list = (await window.tcList()).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))); tcRender(); }
+      catch(e){ console.error(e); alertIn('tcAlert', 'Teachers load nahi hue (' + (e.code || e.message) + ') — naye firestore.rules publish karein.', 'err'); }
+    }
+    function tcRender(){
+      $('tcCount').textContent = list.length;
+      $('tcRows').innerHTML = list.length ? list.map(t => {
+        const on = t.active !== false, i = E(t.id);
+        return '<tr><td><b>' + E(t.name) + '</b></td><td>' + E(t.username) + '</td><td>' + when(t.createdAt) + '</td>' +
+          '<td><span class="pill ' + (on ? 'pill-paid' : 'pill-inactive') + '">' + (on ? 'Active' : 'Blocked') + '</span></td>' +
+          '<td style="white-space:nowrap"><button class="row-btn" onclick="tcToggle(\'' + i + '\')">' + (on ? 'Block login' : 'Unblock') + '</button>' +
+          '<button class="row-btn danger" onclick="tcDel(\'' + i + '\')">Delete</button></td></tr>';
+      }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:20px">Abhi koi teacher login nahi hai.</td></tr>';
+    }
+    window.tcAddBtn = async () => {
+      const name = $('tcName').value.trim(), user = $('tcUser').value.trim().toLowerCase(), pw = $('tcPass').value;
+      if (!name){ alertIn('tcAlert', 'Teacher ka naam likhein.', 'err'); return; }
+      if (!/^[a-z0-9._-]{3,30}$/.test(user)){ alertIn('tcAlert', 'Username mein sirf a-z, 0-9, . _ - (3-30 chars) allowed hain.', 'err'); return; }
+      if (pw.length < 6){ alertIn('tcAlert', 'Password kam se kam 6 characters ka ho.', 'err'); return; }
+      if (list.some(t => String(t.username).toLowerCase() === user)){ alertIn('tcAlert', 'Yeh username pehle se hai.', 'err'); return; }
+      const btn = $('tcAddBtn'); btn.disabled = true; btn.textContent = 'Adding…';
+      try {
+        await window.tcAdd(name, user, pw);
+        $('tcC_u').textContent = user; $('tcC_p').textContent = pw; $('tcCreated').classList.add('show');
+        alertIn('tcAlert', '✅ ' + name + ' ka login ban gaya.', 'ok');
+        $('tcName').value = ''; $('tcUser').value = ''; $('tcPass').value = gen();
+        await tcLoad();
+      } catch(e){
+        console.error(e);
+        alertIn('tcAlert', e.code === 'app/username-taken' ? 'Yeh username pehle use ho chuka hai — alag username chunein (ya purana password daalein).'
+          : e.code === 'app/teacher-exists' ? 'Yeh teacher pehle se list mein hai.'
+          : e.code === 'auth/weak-password' ? 'Password kamzor hai, lamba rakhein.'
+          : e.code === 'permission-denied' || /permission/i.test(e.message || '') ? 'Permission denied — naye firestore.rules publish karein aur admin login rakhein. (Phir wahi username/password dobara try karein.)'
+          : 'Login nahi bana: ' + (e.code || e.message || e), 'err');
+      }
+      btn.disabled = false; btn.textContent = '+ Add teacher login';
+    };
+    window.tcToggle = async id => {
+      const t = list.find(x => x.id === id); if (!t) return;
+      const on = t.active !== false;
+      if (!confirm(on ? t.name + ' ka login block karein? Wo panel mein kuch nahi kar payega.' : t.name + ' ka login wapas chalu karein?')) return;
+      try { await window.tcSetActive(id, !on); await tcLoad(); } catch(e){ alert('Update nahi hua: ' + (e.code || e.message)); }
+    };
+    window.tcDel = async id => {
+      const t = list.find(x => x.id === id); if (!t) return;
+      if (!confirm(t.name + ' (' + t.username + ') ka login permanently delete karein?\n\nWo panel mein login nahi kar payega. Uski pending requests Approvals mein rahengi.')) return;
+      try { await window.tcDelete(id); await tcLoad(); window.toast && window.toast('Teacher login delete ho gaya.'); } catch(e){ alert('Delete nahi hua: ' + (e.code || e.message)); }
+    };
+    $('teacherModal').addEventListener('click', function(e){ if (e.target === this) closeModal('teacherModal'); });
+
+    window.pwOpen = () => { $('pw1').value = ''; $('pw2').value = ''; $('pwAlert').className = 'modal-alert'; openPanelModal('pwModal'); };
+    window.pwSave = async () => {
+      const a = $('pw1').value, b = $('pw2').value;
+      if (a.length < 6){ alertIn('pwAlert', 'Password kam se kam 6 characters ka ho.', 'err'); return; }
+      if (a !== b){ alertIn('pwAlert', 'Dono password same hone chahiye.', 'err'); return; }
+      try { await window.changeMyPassword(a); alertIn('pwAlert', '✅ Password badal gaya.', 'ok'); $('pw1').value = ''; $('pw2').value = ''; }
+      catch(e){ alertIn('pwAlert', e.code === 'auth/requires-recent-login' ? 'Security ke liye Logout karke dobara login karein, phir password badlein.' : e.code === 'auth/weak-password' ? 'Password kamzor hai.' : 'Password nahi badla: ' + (e.code || e.message), 'err'); }
+    };
+    $('pwModal').addEventListener('click', function(e){ if (e.target === this) closeModal('pwModal'); });
   })();
 
   // ============ APPROVALS (teacher requests -> admin applies) ============
