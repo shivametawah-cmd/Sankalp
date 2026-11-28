@@ -8,6 +8,11 @@
    - Monthly fees : Firestore fees/{uid_YYYY-MM}
    - Certificates : Firestore certificates/{ID}   (read by verify-certificate.html)
    - Quiz scores / batch access : same as before
+  TEACHER LOGIN (approval-first): teachers log in here too (Firebase Auth + Firestore teachers/{uid}).
+  Teachers have NO direct write on students / fees / expenses / water-camper entries. Every such action is saved as a
+  request in approvals/{id} (status 'pending'); the admin's "Approvals" window applies it (Approve) or sends it back (Reject).
+  - Practical MARKS  -> markReviews/{submissionId} (pending) -> admin Approve copies them to practicalSubmissions.rating/feedback
+  - Practical UPLOAD -> practicals/{id} with status 'pending' (students only see 'ready') -> admin Approve sets 'ready'
   Rules: see firestore.rules. Do NOT link this page from the public website.
 ------------------------------------------------------------- -->
 <html lang="en">
@@ -31,7 +36,7 @@
   import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
     getFirestore, collection, getDocs, query, orderBy,
-    doc, setDoc, getDoc, updateDoc, deleteDoc, addDoc, onSnapshot, serverTimestamp
+    doc, setDoc, getDoc, updateDoc, deleteDoc, addDoc, onSnapshot, serverTimestamp, writeBatch, where, deleteField
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import {
     getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -56,27 +61,37 @@
   // Username "shivam" => Firebase user  shivam@admin.sankalpcomputerclasses.in  (a full email also works).
   // That user must also have a Firestore doc  admins/{uid}.
   const ADMIN_DOMAIN = 'admin.sankalpcomputerclasses.in';
+  const TEACHER_DOMAIN = 'teacher.sankalpcomputerclasses.in';   // teacher "ravi" => ravi@teacher.sankalpcomputerclasses.in
   const persistReady = setPersistence(quizAuth, browserSessionPersistence); // session ends when tab closes
-  window.adminLogin = async function(user, pw){
+
+  // Who is this signed-in user? admins/{uid} => admin, teachers/{uid} (active) => teacher, else nobody.
+  async function getStaff(uid){
+    try { const a = await getDoc(doc(quizDb, 'admins', uid)); if (a.exists()) return { role: 'admin', uid, ...a.data() }; } catch(e){}
+    try { const t = await getDoc(doc(quizDb, 'teachers', uid)); if (t.exists() && t.data().active !== false) return { role: 'teacher', uid, ...t.data() }; } catch(e){}
+    return null;
+  }
+  window.adminLogin = async function(user, pw, role){
     await persistReady;
     const u = user.trim().toLowerCase();
-    const cred = await signInWithEmailAndPassword(quizAuth, u.includes('@') ? u : u + '@' + ADMIN_DOMAIN, pw);
-    const a = await getDoc(doc(quizDb, 'admins', cred.user.uid));
-    if (!a.exists()){ await signOut(quizAuth); const e = new Error('not admin'); e.code = 'app/not-admin'; throw e; }
-    return a.data();
+    const dom = role === 'teacher' ? TEACHER_DOMAIN : ADMIN_DOMAIN;
+    const cred = await signInWithEmailAndPassword(quizAuth, u.includes('@') ? u : u + '@' + dom, pw);
+    const info = await getStaff(cred.user.uid);
+    if (!info){ await signOut(quizAuth); const e = new Error('not staff'); e.code = 'app/not-admin'; throw e; }
+    return info;
   };
   window.adminLogout = () => signOut(quizAuth);
   window.adminSession = () => persistReady.then(() => new Promise(res => {
     const un = onAuthStateChanged(quizAuth, async u => {
       un(); if (!u) return res(null);
-      try { const a = await getDoc(doc(quizDb, 'admins', u.uid)); res(a.exists() ? a.data() : null); } catch(e){ res(null); }
+      res(await getStaff(u.uid));
     });
   }));
 
   // ---- Data: students / fees / certificates ----
   const snapAll = async c => (await getDocs(collection(quizDb, c))).docs.map(d => ({ id: d.id, ...d.data() }));
   window.fsLoadAll = async () => {
-    const [students, fees, certs] = await Promise.all([snapAll('students'), snapAll('fees'), snapAll('certificates')]);
+    const [students, fees, certs] = await Promise.all([snapAll('students'), snapAll('fees'),
+      window.ROLE === 'teacher' ? Promise.resolve([]) : snapAll('certificates')]);
     return { students, fees, certs };
   };
   window.fsSaveFee       = (id, data) => setDoc(doc(quizDb, 'fees', id), data);
@@ -123,6 +138,45 @@
   // ---- Practical submissions (students upload in dashboard.html; admin rates here) ----
   window.pxListen = (cb, err) => onSnapshot(collection(quizDb, 'practicalSubmissions'), q => cb(q.docs.map(d => ({ id: d.id, ...d.data() }))), err);
   window.pxRate   = (id, rating, feedback) => updateDoc(doc(quizDb, 'practicalSubmissions', id), { rating, feedback, ratedAt: serverTimestamp() });
+  // ---- Approvals queue: a teacher's request is saved here; ONLY the admin applies it (Approve) ----
+  window.apSubmit = (type, summary, payload, me, secret) => addDoc(collection(quizDb, 'approvals'), {
+    type, summary, payload, ...(secret ? { secret } : {}), status: 'pending',
+    teacherUid: me.uid, teacherName: me.name || me.username || 'Teacher', adminNote: '', createdAt: serverTimestamp() });
+  window.apListen = (isTeacher, uid, cb, err) => onSnapshot(
+    isTeacher ? query(collection(quizDb, 'approvals'), where('teacherUid', '==', uid)) : collection(quizDb, 'approvals'),
+    q => cb(q.docs.map(d => ({ id: d.id, ...d.data() }))), err);
+  window.apApply = async a => {
+    const ref = doc(quizDb, 'approvals', a.id), p = a.payload || {};
+    const done = { status: 'approved', adminNote: '', secret: deleteField(), reviewedAt: serverTimestamp() };
+    if (a.type === 'admission'){
+      await window.createStudentAccount(p.studentId, a.secret, p.profile);   // creates Auth login + students/{uid}
+      await updateDoc(ref, done); return;
+    }
+    const b = writeBatch(quizDb);
+    if (a.type === 'studentEdit') b.update(doc(quizDb, 'students', p.uid), p.patch);
+    else if (a.type === 'fee'){ b.set(doc(quizDb, 'fees', p.feeId), p.data); if (p.studentPatch) b.update(doc(quizDb, 'students', p.uid), p.studentPatch); }
+    else if (a.type === 'expense') b.set(doc(collection(quizDb, 'kharchaCleaning')), { ...p.e, createdAt: serverTimestamp() });
+    else if (a.type === 'camp'){ if (p.entry) b.set(doc(quizDb, 'kharchaCamp', p.day), p.entry); else b.delete(doc(quizDb, 'kharchaCamp', p.day)); }
+    else throw new Error('Unknown request type: ' + a.type);
+    b.update(ref, done);
+    await b.commit();
+  };
+  window.apReject = (a, note) => updateDoc(doc(quizDb, 'approvals', a.id), { status: 'rejected', adminNote: note || '', secret: deleteField(), reviewedAt: serverTimestamp() });
+  window.apCancelReq = id => deleteDoc(doc(quizDb, 'approvals', id));
+
+  // Teacher marks are NOT written to the submission (students read that). They go to markReviews/{submissionId} as 'pending'.
+  window.rvListen  = (cb, err) => onSnapshot(collection(quizDb, 'markReviews'), q => cb(q.docs.map(d => ({ id: d.id, ...d.data() }))), err);
+  window.rvSubmit  = (sub, rating, feedback, me) => setDoc(doc(quizDb, 'markReviews', sub.id), {
+    submissionId: sub.id, studentName: sub.name || '', studentId: sub.studentId || '', practical: sub.practical || '', course: sub.course || '', batch: sub.batch || '',
+    rating, feedback, status: 'pending', teacherUid: me.uid, teacherName: me.name || me.username || 'Teacher', adminNote: '', updatedAt: serverTimestamp() });
+  // Admin approves: publish to the submission (what the student sees) + mark review approved, atomically.
+  window.rvApprove = (id, rating, feedback, hasReview) => {
+    const b = writeBatch(quizDb);
+    b.update(doc(quizDb, 'practicalSubmissions', id), { rating, feedback, ratedAt: serverTimestamp() });
+    if (hasReview) b.update(doc(quizDb, 'markReviews', id), { status: 'approved', approvedRating: rating, approvedFeedback: feedback, reviewedAt: serverTimestamp() });
+    return b.commit();
+  };
+  window.rvReject  = (id, note) => updateDoc(doc(quizDb, 'markReviews', id), { status: 'rejected', adminNote: note || '', reviewedAt: serverTimestamp() });
   window.pxFetchFile = async (id, n) => { let out = ''; for (let i = 0; i < n; i++) { const p = await getDoc(doc(quizDb, 'practicalSubmissions', id, 'parts', String(i))); out += p.data().data; } return out; };
   window.pxDelete = async (id, n) => { for (let i = 0; i < n; i++) await deleteDoc(doc(quizDb, 'practicalSubmissions', id, 'parts', String(i))); await deleteDoc(doc(quizDb, 'practicalSubmissions', id)); };
 
@@ -138,12 +192,13 @@
     const pn = Math.ceil(pb.length / PRAC_CH), tn = tb ? Math.ceil(tb.length / PRAC_CH) : 0, total = pn + tn;
     let done = 0;
     await setDoc(ref, { title: meta.title, course: meta.course, type: 'PDF', fileName: meta.fileName, tplName: meta.tplName || '', tplType: meta.tplType || '',
-      pdfParts: 0, tplParts: 0, status: 'uploading', createdAt: serverTimestamp() });
+      pdfParts: 0, tplParts: 0, status: 'uploading', addedBy: meta.addedBy || '', createdAt: serverTimestamp() });
     for (let i = 0; i < pn; i++) { await setDoc(doc(quizDb, 'practicals', ref.id, 'parts', 'p' + i), { data: pb.slice(i * PRAC_CH, (i + 1) * PRAC_CH) }); if (onProg) onProg(++done / total); }
     for (let i = 0; i < tn; i++) { await setDoc(doc(quizDb, 'practicals', ref.id, 'parts', 'x' + i), { data: tb.slice(i * PRAC_CH, (i + 1) * PRAC_CH) }); if (onProg) onProg(++done / total); }
-    await setDoc(ref, { pdfParts: pn, tplParts: tn, status: 'ready' }, { merge: true });   // students see it only when 'ready'
+    await setDoc(ref, { pdfParts: pn, tplParts: tn, status: window.ROLE === 'teacher' ? 'pending' : 'ready' }, { merge: true });   // students see it only when 'ready'; a teacher's upload waits for admin approval
     return ref.id;
   };
+  window.pracFsApprove = id => updateDoc(doc(quizDb, 'practicals', id), { status: 'ready', approvedAt: serverTimestamp() });
   window.pracFsDelete = async p => {
     for (let i = 0; i < (p.pdfParts || 0); i++) await deleteDoc(doc(quizDb, 'practicals', p.id, 'parts', 'p' + i));
     for (let i = 0; i < (p.tplParts || 0); i++) await deleteDoc(doc(quizDb, 'practicals', p.id, 'parts', 'x' + i));
@@ -379,6 +434,13 @@
   .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:0 16px;}
   @media (max-width:640px){ .form-grid{grid-template-columns:1fr;} }
   .pill-inactive{background:#fbeae6; color:var(--danger);}
+  .role-teacher .admin-only{display:none !important;}
+  #toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(30px); background:var(--ink); color:#fff; padding:12px 20px; border-radius:12px; font-size:.9rem; font-weight:600; box-shadow:0 12px 30px -12px rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:.25s; z-index:9999; max-width:92vw; text-align:center;}
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .ap-detail{font-size:.84rem; line-height:1.5;} .ap-detail small{color:var(--ink-soft);}
+  .login-card select{width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:10px; font-size:.95rem; margin-bottom:10px; background:#fff; font-family:inherit;}
+  .rv-chip{display:inline-block; padding:2px 9px; border-radius:999px; font-size:.74rem; font-weight:700;}
+  .rv-wait{background:#fdf1e7; color:#7a4a12;} .rv-ok{background:#e4f4ec; color:#1c7c4d;} .rv-no{background:#fbeae6; color:#7a1f10;}
   .row-btn{background:none; border:1px solid var(--line); border-radius:6px; padding:3px 10px; font-size:.78rem; font-weight:600; color:var(--teal-dark); margin-right:4px;}
   .row-btn:hover{border-color:var(--teal);}
   .row-btn.danger{color:var(--danger);}
@@ -423,10 +485,11 @@
 <div id="loginGate">
   <div class="login-card">
     <img src="logo.png" alt="" onerror="this.style.background='var(--ink)'; this.src='';">
-    <h2>Admin Dashboard</h2>
+    <h2>Admin / Teacher Login</h2>
     <p>Sankalp Computer Classes — authorized access only</p>
     <p class="login-error" id="loginError">Username ya password galat hai.</p>
-    <input type="text" id="userInput" placeholder="Admin username" autocomplete="username">
+    <select id="roleInput" aria-label="Login as"><option value="admin">Login as Admin</option><option value="teacher">Login as Teacher</option></select>
+    <input type="text" id="userInput" placeholder="Username" autocomplete="username">
     <input type="password" id="passwordInput" placeholder="Password" autocomplete="current-password">
     <button id="loginBtn" onclick="tryLogin()">Login</button>
   </div>
@@ -440,17 +503,18 @@
         <img src="logo.png" alt="" onerror="this.style.background='#fff'; this.src='';">
         <div>
           <strong>Sankalp Computer Classes</strong>
-          <span>Admin dashboard</span>
+          <span id="roleLabel">Admin dashboard</span>
         </div>
       </div>
       <div class="topbar-actions">
         <a class="btn btn-outline" href="#monthlyFeeStatusPanel">Fee status</a>
         <a class="btn btn-outline" href="#quizScoresPanel">Quiz scores</a>
-        <button class="btn btn-outline" onclick="openPanelModal('certModal')">Certificates</button>
-        <button class="btn btn-outline" onclick="openPanelModal('batchModal')">Batch access</button>
+        <button class="btn btn-outline admin-only" onclick="openPanelModal('certModal')">Certificates</button>
+        <button class="btn btn-outline admin-only" onclick="openPanelModal('batchModal')">Batch access</button>
         <button class="btn btn-outline" onclick="pracOpen()">+ Practical</button>
-        <button class="btn btn-outline" onclick="noteOpen()">+ Notes</button>
-        <button class="btn btn-outline" onclick="matOpen()">Materials</button>
+        <button class="btn btn-outline admin-only" onclick="noteOpen()">+ Notes</button>
+        <button class="btn btn-outline admin-only" onclick="matOpen()">Materials</button>
+        <button class="btn btn-outline" onclick="apOpen()"><span id="apBtnLabel">Approvals</span> <span id="apBadge" style="color:var(--gold);font-weight:800"></span></button>
         <button class="btn btn-outline" onclick="openPanelModal('pxModal')">Submissions <span id="pxBadge" style="color:var(--gold);font-weight:800"></span></button>
         <button class="btn btn-outline" onclick="xpOpen()">Expenses</button>
         <button class="btn btn-gold" onclick="openStudentModal()">+ New Admission</button>
@@ -464,6 +528,7 @@
     <div class="wrap">
 
       <div class="status-banner" id="statusBanner"></div>
+      <div id="toast"></div>
 
       <div class="summary-grid summary-grid-6">
         <div class="summary-card">
@@ -761,19 +826,41 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="apprModal">
+  <div class="modal-box modal-wide" style="max-width:1120px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px;">
+      <h3 style="margin:0;" id="apTitle">✅ Approvals (<span id="apCount">0</span>)</h3>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <select id="apFilter" onchange="apRender()" style="padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:.85rem;">
+          <option value="pending">Pending</option><option value="rejected">Sent back</option><option value="approved">Approved</option><option value="all">All</option></select>
+        <button class="btn-teal admin-only" style="padding:8px 14px;" onclick="apApproveAll()">Approve all shown</button>
+      </div>
+    </div>
+    <p class="modal-sub" id="apSub">Teacher ke har admission, student edit, fee, expense aur water-camper entry yahan aati hai. Approve karne par hi asli data mein jaati hai.</p>
+    <div id="apPrac" style="display:none; background:#fdf1e7; color:#7a4a12; border-radius:10px; padding:10px 14px; margin-bottom:10px; font-size:.88rem;"></div>
+    <div class="table-scroll">
+      <table style="min-width:900px;">
+        <thead><tr><th>When</th><th>Teacher</th><th>Type</th><th>Details</th><th>Status</th><th></th></tr></thead>
+        <tbody id="apRows"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;"><button class="btn-cancel" onclick="closeModal('apprModal')">Close</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="pxModal">
   <div class="modal-box modal-wide" style="max-width:1120px;">
     <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
       <h3 style="margin:0;">📝 Practical Submissions (<span id="pxCount">0</span>)</h3>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <select id="pxFilter" onchange="pxRender()" style="padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:.85rem;">
-          <option value="pending">Pending review</option><option value="all">All</option><option value="rated">Rated</option></select>
+          <option value="pending">Pending review</option><option value="approval">Awaiting approval</option><option value="rated">Marks live</option><option value="all">All</option></select>
         <input type="text" id="pxSearch" placeholder="Search student, ID, practical…" oninput="pxRender()" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px; font-size:.85rem; min-width:220px;">
       </div>
     </div>
     <div class="table-scroll">
       <table style="min-width:900px;">
-        <thead><tr><th>Student</th><th>Practical</th><th>File</th><th>Submitted</th><th>Rating (1-10)</th><th>Feedback</th><th></th></tr></thead>
+        <thead><tr><th>Student</th><th>Practical</th><th>File</th><th>Submitted</th><th>Marks (1-10)</th><th>Remarks</th><th>Status</th><th></th></tr></thead>
         <tbody id="pxRows"></tbody>
       </table>
     </div>
@@ -797,7 +884,14 @@
       <button class="btn-teal" id="pracBtn" onclick="pracUpload()">⬆️ Upload practical</button>
       <span id="pracMsg" style="font-size:.85rem; color:var(--ink-soft);"></span>
     </div>
-    <h4 style="margin:22px 0 8px;">Added from this panel (<span id="pracCount">0</span>)</h4>
+    <h4 style="margin:22px 0 8px;">⏳ Waiting for admin approval (<span id="pracPendCount">0</span>)</h4>
+    <div class="table-scroll">
+      <table style="min-width:620px;">
+        <thead><tr><th>Title</th><th>Course</th><th>Uploaded</th><th></th></tr></thead>
+        <tbody id="pracPendRows"></tbody>
+      </table>
+    </div>
+    <h4 style="margin:22px 0 8px;">Live for students — added from this panel (<span id="pracCount">0</span>)</h4>
     <div class="table-scroll">
       <table style="min-width:620px;">
         <thead><tr><th>Title</th><th>Course</th><th>Excel template</th><th>Added</th><th></th></tr></thead>
@@ -894,7 +988,10 @@
     return CHAPTER_LABELS[id] || id || '—';
   }
 
-  function showDash(){
+  function showDash(me){
+    window.ME = me || {}; window.ROLE = window.ME.role || 'admin';
+    document.body.classList.toggle('role-teacher', window.ROLE === 'teacher');
+    document.getElementById('roleLabel').textContent = window.ROLE === 'teacher' ? 'Teacher panel' + (window.ME.name ? ' — ' + window.ME.name : '') : 'Admin dashboard';
     document.getElementById('loginGate').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
     refreshAll();
@@ -906,11 +1003,11 @@
     if (!window.adminLogin){ err.textContent = 'Firebase load nahi hua, page refresh karein.'; err.style.display = 'block'; return; }
     err.style.display = 'none'; btn.disabled = true; btn.textContent = 'Checking…';
     try{
-      await window.adminLogin(u, p);
-      showDash();
+      const me = await window.adminLogin(u, p, document.getElementById('roleInput').value);
+      showDash(me);
     } catch(e){
       console.error(e);
-      err.textContent = e.code === 'app/not-admin' ? 'Yeh account admin nahi hai (admins collection mein add karein).'
+      err.textContent = e.code === 'app/not-admin' ? 'Yeh account admin/teacher list mein nahi hai (admins ya teachers collection mein add karein, ya account inactive hai).'
         : e.code === 'auth/too-many-requests' ? 'Bahut zyada koshish — thodi der baad try karein.'
         : (e.code || '').startsWith('auth/') ? 'Username ya password galat hai.' : 'Login nahi hua: ' + (e.message || e);
       err.style.display = 'block';
@@ -922,10 +1019,10 @@
   // Restore the admin session in this tab (Firebase Auth)
   (function restore(t){
     if (!window.adminSession){ if (t < 60) setTimeout(() => restore(t + 1), 100); return; }
-    window.adminSession().then(a => { if (a) showDash(); });
+    window.adminSession().then(a => { if (a) showDash(a); });
   })(0);
 
-  function refreshAll(){ loadData(); loadQuizScores(); if (window.xpStart) window.xpStart(); if (window.pxStart) window.pxStart(); if (window.pracSync) window.pracSync(); if (window.noteSync) window.noteSync(); }
+  function refreshAll(){ loadData(); loadQuizScores(); if (window.xpStart) window.xpStart(); if (window.pxStart) window.pxStart(); if (window.apStart) window.apStart(); if (window.pracSync) window.pracSync(); if (window.noteSync) window.noteSync(); }
 
   function showBanner(msg, isError){
     const b = document.getElementById('statusBanner');
@@ -1008,8 +1105,9 @@
     body.innerHTML = list.map(s => {
       const fee = feeBy[s.uid] || feeBy[normalize(s.name)];
       const paid = fee && normalize(fee.status).includes('paid');
+      const pf = (window.apPendingFee || {})[s.uid + '_' + mk];
       return `<tr><td>${esc(s.name)}</td><td>${esc(s.course)}</td>
-        <td><span class="pill ${paid ? 'pill-paid' : 'pill-pending'}">${paid ? 'Paid' : 'Pending'}</span></td>
+        <td><span class="pill ${paid ? 'pill-paid' : 'pill-pending'}">${paid ? 'Paid' : 'Pending'}</span>${pf ? ' <span class="rv-chip rv-wait">⏳ Fee approval pending</span>' : ''}</td>
         <td>${fee ? formatMoney(fee.amount) : '—'}</td><td>${fee ? formatDate(fee.date) : '—'}</td>
         <td><button class="row-btn" onclick="openFeeModal('${s.uid}')">${paid ? 'Edit' : '💰 Mark paid'}</button></td></tr>`;
     }).join('');
@@ -1390,7 +1488,9 @@
     document.getElementById('stTitle').textContent = s ? '✏️ Edit student — ' + (s.name || '') : '➕ New Admission';
     document.getElementById('stSub').textContent = s ? 'Details update karke Save dabayein. Active / Inactive yahin se badal sakte hain.' : 'Student ka record + login Firebase mein ban jayega. Pehli baar login par password change mandatory hoga.';
     document.getElementById('stSaveBtn').disabled = false;
-    document.getElementById('stSaveBtn').textContent = s ? 'Save changes' : 'Save admission →';
+    document.getElementById('stSaveBtn').textContent = window.ROLE === 'teacher' ? (s ? 'Send changes for approval' : 'Send admission for approval →') : (s ? 'Save changes' : 'Save admission →');
+    document.querySelector('#createdBox b').textContent = '✅ Student login ban gaya!';
+    if (window.ROLE === 'teacher') document.getElementById('stSub').textContent += ' ⏳ Yeh admin ki approval ke baad hi apply hoga.';
     document.getElementById('studentModal').classList.add('open');
   }
   async function saveStudent(){
@@ -1403,6 +1503,28 @@
     if (a4 && !/^\d{4}$/.test(a4)){ alertIn('stAlert', 'Aadhar ke sirf aakhri 4 digit likhein.', 'err'); return; }
     profile.aadharMasked = a4 ? 'XXXX-XXXX-' + a4 : '';
     profile.feeStatus = profile.admissionFeeStatus;           // dashboard reads feeStatus
+    if (window.ROLE === 'teacher'){                           // teacher: nothing is saved directly, only a request for the admin
+      if (!window.requestApproval){ alertIn('stAlert', 'Firebase load nahi hua, page refresh karein.', 'err'); return; }
+      btn.disabled = true;
+      try{
+        if (editingUid){
+          await window.requestApproval('studentEdit', 'Edit student: ' + (profile.name || ''), { uid: editingUid, patch: profile });
+          alertIn('stAlert', '✅ Admin ko approval ke liye bhej diya. Approve hone ke baad changes lagenge.', 'ok'); btn.textContent = 'Sent ✓';
+        } else {
+          const sid = $v('st_studentId').toLowerCase(), pw = document.getElementById('st_password').value;
+          if (!/^[a-z0-9._-]{3,30}$/.test(sid)){ alertIn('stAlert', 'Student ID mein sirf a-z, 0-9, . _ - (3-30 chars) allowed hain.', 'err'); btn.disabled = false; return; }
+          if (pw.length < 6){ alertIn('stAlert', 'Password kam se kam 6 characters ka ho.', 'err'); btn.disabled = false; return; }
+          if (allStudents.some(x => String(x.studentId || '').toLowerCase() === sid)){ alertIn('stAlert', 'Yeh Student ID pehle se hai, alag ID chunein.', 'err'); btn.disabled = false; return; }
+          profile.monthlyFeeStatus = 'pending'; profile.currentMonth = currentMonthLabel(); profile.addedBy = (window.ME && window.ME.name) || 'Teacher';
+          await window.requestApproval('admission', 'New admission: ' + profile.name + ' (' + profile.course + ')', { studentId: sid, profile }, pw);
+          document.getElementById('cb_id').textContent = sid; document.getElementById('cb_pw').textContent = pw;
+          document.querySelector('#createdBox b').textContent = '⏳ Request bhej di — admin approve karega tab hi login chalega';
+          document.getElementById('createdBox').classList.add('show');
+          alertIn('stAlert', '✅ Admission request admin ko bhej di gayi.', 'ok'); btn.textContent = 'Sent ✓';
+        }
+      } catch(err){ console.error(err); alertIn('stAlert', 'Request nahi gayi: ' + (err.code || err.message || err), 'err'); btn.disabled = false; }
+      return;
+    }
     if (!window.fsUpdateStudent){ alertIn('stAlert', 'Firebase load nahi hua, page refresh karein.', 'err'); return; }
     btn.disabled = true;
     try{
@@ -1435,6 +1557,11 @@
     const s = allStudents.find(x => x.uid === uid); if (!s) return;
     const next = normalize(s.status || 'active') === 'active' ? 'Inactive' : 'Active';
     if (!confirm(s.name + ' ko ' + next + ' karna hai?')) return;
+    if (window.ROLE === 'teacher'){
+      try{ await window.requestApproval('studentEdit', next + ': ' + (s.name || ''), { uid, patch: { status: next } }); }
+      catch(e){ console.error(e); showBanner('Request nahi gayi: ' + (e.code || e.message), true); }
+      return;
+    }
     try{ await window.fsUpdateStudent(uid, { status: next }); s.status = next; renderAll(); }
     catch(e){ console.error(e); showBanner('Status update nahi hua — rules/admin login check karein.', true); }
   }
@@ -1454,6 +1581,7 @@
     document.getElementById('fm_mode').value = (ex && ex.mode) || 'Cash';
     document.getElementById('fmAlert').className = 'modal-alert';
     document.getElementById('fmSaveBtn').disabled = false;
+    document.getElementById('fmSaveBtn').textContent = window.ROLE === 'teacher' ? 'Send for approval' : 'Save fee';
     document.getElementById('feeModal').classList.add('open');
   }
   async function saveFee(){
@@ -1464,6 +1592,15 @@
     const data = { uid: s.uid, studentId: s.studentId || '', name: s.name || '', course: s.course || '', month: label, monthKey: mk, amount, status,
       date: status === 'Paid' ? document.getElementById('fm_date').value : '', mode: document.getElementById('fm_mode').value, updatedAt: new Date().toISOString() };
     const btn = document.getElementById('fmSaveBtn'); btn.disabled = true;
+    if (window.ROLE === 'teacher'){                           // teacher: fee is only a request until the admin approves
+      try{
+        const isCur = mk === monthKeyOf(currentMonthLabel());
+        await window.requestApproval('fee', 'Fee: ' + (s.name || '') + ' · ' + label + ' · ₹' + amount + ' ' + status + (status === 'Paid' ? ' (' + data.mode + ')' : ''),
+          { uid: s.uid, feeId: s.uid + '_' + mk, data, studentPatch: isCur ? { monthlyFeeStatus: status.toLowerCase(), currentMonth: currentMonthLabel() } : null });
+        closeModal('feeModal');
+      } catch(e){ console.error(e); alertIn('fmAlert', 'Request nahi gayi: ' + (e.code || e.message), 'err'); btn.disabled = false; }
+      return;
+    }
     try{
       await window.fsSaveFee(s.uid + '_' + mk, data);
       const i = allFees.findIndex(f => f.uid === s.uid && f.monthKey === mk);
@@ -1543,7 +1680,7 @@
     const LEG = { l: 'Cleaning Staff Salary', m: 'Cleaning Materials', e: 'Electricity Bill', x: 'Miscellaneous' };  // entries saved by the earlier version
     const D = { exp: [], camp: {}, rate: 0 };
     let started = false, cur = new Date(), sel = null;
-    const fail = e => { $('xpErr').textContent = 'Could not load or save: ' + (e.code || e.message) + '. This account must be listed in the admins collection.'; };
+    const fail = e => { $('xpErr').textContent = 'Could not load or save: ' + (e.code || e.message) + '. This account must be listed in the admins or teachers collection.'; };
     const catOf = x => x.c || LEG[x.t] || 'Miscellaneous';
 
     window.xpOpen = () => { $('expenseModal').classList.add('open'); if (window.xpStart) window.xpStart(); xpRender(); };
@@ -1566,7 +1703,8 @@
       if (!a){ $('xeAmt').focus(); return; }
       const e = { d: $('xeDate').value || T(), c, n: $('xeNote').value.trim(), a, pm: $('xeMode').value };
       const u = +$('xeUnits').value; if (c === 'Electricity Bill' && u) e.u = u;
-      window.khAdd(e).catch(fail);
+      if (window.ROLE === 'teacher') window.requestApproval('expense', 'Expense: ₹' + a + ' · ' + c + (e.n ? ' · ' + e.n : '') + ' · ' + e.d, { e }).catch(fail);
+      else window.khAdd(e).catch(fail);
       $('xeNote').value = ''; $('xeAmt').value = ''; $('xeUnits').value = '';
     };
     window.xpDel = id => { if (confirm('Delete this expense?')) window.khDel(id).catch(fail); };
@@ -1585,7 +1723,7 @@
       $('xeBreak').innerHTML = Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, v]) => '<div class="xp-row"><span>' + E(k) + '</span><b>' + R(v) + '</b></div>').join('');
       $('xeRows').innerHTML = L.length ? L.map(x =>
         '<tr><td>' + E(x.d) + '</td><td>' + E(catOf(x)) + '</td><td>' + E(x.n || '') + (x.u ? ' <span style="color:var(--ink-soft)">(' + x.u + ' units)</span>' : '') + '</td><td>' + E(x.pm || '—') + '</td>' +
-        '<td style="text-align:right;font-weight:700">' + R(x.a) + '</td><td><button class="row-btn danger" onclick="xpDel(\'' + E(x.id) + '\')">Delete</button></td></tr>'
+        '<td style="text-align:right;font-weight:700">' + R(x.a) + '</td><td><button class="row-btn danger admin-only" onclick="xpDel(\'' + E(x.id) + '\')">Delete</button></td></tr>'
       ).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);padding:22px">No expenses recorded for this selection.</td></tr>';
     };
 
@@ -1597,11 +1735,16 @@
       const e = { ...(D.camp[sel] || {}) };
       if (s !== undefined) e.s = s;
       e.n = +$('xcQty').value || 1; e.p = +$('xcPay').value || 0;
+      if (window.ROLE === 'teacher'){
+        const clr = !e.s && !e.p;
+        window.requestApproval('camp', 'Water campers ' + sel + ': ' + (clr ? 'clear day' : (e.s === 'y' ? 'delivered' : e.s === 'n' ? 'not delivered' : 'payment only') + ' · qty ' + e.n + (e.p ? ' · paid ₹' + e.p : '')), { day: sel, entry: clr ? null : e }).catch(fail);
+        return;
+      }
       (!e.s && !e.p ? window.khCampDel(sel) : window.khCampSet(sel, e)).catch(fail);
     };
     function xcRender(){
       const y = cur.getFullYear(), mo = cur.getMonth(), pre = y + '-' + P(mo + 1);
-      $('xcRate').value = D.rate || '';
+      $('xcRate').value = D.rate || ''; $('xcRate').disabled = window.ROLE === 'teacher';
       $('xcMonth').textContent = cur.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
       const first = new Date(y, mo, 1).getDay(), n = new Date(y, mo + 1, 0).getDate();
       let h = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => '<b>' + d + '</b>').join('');
@@ -1645,40 +1788,67 @@
   function openPanelModal(id){ document.getElementById(id).classList.add('open'); }
   ['certModal','batchModal','pxModal'].forEach(id => document.getElementById(id).addEventListener('click', function(e){ if (e.target === this) closeModal(id); }));
 
-  // ============ PRACTICAL SUBMISSIONS (admin rating) ============
+  // ============ PRACTICAL SUBMISSIONS (teacher marks -> admin approves -> student sees) ============
   (function(){
     const $ = id => document.getElementById(id);
     const E = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    let subs = [], started = false;
+    let subs = [], reviews = {}, started = false;
+    const isT = () => window.ROLE === 'teacher';
     const when = s => s.submittedAt && s.submittedAt.toDate ? s.submittedAt.toDate().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+    const inp = 'padding:7px;border:1px solid var(--line);border-radius:8px';
     window.pxStart = () => {
       if (started || !window.pxListen) return; started = true;
       window.pxListen(l => { subs = l; pxRender(); }, e => console.error('Submissions:', e));
+      window.rvListen(l => { reviews = {}; l.forEach(r => reviews[r.id] = r); pxRender(); }, e => console.error('Mark reviews:', e));
     };
+    // status of one submission: waiting = teacher marks awaiting admin; rejected = admin sent back; done = marks live for student
+    const stateOf = x => { const r = reviews[x.id]; return r && r.status === 'pending' ? 'waiting' : r && r.status === 'rejected' ? 'rejected' : x.rating != null ? 'done' : 'new'; };
     window.pxRender = () => {
       const f = $('pxFilter').value, q = $('pxSearch').value.trim().toLowerCase();
-      const pend = subs.filter(x => x.rating == null && x.status !== 'uploading').length;
-      $('pxBadge').textContent = pend ? '(' + pend + ')' : '';
-      const L = subs.filter(x => x.status !== 'uploading' || x.parts)
-        .filter(x => f === 'all' || (f === 'rated' ? x.rating != null : x.rating == null))
+      const live = subs.filter(x => x.status !== 'uploading' || x.parts);
+      const waiting = live.filter(x => stateOf(x) === 'waiting').length;
+      const unrated = live.filter(x => stateOf(x) === 'new' || stateOf(x) === 'rejected').length;
+      $('pxBadge').textContent = isT() ? (unrated ? '(' + unrated + ')' : '') : (waiting ? '(' + waiting + ' to approve)' : (unrated ? '(' + unrated + ')' : ''));
+      const L = live
+        .filter(x => { const st = stateOf(x);
+          return f === 'all' || (f === 'approval' ? st === 'waiting' : f === 'rated' ? st === 'done' : (st === 'new' || st === 'rejected' || (!isT() && st === 'waiting'))); })
         .filter(x => !q || [x.name, x.studentId, x.practical, x.course, x.batch].join(' ').toLowerCase().includes(q))
         .sort((a, b) => ((b.submittedAt && b.submittedAt.seconds) || 0) - ((a.submittedAt && a.submittedAt.seconds) || 0));
       $('pxCount').textContent = L.length;
       $('pxRows').innerHTML = L.length ? L.map(x => {
-        const i = E(x.id);
+        const i = E(x.id), st = stateOf(x), r = reviews[x.id];
+        // what goes into the input boxes: pending/rejected teacher marks first, else the live (approved) marks
+        const val = r && r.status !== 'approved' ? r.rating : (x.rating == null ? '' : x.rating);
+        const fb  = r && r.status !== 'approved' ? r.feedback : (x.feedback || '');
+        let chip = '<span class="rv-chip rv-wait">Not marked</span>';
+        if (st === 'waiting') chip = '<span class="rv-chip rv-wait">⏳ Awaiting approval</span>' + (r.teacherName ? '<div style="font-size:.74rem;color:var(--ink-soft);margin-top:3px">by ' + E(r.teacherName) + '</div>' : '');
+        else if (st === 'rejected') chip = '<span class="rv-chip rv-no">❌ Sent back</span>' + (r.adminNote ? '<div style="font-size:.74rem;color:var(--ink-soft);margin-top:3px">' + E(r.adminNote) + '</div>' : '');
+        else if (st === 'done') chip = '<span class="rv-chip rv-ok">✅ Live for student</span>';
+        let acts;
+        if (isT()) acts = '<button class="row-btn" onclick="pxSave(\'' + i + '\')">' + (st === 'waiting' ? 'Update' : 'Send for approval') + '</button>';
+        else if (st === 'waiting') acts = '<button class="row-btn" onclick="pxSave(\'' + i + '\')">Approve</button><button class="row-btn danger" onclick="pxReject(\'' + i + '\')">Send back</button><button class="row-btn danger" onclick="pxRemove(\'' + i + '\')">Delete</button>';
+        else acts = '<button class="row-btn" onclick="pxSave(\'' + i + '\')">Save</button><button class="row-btn danger" onclick="pxRemove(\'' + i + '\')">Delete</button>';
         return '<tr><td><b>' + E(x.name) + '</b><br><span style="color:var(--ink-soft);font-size:.8rem">' + E(x.studentId) + ' · ' + E(x.course) + (x.batch ? ' · ' + E(x.batch) : '') + '</span></td>' +
           '<td>' + E(x.practical) + '</td>' +
           '<td><button class="row-btn" onclick="pxView(\'' + i + '\')">View</button><div style="font-size:.74rem;color:var(--ink-soft)">' + E(x.fileName) + '</div></td>' +
           '<td>' + when(x) + '</td>' +
-          '<td><input type="number" id="pxR_' + i + '" min="1" max="10" step="0.5" value="' + (x.rating == null ? '' : x.rating) + '" style="width:70px;padding:7px;border:1px solid var(--line);border-radius:8px"></td>' +
-          '<td><input type="text" id="pxF_' + i + '" value="' + E(x.feedback || '') + '" placeholder="Optional comment" style="width:100%;min-width:150px;padding:7px;border:1px solid var(--line);border-radius:8px"></td>' +
-          '<td style="white-space:nowrap"><button class="row-btn" onclick="pxSave(\'' + i + '\')">Save</button><button class="row-btn danger" onclick="pxRemove(\'' + i + '\')">Delete</button></td></tr>';
-      }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--ink-soft);padding:22px">No submissions here yet.</td></tr>';
+          '<td><input type="number" id="pxR_' + i + '" min="1" max="10" step="0.5" value="' + E(val) + '" style="width:70px;' + inp + '"></td>' +
+          '<td><input type="text" id="pxF_' + i + '" value="' + E(fb) + '" placeholder="Remarks" style="width:100%;min-width:150px;' + inp + '"></td>' +
+          '<td>' + chip + '</td>' +
+          '<td style="white-space:nowrap">' + acts + '</td></tr>';
+      }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:22px">No submissions here yet.</td></tr>';
     };
     window.pxSave = id => {
-      const r = parseFloat($('pxR_' + id).value);
-      if (!(r >= 1 && r <= 10)){ alert('Rating must be between 1 and 10.'); return; }
-      window.pxRate(id, r, $('pxF_' + id).value.trim()).catch(e => alert('Could not save: ' + (e.code || e.message)));
+      const x = subs.find(s => s.id === id); if (!x) return;
+      const r = parseFloat($('pxR_' + id).value), fb = $('pxF_' + id).value.trim();
+      if (!(r >= 1 && r <= 10)){ alert('Marks must be between 1 and 10.'); return; }
+      const fail = e => alert('Could not save: ' + (e.code || e.message));
+      if (isT()) window.rvSubmit(x, r, fb, window.ME).then(() => alert('Sent to admin for approval. Student will see it only after approval.')).catch(fail);
+      else window.rvApprove(id, r, fb, !!reviews[id]).catch(fail);   // admin: saves & publishes (also approves a pending teacher review)
+    };
+    window.pxReject = id => {
+      const note = prompt('Reason / instruction for the teacher (optional):'); if (note === null) return;
+      window.rvReject(id, note.trim()).catch(e => alert('Could not save: ' + (e.code || e.message)));
     };
     window.pxRemove = id => {
       const x = subs.find(s => s.id === id); if (!x || !confirm('Delete this submission permanently?')) return;
@@ -1698,11 +1868,101 @@
     };
   })();
 
+  // ============ APPROVALS (teacher requests -> admin applies) ============
+  (function(){
+    const $ = id => document.getElementById(id);
+    const E = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const R = n => '₹' + (Number(n) || 0).toLocaleString('en-IN');
+    const isT = () => window.ROLE === 'teacher';
+    const LBL = { admission: '🎓 New admission', studentEdit: '✏️ Student edit', fee: '💰 Fee', expense: '🧾 Expense', camp: '💧 Water campers' };
+    let items = [], started = false, tt = null;
+    const when = a => a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+    const secs = a => (a.createdAt && a.createdAt.seconds) || 0;
+
+    window.toast = m => { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 3800); };
+    window.requestApproval = async (type, summary, payload, secret) => {
+      await window.apSubmit(type, summary, payload, window.ME, secret);
+      window.toast('⏳ Admin ko approval ke liye bhej diya — approve hone ke baad hi apply hoga.');
+    };
+    window.apStart = () => {
+      $('apBtnLabel').textContent = isT() ? 'My requests' : 'Approvals';
+      $('apTitle').firstChild.textContent = isT() ? '📨 My requests (' : '✅ Approvals (';
+      if (isT()) $('apSub').textContent = 'Aapki bheji hui requests aur unka status. Admin approve karega tabhi asli data mein jayegi. Pending request ko Cancel kar sakte hain.';
+      if (started || !window.apListen) return; started = true;
+      window.apListen(isT(), window.ME.uid, l => { items = l; apRender(); }, e => console.error('Approvals:', e));
+    };
+    window.apOpen = () => { openPanelModal('apprModal'); window.apStart(); apRender(); };
+    window.apBadge = () => {
+      const n = items.filter(a => a.status === 'pending').length, p = isT() ? 0 : (window.pracPending || 0);
+      $('apBadge').textContent = (n + p) ? '(' + (n + p) + ')' : '';
+    };
+    const detail = a => {
+      const p = a.payload || {};
+      if (a.type === 'admission'){
+        const f = p.profile || {};
+        return '<b>' + E(f.name) + '</b> · ' + E(f.course) + (f.batch ? ' · ' + E(f.batch) : '') + '<br><small>ID <b>' + E(p.studentId) + '</b> · Adm. fee ' + R(f.admissionFee) + ' (' + E(f.admissionFeeStatus) + ') · Monthly ' + R(f.monthlyFee) + (f.phone ? ' · ' + E(f.phone) : '') + '</small>'
+          + (a.secret ? '<br><small>Temp password: <b>' + E(a.secret) + '</b></small>' : '');
+      }
+      if (a.type === 'studentEdit'){
+        const st = (typeof allStudents !== 'undefined' ? allStudents : []).find(x => x.uid === p.uid) || {};
+        const ch = Object.entries(p.patch || {}).filter(([k, v]) => a.status !== 'pending' || String(st[k] == null ? '' : st[k]) !== String(v == null ? '' : v));
+        const head = '<b>' + E(st.name || a.summary) + '</b>';
+        return ch.length && a.status === 'pending' ? head + '<br>' + ch.map(([k, v]) => '<small>' + E(k) + ': ' + E(st[k] == null ? '—' : st[k]) + ' → <b>' + E(v) + '</b></small>').join('<br>') : E(a.summary);
+      }
+      return E(a.summary);
+    };
+    window.apRender = () => {
+      // pending fee requests -> chip in the monthly fee table
+      window.apPendingFee = {}; items.filter(a => a.type === 'fee' && a.status === 'pending' && a.payload).forEach(a => window.apPendingFee[a.payload.feeId] = true);
+      try { renderMonthStatus(); } catch(e){}
+      apBadge();
+      const f = $('apFilter').value;
+      const L = items.filter(a => f === 'all' || a.status === f).sort((a, b) => secs(b) - secs(a));
+      $('apCount').textContent = L.length;
+      const pp = window.pracPending || 0, box = $('apPrac');
+      if (!isT() && pp){ box.style.display = ''; box.innerHTML = '📚 <b>' + pp + '</b> practical teacher ne upload kiya hai aur approval ka intezar hai. <button class="row-btn" onclick="closeModal(\'apprModal\');pracOpen()">Review karein</button>'; }
+      else box.style.display = 'none';
+      $('apRows').innerHTML = L.length ? L.map(a => {
+        const i = E(a.id);
+        const chip = a.status === 'pending' ? '<span class="rv-chip rv-wait">⏳ Pending</span>' : a.status === 'approved' ? '<span class="rv-chip rv-ok">✅ Approved</span>'
+          : '<span class="rv-chip rv-no">❌ Sent back</span>' + (a.adminNote ? '<div style="font-size:.74rem;color:var(--ink-soft);margin-top:3px">' + E(a.adminNote) + '</div>' : '');
+        const acts = a.status !== 'pending' ? '' : isT() ? '<button class="row-btn danger" onclick="apCancel(\'' + i + '\')">Cancel</button>'
+          : '<button class="row-btn" onclick="apApprove(\'' + i + '\')">Approve</button><button class="row-btn danger" onclick="apRejectBtn(\'' + i + '\')">Reject</button>';
+        return '<tr><td style="white-space:nowrap">' + when(a) + '</td><td>' + E(a.teacherName) + '</td><td>' + (LBL[a.type] || E(a.type)) + '</td><td class="ap-detail">' + detail(a) + '</td><td>' + chip + '</td><td style="white-space:nowrap">' + acts + '</td></tr>';
+      }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);padding:22px">Yahan abhi kuch nahi hai.</td></tr>';
+    };
+    async function applyOne(a){
+      await window.apApply(a);
+      if (a.type === 'admission') alert('✅ Admission approve ho gaya.\n\nStudent ID: ' + a.payload.studentId + '\nTemp password: ' + a.secret + '\n\n(Teacher ke paas yeh already hai. Pehli login par password change hoga.)');
+    }
+    window.apApprove = async id => {
+      const a = items.find(x => x.id === id); if (!a || a.status !== 'pending') return;
+      try { await applyOne(a); window.toast('✅ Approve ho gaya.'); loadData(); }
+      catch(e){ console.error(e); alert(e.code === 'auth/email-already-in-use' ? 'Yeh Student ID pehle se hai — Reject karke teacher se alag ID ke saath dobara bhejne ko kahein.' : 'Approve nahi hua: ' + (e.code || e.message)); }
+    };
+    window.apRejectBtn = id => {
+      const a = items.find(x => x.id === id); if (!a) return;
+      const note = prompt('Reason / instruction for the teacher (optional):'); if (note === null) return;
+      window.apReject(a, note.trim()).catch(e => alert('Save nahi hua: ' + (e.code || e.message)));
+    };
+    window.apCancel = id => { if (confirm('Yeh request cancel karein?')) window.apCancelReq(id).catch(e => alert('Cancel nahi hua: ' + (e.code || e.message))); };
+    window.apApproveAll = async () => {
+      const L = items.filter(a => a.status === 'pending' && ($('apFilter').value === 'pending' || $('apFilter').value === 'all'));
+      if (!L.length){ alert('Koi pending request nahi hai.'); return; }
+      if (!confirm(L.length + ' pending request(s) approve karein? Pehle details check kar lein.')) return;
+      let ok = 0, bad = [];
+      for (const a of L.sort((x, y) => secs(x) - secs(y))){ try { await window.apApply(a); ok++; } catch(e){ bad.push(a.summary + ' — ' + (e.code || e.message)); } }
+      window.toast('✅ ' + ok + ' approve hui.'); loadData();
+      if (bad.length) alert('Yeh approve nahi hui:\n\n' + bad.join('\n'));
+    };
+    $('apprModal').addEventListener('click', function(e){ if (e.target === this) closeModal('apprModal'); });
+  })();
+
   // ============ ADD NEW PRACTICALS (stored in Firestore, shown on student dashboard) ============
   (function(){
     const $ = id => document.getElementById(id);
     const E = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    let list = [];
+    let list = [], pending = [];
     const when = x => x.createdAt && x.createdAt.toDate ? x.createdAt.toDate().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
     const say = (t, color) => { $('pracMsg').textContent = t; $('pracMsg').style.color = color || 'var(--ink-soft)'; };
 
@@ -1711,20 +1971,47 @@
       const base = (window.STATIC_PRACTICALS || []).filter(p => !p.fsId);
       window.STATIC_PRACTICALS = base.concat(list.map(x => ({ title: x.title, course: x.course, type: 'PDF', file: 'fs_' + x.id, fsId: x.id })));
     }
+    function renderPending(){
+      const admin = window.ROLE !== 'teacher';
+      $('pracPendCount').textContent = pending.length;
+      $('pracPendRows').innerHTML = pending.length ? pending.map(x =>
+        '<tr><td><b>' + E(x.title) + '</b><div style="font-size:.74rem;color:var(--ink-soft)">' + E(x.fileName) + (x.addedBy ? ' · by ' + E(x.addedBy) : '') + '</div></td>' +
+        '<td>' + E(x.course) + '</td><td>' + when(x) + '</td>' +
+        '<td style="white-space:nowrap"><button class="row-btn" onclick="pracView(\'' + E(x.id) + '\')">View</button>' +
+        '<button class="row-btn admin-only" onclick="pracApprove(\'' + E(x.id) + '\')">Approve &amp; publish</button>' +
+        '<button class="row-btn danger admin-only" onclick="pracRemove(\'' + E(x.id) + '\', true)">Reject</button>' +
+        (admin ? '' : '<span class="rv-chip rv-wait">⏳ Awaiting approval</span>') + '</td></tr>'
+      ).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:14px">Koi practical approval ke liye pending nahi hai.</td></tr>';
+      window.pracPending = pending.length; if (window.apBadge) window.apBadge();
+    }
+    window.pracView = async id => {
+      const x = pending.find(p => p.id === id) || list.find(p => p.id === id); if (!x) return;
+      const w = window.open('', '_blank');
+      try {
+        const bin = atob(await window.matFetch('practicals', id, 'p', x.pdfParts || 0)), arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        w.location.href = URL.createObjectURL(new Blob([arr], { type: 'application/pdf' }));
+      } catch(e){ if (w) w.close(); alert('File open nahi hui: ' + (e.code || e.message)); }
+    };
+    window.pracApprove = async id => {
+      const x = pending.find(p => p.id === id); if (!x || !confirm('"' + x.title + '" ko publish karein? ' + x.course + ' ke students ko dikhne lagega.')) return;
+      try { await window.pracFsApprove(id); await window.pracSync(); } catch(e){ alert('Approve nahi hua: ' + (e.code || e.message)); }
+    };
     function render(){
+      renderPending();
       $('pracCount').textContent = list.length;
       $('pracRows').innerHTML = list.length ? list.map(x =>
         '<tr><td><b>' + E(x.title) + '</b><div style="font-size:.74rem;color:var(--ink-soft)">' + E(x.fileName) + '</div></td>' +
         '<td>' + E(x.course) + '</td>' +
         '<td>' + (x.tplParts ? '✅ ' + E(x.tplName) : '—') + '</td>' +
         '<td>' + when(x) + '</td>' +
-        '<td><button class="row-btn danger" onclick="pracRemove(\'' + E(x.id) + '\')">Delete</button></td></tr>'
+        '<td><button class="row-btn danger admin-only" onclick="pracRemove(\'' + E(x.id) + '\')">Delete</button></td></tr>'
       ).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:18px">Abhi koi naya practical add nahi hua.</td></tr>';
     }
     window.pracSync = async () => {
       if (!window.pracFsList) return;
-      try { list = (await window.pracFsList()).filter(x => x.status === 'ready')
-              .sort((a, b) => ((b.createdAt && b.createdAt.seconds) || 0) - ((a.createdAt && a.createdAt.seconds) || 0)); }
+      try { const all = (await window.pracFsList()).sort((a, b) => ((b.createdAt && b.createdAt.seconds) || 0) - ((a.createdAt && a.createdAt.seconds) || 0));
+            list = all.filter(x => x.status === 'ready'); pending = all.filter(x => x.status === 'pending'); }
       catch(e){ console.error('Practicals:', e); say('Practicals load nahi hue — Firestore rules me "practicals" add karein.', '#b3261e'); return; }
       mergeIntoStatic(); render();
       if (window.baInit) window.baInit();     // refresh course list / batch-access checkboxes
@@ -1742,10 +2029,10 @@
       if (!window.pracFsAdd){ say('Firebase abhi load ho raha hai, thodi der baad try karein.', '#b3261e'); return; }
       const btn = $('pracBtn'); btn.disabled = true; say('Uploading… 0%');
       try {
-        await window.pracFsAdd({ title, course, fileName: pdf.name, tplName: tpl ? tpl.name : '', tplType: tpl ? tpl.type : '' }, pdf, tpl,
+        await window.pracFsAdd({ title, course, fileName: pdf.name, tplName: tpl ? tpl.name : '', tplType: tpl ? tpl.type : '', addedBy: window.ROLE === 'teacher' ? ((window.ME && window.ME.name) || 'Teacher') : '' }, pdf, tpl,
           p => say('Uploading… ' + Math.round(p * 100) + '%'));
         $('pracTitle').value = ''; $('pracPdf').value = ''; $('pracTpl').value = '';
-        say('✅ Practical add ho gaya — ' + course + ' ke students ko dikhega.', '#1a7f4b');
+        say(window.ROLE === 'teacher' ? '✅ Upload ho gaya — admin approve karega tab ' + course + ' ke students ko dikhega.' : '✅ Practical add ho gaya — ' + course + ' ke students ko dikhega.', '#1a7f4b');
         await window.pracSync();
       } catch(e){
         console.error(e);
@@ -1753,9 +2040,9 @@
       }
       btn.disabled = false;
     };
-    window.pracRemove = async id => {
-      const x = list.find(p => p.id === id);
-      if (!x || !confirm('"' + x.title + '" ko permanently delete karein? Students ko ye dikhna band ho jayega.')) return;
+    window.pracRemove = async (id, isReject) => {
+      const x = list.find(p => p.id === id) || pending.find(p => p.id === id);
+      if (!x || !confirm(isReject ? '"' + x.title + '" ko reject karke delete karein?' : '"' + x.title + '" ko permanently delete karein? Students ko ye dikhna band ho jayega.')) return;
       try { await window.pracFsDelete(x); await window.pracSync(); }
       catch(e){ alert('Delete nahi hua: ' + (e.code || e.message)); }
     };
